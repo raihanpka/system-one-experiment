@@ -130,8 +130,6 @@ results/<samples>_<timestamp>/       one folder per run, for example identical-s
   report/
     summary.md                       tables and figures of this run
     figures/*.svg                    accuracy, outcomes, drift regression, calibration, kinds, heatmaps
-
-results/latest                       link to the newest run
 ```
 
 Files ending in `_name` or `_samples` show what the model saw for that context. The `results/` folder is not tracked by git.
@@ -178,6 +176,3 @@ make bench
 - **Data & Figures**: [NumPy](https://numpy.org), [pandas](https://pandas.pydata.org), [seaborn](https://seaborn.pydata.org), [Matplotlib](https://matplotlib.org)
 - **Testing & Linting**: [pytest](https://pytest.org), [pyflakes](https://github.com/PyCQA/pyflakes)
 
-<div align="center">
-<sub>Copyright &copy; 2026 Raihan Putra Kirana. All rights reserved.</sub>
-</div>

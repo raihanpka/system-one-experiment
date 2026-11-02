@@ -39,7 +39,7 @@ bench: ## Speed and accuracy of the two scoring modes (about 5 minutes)
 	$(PY) scripts/bench_modes.py
 
 open: ## Open the summary of the newest run
-	open results/latest/report/summary.md
+	open "$$(ls -dt results/*/ | head -1)report/summary.md"
 
 status: ## Is the model process running?
 	@pgrep -fl jev-score-v2 || echo "model not running"

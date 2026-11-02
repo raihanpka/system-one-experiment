@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .core.paths import CONFIG, DATA, ROOT
-from .core.runs import latest_run, link_latest, new_run_dir
+from .core.runs import new_run_dir, newest_run
 from .core.store import Store
 from .core.template import load_template
 from .dataset.export import write_samples
@@ -61,7 +61,7 @@ def main(argv=None, decider_factory=None) -> int:
         run = _abs(a.out)
         run.mkdir(parents=True, exist_ok=True)
     elif a.report_only:
-        run = latest_run(root)
+        run = newest_run(root)
         if run is None:
             ap.error(f"no run found under {root}; run without --report-only first")
     else:
@@ -96,8 +96,6 @@ def main(argv=None, decider_factory=None) -> int:
         store.save()
 
     paths = make_report(store, cases, letters, conds, run, other)
-    if run.parent == root and not a.report_only:
-        link_latest(root, run)
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")
     print(f"raw model output: {run / 'result.json'}")
     return 0

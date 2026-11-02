@@ -37,7 +37,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     runs = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()]
     assert len(runs) == 1 and re.fullmatch(r"identical-synonym-coded-mixed_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
     run = runs[0]
-    assert (root / "latest").is_symlink() and (root / "latest").resolve() == run.resolve()
+    assert not (root / "latest").exists()                                                          # no extra link next to the runs
 
     for f in ("input_coded.csv", "expected_coded.csv", "ground_truth_coded.csv"):              # single source of truth
         assert (data / "samples" / "c_coded" / f).exists(), f
@@ -77,7 +77,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     assert "d_mixed" in (rep / "summary.md").read_text()
 
 
-def test_each_run_gets_its_own_folder_and_latest_follows(tmp_path):
+def test_each_run_gets_its_own_folder_and_report_only_takes_the_newest(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
     main(["--samples", "a", "--root", str(root), "--data", str(data), "--conds", "name"], decider_factory=Generic)
     time.sleep(1.1)                                                                              # names carry seconds
@@ -85,7 +85,8 @@ def test_each_run_gets_its_own_folder_and_latest_follows(tmp_path):
     runs = sorted((p.name for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda n: n.rsplit("_", 1)[-1])
     assert len(runs) == 2 and runs[0].startswith("identical_") and runs[1].startswith("synonym_")
     assert all((root / r / "result.json").exists() for r in runs)                                # one result.json per run
-    assert (root / "latest").resolve().name == runs[1]
+    main(["--root", str(root), "--data", str(data), "--report-only"])                            # rebuilds the newest run only
+    assert (root / runs[1] / "report" / "summary.md").stat().st_mtime > (root / runs[0] / "report" / "summary.md").stat().st_mtime
 
 
 def test_bad_sample_letter_is_rejected(tmp_path):
