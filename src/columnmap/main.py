@@ -43,8 +43,9 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--samples", help=f"letters from {''.join(SAMPLES)} (default {DEFAULT}): "
                     + ", ".join(f"{k} {v[1]}" for k, v in SAMPLES.items()))
     ap.add_argument("--all", action="store_true", help="all seven samples")
-    ap.add_argument("--conds", default=",".join(cfg["run"]["conds"]),
-                    help="what the model sees: name = column name; samples = name + 5 values (desc, both add column descriptions)")
+    ap.add_argument("--conds", default=None,
+                    help="what the model sees: name = column name; samples = name + 5 values; table = name + the whole table "
+                         "(desc, both add column descriptions). Default: the contexts already in the run folder, else name,samples")
     ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs", "both"),
                     help="options: one question per input column, fast; pairs: one yes/no per column and field, slow, calibrated; "
                          "both: run and compare the two")
@@ -75,7 +76,7 @@ def main(argv=None, decider_factory=None) -> int:
     letters = "".join(SAMPLES) if a.all else (a.samples or (store.data["meta"].get("samples") if a.report_only else None) or DEFAULT).replace(",", "")
     if not letters or any(x not in SAMPLES for x in letters):
         ap.error(f"samples must be letters from {''.join(SAMPLES)}")
-    conds = a.conds.split(",")
+    conds = (a.conds or ",".join(store.data["meta"].get("contexts") or cfg["run"]["conds"])).split(",")
     modes = ["options", "pairs"] if a.mode == "both" else [a.mode]
     other = Store(_abs(a.calibrate_from) / "result.json") if a.calibrate_from else None
     t = load_template()
@@ -91,7 +92,7 @@ def main(argv=None, decider_factory=None) -> int:
         with decider_factory() as d:
             run_models(d, sel, conds, modes, a.permute, store, t)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
-                                   "seed": cfg["run"]["seed"], "mode": ",".join(modes), "contexts": conds,
+                                   "seed": cfg["run"]["seed"], "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 

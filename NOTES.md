@@ -24,7 +24,7 @@
 
 1. Template: 26 source concepts, 31 output fields (11 derived: concat, arithmetic, format, lookup), 6 decoy columns. Rules are a small expression tree (`core/dsl.py`).
 2. Seven named samples, from identical names to system codes such as `OBJ_INFO_ADDR_C` (kept UPPER_SNAKE). See the README table.
-3. Each file has 15 to 30 rows and 1 to 2 anomalies (0, negative, x1000, empty, `N/A`, sentinel date). Where a rule cannot handle a value the expected cell is blank.
+3. Each file keeps 14 to 22 of the 26 source columns (so some fields have no source), 15 to 30 rows, and 1 to 2 anomalies (0, negative, x1000, empty, `N/A`, sentinel date). Where a rule cannot handle a value the expected cell is blank.
 4. The real template is a header only, so the model gets the input column name (and 5 sample values) and output names only. Descriptions exist in code (`desc`, `both`) but are not used.
 5. `data/` is tracked and is the only copy of inputs, expected files and ground truth. A run writes only its own outputs.
 6. CSV only. An `.xlsx` file would need `openpyxl`.
@@ -35,20 +35,25 @@
 2. Temperature on Jev only rescales scores (calibration) and never changes the top answer. OpenAI and TypeSafe expose no temperature.
 3. Option order matters for `choice` (smoke test, 3 orders): the transform pick stayed the same for 10/11 and 9/11 outputs, the kind pick for 25/31 and 28/31. Average over orders when it matters.
 4. Candidate expressions come from the ground truth (1 true, 3 distractors). Jev picks one; it does not write formulas.
+5. A field is kept when its best input column passes a rule: fixed 0.5, or a cutoff on the best score or on its lift above the median column, fitted on ground truth (`--calibrate-from RUN` fits it on another run).
 
-## 5. First real run (4 samples, 2 contexts, options mode, 6 minutes)
+## 5. Real Runs on Two Cases
 
-1. Top-1: name only 79.3 percent, name + values 86.2 percent. By sample, identical 95.7 / 95.7, synonym 87.1 / 90.3, coded 48.4 / 71.0, mixed 90.3 / 90.3. A string-similarity baseline gets 82.6 on identical and about 19 on the rest.
-2. Pooled ECE is 0.007 at T 0.828 and grows with T (0.21 at T 3). The many negative pairs flatter it.
-3. Weak spots: fields with no source are not rejected at synonym, coded and mixed (0 percent at threshold 0.5), 60 percent of decoys reached P of 0.5 or more, and pair recall at 0.5 is only 44 to 50 percent.
-4. Transformation kind, given the true sources: 77 to 100 percent.
-5. `results/` was cleared on request. Run `make sample` to recreate it.
+1. Two separate runs, each with 3 contexts and both modes: `coded-000` (26 columns, 21 of 31 fields have a source) in `results/coded_20261102-103424` and `mixed-000` (32 columns with 6 decoys, 16 of 31 fields have a source) in `results/mixed_20261102-104030`. Each folder has its own `report/summary.md`. One file per case, so read the numbers as indications.
+2. Correction: an earlier note said fields without a source were never rejected. That was a division by zero: those samples had no such fields. The generator now keeps only 14 to 22 of 26 source columns, and undefined rates print as "-".
+3. Top-1 (options / pairs). Coded: name only 61.9 / 52.4, name + values 71.4 / 52.4, name + whole table 57.1 / 33.3. Mixed: name only 81.2 / 93.8, name + values 87.5 / 93.8, name + whole table 93.8 / 93.8.
+4. Time per file: options 14 to 33 s, pairs 70 to 144 s.
+5. Fixed rule (probability 0.5): on coded it keeps only 33 to 57 percent of the fields that have a source and leaves 100 percent of the no-source fields empty (too cautious on system codes). On mixed it keeps 75 to 81 percent and leaves 80 to 93 percent of the no-source fields empty.
+6. Cutoffs fitted on ground truth: on the same run they help a little (coded name only: fields kept 33 to 57 percent, converted cells correct 28.6 to 42.9 percent) but that is optimistic. Fitted on the other run they do not help and are often worse (mixed name only, options: no-source fields left empty 80 to 66.7 percent; mixed name + values, pairs: 93.3 to 53.3). Scores sit on a different scale in each sample, so one cutoff does not transfer; more files are needed to say more.
+7. Whole table: helps mixed (top-1 93.8 in options mode), hurts coded (57.1 vs 71.4 with values), and in pairs mode the model accepts almost every field (only 20 to 27 percent of no-source fields left empty at the fixed rule). It costs about 1.5 times the time of name + values.
+8. Converted cells correct (fixed rule): coded 14 to 48 percent, mixed 69 to 81 percent. Derived fields lose accuracy through the kind and expression picks.
+9. Takeaway: name + values in options mode is the best default for speed and accuracy. Pairs mode is better only on the easier file and is 5 to 6 times slower.
 
 ## 6. Structure
 
 1. Package `columnmap` in `src/`, one command: `uv run columnmap`.
 2. Layers: `core` and `decisions` depend on nothing above them. `dataset` uses `core`. The slices `mapping`, `transform`, `stability`, `convert` use `core` and `decisions`. `report` assembles the slices. `experiment` runs the model. `main` is the only place that knows the Jev adapter and reads `config.toml`.
-3. Each slice owns its run, metrics, figures and tables. `stability` imports only `transform.prompts`. Only `report` imports figures.
+3. Each slice owns its run, metrics, figures and tables. `stability` imports only `transform.prompts`, and `convert` uses `mapping.reject` for the keep rules. Only `report` imports figures.
 4. Moving to OpenAI or hosted Jev means one new adapter in `decisions/` and one line in `main.py`.
 5. Tests mirror `src/` and use fake deciders (`tests/fakes.py`). `make test`, `make lint`.
 

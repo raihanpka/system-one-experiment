@@ -118,5 +118,7 @@ def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
     assert "## Options Mode Versus Pairs Mode" in md and "fitted on other run" in md
     assert "name + whole table, options mode" in md                                      # readable context labels in the headline
     assert (second / "d_mixed" / "converted_mixed_name_calibrated.csv").exists()
+    main(["--report-only", "--out", str(second), "--data", str(data)])                          # contexts are read from the run itself
+    assert "name + whole table, options mode" in (second / "report" / "summary.md").read_text()
     first_md = (first / "report" / "summary.md").read_text()
     assert "fitted on this run, optimistic" in first_md and "fitted on other run" not in first_md
