@@ -55,35 +55,8 @@ def _label(name, desc, cond):
     return f"'{name}'" + (f" (meaning: {desc})" if _desc(cond) and desc else "")
 
 
-# question wording per version; the version is part of the calibration key, so a new wording needs a new fit
-PROMPTS = {
-    "v1": {"options": "Which output fields does this input column provide data for?",
-           "pair": "This input column provides the data for the output field {label}.",
-           "table_options": "Which output fields does the input column '{col}' provide data for?",
-           "table_pair": "The input column '{col}' provides the data for the output field '{out}'."},
-    "v2": {"options": "Which output fields are filled from this input column, directly, by joining it with other columns, or by a calculation?",
-           "pair": "The output field {label} is filled from this input column, directly, by joining it with other columns, or by a calculation.",
-           "table_options": "Which output fields are filled from the input column '{col}', directly, by joining it with other columns, or by a calculation?",
-           "table_pair": "The output field '{out}' is filled from the input column '{col}', directly, by joining it with other columns, or by a calculation."},
-    "v3": {"options": "Which output fields are filled from this input column, directly, by joining it with other columns, or by a calculation? "
-                      "Column names may be Indonesian words or system codes.",
-           "pair": "The output field {label} is filled from this input column, directly, by joining it with other columns, or by a calculation. "
-                   "Column names may be Indonesian words or system codes.",
-           "table_options": "Which output fields are filled from the input column '{col}', directly, by joining it with other columns, or by a calculation? "
-                            "Column names may be Indonesian words or system codes.",
-           "table_pair": "The output field '{out}' is filled from the input column '{col}', directly, by joining it with other columns, or by a calculation. "
-                         "Column names may be Indonesian words or system codes."},
-}
-
-
-def prompt(version: str, key: str) -> str:
-    if version not in PROMPTS:
-        raise ValueError(f"unknown prompt version {version!r}; known versions: {', '.join(PROMPTS)}")
-    return PROMPTS[version][key]
-
-
-def mapping_question(name: str, desc: str | None, cond: str, version: str = "v1") -> Question:
-    return Question("predicate", prompt(version, "pair").format(label=_label(name, desc, cond)), name=name)
+def mapping_question(name: str, desc: str | None, cond: str) -> Question:
+    return Question("predicate", f"This input column provides the data for the output field {_label(name, desc, cond)}.", name=name)
 
 
 def kind_state(cols: list[tuple[str, str | None, list]], cond: str) -> str:
@@ -105,12 +78,13 @@ def table_state(case: dict) -> str:
     return "Input table (CSV):\n" + buf.getvalue().rstrip("\n")
 
 
-def table_options_question(col: str, outs: list[str], version: str = "v1") -> Question:
-    return Question("choice", prompt(version, "table_options").format(col=col), name="field", choices=tuple(Choice(o) for o in outs))
+def table_options_question(col: str, outs: list[str]) -> Question:
+    return Question("choice", f"Which output fields does the input column '{col}' provide data for?", name="field",
+                    choices=tuple(Choice(o) for o in outs))
 
 
-def table_pair_question(col: str, out: str, version: str = "v1") -> Question:
-    return Question("predicate", prompt(version, "table_pair").format(col=col, out=out), name=out)
+def table_pair_question(col: str, out: str) -> Question:
+    return Question("predicate", f"The input column '{col}' provides the data for the output field '{out}'.", name=out)
 
 
 # kind and transformation questions describe the columns the usual way when the context is the whole table
