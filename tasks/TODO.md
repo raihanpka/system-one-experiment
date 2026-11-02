@@ -139,3 +139,13 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
 ### Checkpoint: Selesai
 - [ ] Semua pertanyaan di `PLAN.md` terjawab
 - [ ] Hasil bisa diulang dari `config.yaml`
+
+## Tambahan atas permintaan pengguna
+
+- [x] Hasil satu proses jadi satu file `result.json` yang rapi (`src/store.py`), bisa dilanjutkan
+- [x] Satu perintah: `uv run python src --samples abcd` (`src/pipeline.py`), sampel a sampai g
+- [x] Laporan otomatis `results/latest/report/`: ringkasan markdown, grafik SVG Times New Roman (batang berkelompok, batang bertumpuk, garis regresi, heatmap, kalibrasi), CSV prediksi per sampel
+- [x] `Makefile` (setup, test, sample, full, pairs, permute, report, data, bench, open, status, stop, clean) dan `README.md` minimalis
+- [x] Mode `options` (sekitar 7 kali lebih cepat) dan opsi model di `config.toml` (`quant`, `ngl`, `flash_attn`, `threads`)
+- [ ] Jalankan `make sample` pada model asli dan baca hasilnya
+- [ ] Ukur F16 versus Q8_0 versus Q4_K_M (perlu unduhan) dan pangkas pertanyaan (lihat `NOTES.md`)

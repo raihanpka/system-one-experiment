@@ -45,3 +45,15 @@
 - The real template is a header row only (no rows, no descriptions), and real inputs are a header plus aligned rows. So the model gets: input column name + 5 sample values, and the output field name only. Default conditions are `name` and `samples` (`config.toml`). `desc` and `both` stay in `src/context.py` as an upper bound for later, but are not run unless requested with `--cond`.
 - Input CSVs are checked aligned: every row has the same number of fields as the header (21 of 21 files).
 - Sample run first (user request): levels 0, 3, 5, 6, one case each, before any larger run. The full 2 to 3 hour run was stopped and `results/` reset.
+
+## Speed: why the demos feel fast, and what we changed
+
+- Device: MacBook Air M3 (Mac15,12), 8-core CPU (4 performance, 4 efficiency), 8-core GPU, 16 GB unified memory, Metal 4, fanless. No thermal warning was recorded so far, but a fanless chip throttles on long sustained runs. Base M3 memory bandwidth is about 100 GB/s (from memory, not checked against Apple's spec page).
+- Our workload is prefill bound (many short prompts, no generated tokens), so GPU compute matters more than memory bandwidth. Measured: about 0.1 s per yes/no question of roughly 60 tokens on Q8_0, all layers on Metal.
+- Why demos look fast (third-party sources, vendor claims, not independent): the model reads logits at the last position in one forward pass, so there is no decode loop; prompts are short; the state is reused across questions; and one request can carry many questions. An `any2jev` benchmark (Qwen3-0.6B, RTX 2060 SUPER, fp32) reports 778 ms for JSON generation, 137 ms for label logits with one prefill per question, and 42 ms with all questions packed into one pass. ClassOne reports 52 ms local versus 330 ms for the Jev cloud API (self-reported). Packed scoring cost some accuracy in one project (84.3 versus 87.0 percent).
+- Measured here (`make bench`, Q8_0, per input column, top-1 = best output field is a true target):
+  - L5-000, context `name`, 26 columns: pairs 83.5 s, 10/26 correct; options 11.7 s, 12/26.
+  - L6-000, context `samples`, 32 columns: pairs 159.3 s, 25/26; options 25.3 s, 23/26.
+  - So `options` mode (one choice question per column, raw score read per output field) is about 7 times faster with similar top-1. Its probabilities are sigmoid(score / T) per field and are not calibrated; `pairs` stays available for calibrated numbers.
+- Already in place: all layers on the GPU, flash attention auto, one long-lived scorer process, state reused across questions of one column.
+- Not done yet, worth measuring: F16 versus Q8_0 versus Q4_K_M speed (F16 may prefill faster on Metal since it skips dequantisation; needs a 3.8 GB or 1.3 GB download), shorter question text, a two-stage prune (options mode, then yes/no only on the top candidates), kind questions only for outputs that matter, MLX, and running on a machine with a fan or a discrete GPU.
