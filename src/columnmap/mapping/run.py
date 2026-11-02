@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import time
 
-from ..core.prompts import input_state, mapping_question, samples, table_options_question, table_pair_question, table_state
+from ..core.prompts import (diverse_values, input_state, mapping_question, profile_text, samples,
+                            table_options_question, table_pair_question, table_state)
 from ..core.scoring import T0, pair_p
 from ..core.usage import mark, since
 from ..decisions.base import Decider
@@ -18,7 +19,8 @@ def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> 
     desc = {s["id"]: s["desc"] for s in t["sources"] + t["decoys"]}
     odesc = {o["name"]: o["description"] for o in t["outputs"]}
     outs = [o["name"] for o in case["outputs"]]
-    sample = {c["name"]: samples(case["rows"], c["name"]) for c in case["columns"]}
+    values = {c["name"]: [r[c["name"]] for r in case["rows"]] for c in case["columns"]}
+    sample = {n: diverse_values(v) if cond == "profile" else samples(case["rows"], n) for n, v in values.items()}
     if cond != "table":
         qs = ([mapping_question(o, odesc[o], cond) for o in outs] if mode == "pairs" else
               [Question("choice", "Which output fields does this input column provide data for?", name="field",
@@ -29,7 +31,7 @@ def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> 
             state = table_state(case)
             qs = [table_pair_question(c["name"], o) for o in outs] if mode == "pairs" else [table_options_question(c["name"], outs)]
         else:
-            state = input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]])
+            state = input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]], profile_text(values[c["name"]]) if cond == "profile" else None)
         res = decider.decide(state, qs)
         if mode == "pairs":
             matrix[c["name"]] = {a.name: {"p": a.probability, "d": a.raw_scores["true"] - a.raw_scores["false"]} for a in res.answers}
