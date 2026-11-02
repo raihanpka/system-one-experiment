@@ -1,0 +1,6 @@
+transaction_date,discount_rate,insured_province,claim_number,sum_insured_amount,claim_status_code,postal_code,insured_city,claimed_amount,claim_paid_amount,insured_gender,currency_code,transaction_amount,transaction_fee_amount,holder_first_name,holder_last_name,insured_birth_date,premium_tax_rate
+2025-12-15,0.03,DKI Jakarta,CLM-7719450,610437000,A,62694,Semarang,20633000,27968000,F,USD,41123000,31000,Joko,Santoso,1960-06-10,0.15
+2025-10-25,0.13,Jawa Timur,CLM-2484688,1684423000,R,08487,Makassar,28431000,34440000,F,USD,20979000,40000,Budi,Lestari,1982-11-10,0.05
+2025-01-05,0.02,Jawa Timur,CLM-7873173,1888305000,A,37355,Semarang,24668000,82745000,F,IDR,15048000,9000,Agus,Wijaya,1989-03-25,0.08
+2025-10-17,0.15,Sumatera Utara,CLM-5478055,1807297000,A,05652,Surabaya,77691000,62979000,F,USD,47746000,27000,Rina,Kusuma,1970-03-26,0.02
+2025-02-22,0.13,Jawa Tengah,CLM-4409341,883224000,R,70090,Semarang,78721000,11295000,M,USD,45963000,11000,Maya,Lestari,2005-01-18,0.13

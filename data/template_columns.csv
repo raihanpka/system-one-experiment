@@ -1,0 +1,32 @@
+name,type,kind,description,rule
+policy_number,string,pass,Official policy identifier,policy_number
+insured_full_name,string,concat,"Full name of the insured, given name then family name","concat(holder_first_name, "" "", holder_last_name)"
+insured_birth_date,date,pass,Date of birth of the insured,insured_birth_date
+insured_birth_year,number,format,Year of birth of the insured,year(insured_birth_date)
+insured_gender,string,pass,Gender of the insured,insured_gender
+insured_city,string,pass,City of the insured address,insured_city
+insured_province,string,pass,Province of the insured address,insured_province
+postal_code,string,pass,Postal code of the insured address,postal_code
+insured_address,string,concat,"Single-line address: city, province postal code","concat(concat(insured_city, "", "", insured_province), "" "", postal_code)"
+coverage_start_date,date,pass,Date coverage begins,coverage_start_date
+coverage_end_date,date,pass,Date coverage ends,coverage_end_date
+coverage_days,number,arith,Number of days between coverage start and coverage end,"days_between(coverage_start_date, coverage_end_date)"
+sum_insured_amount,number,pass,Maximum payout under the policy,sum_insured_amount
+currency_code,string,pass,Currency of all amounts,currency_code
+gross_premium,number,arith,Base premium plus tax: base premium times (1 + tax rate),base_premium * (1 + premium_tax_rate)
+net_premium_after_discount,number,arith,Base premium after discount: base premium times (1 - discount rate),base_premium * (1 - discount_rate)
+claim_number,string,pass,Official claim identifier,claim_number
+claim_incident_date,date,pass,Date of the insured event,claim_incident_date
+claim_age_days,number,arith,Days from coverage start to the incident,"days_between(coverage_start_date, claim_incident_date)"
+claimed_amount,number,pass,Amount requested in the claim,claimed_amount
+deductible_amount,number,pass,Deductible borne by the insured,deductible_amount
+net_claim_payable,number,arith,Claimed amount minus deductible,claimed_amount - deductible_amount
+claim_paid_amount,number,pass,Amount already paid on the claim,claim_paid_amount
+claim_paid_ratio,number,arith,Paid amount divided by base premium,claim_paid_amount / base_premium
+claim_status,string,lookup,"Claim status in words (Approved, Rejected, Pending)","lookup(claim_status_code, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,string,pass,Selling agent identifier,agent_id
+account_number,string,pass,Customer account number,account_number
+transaction_date,date,pass,Booking date of the transaction,transaction_date
+transaction_amount,number,pass,Transaction amount,transaction_amount
+transaction_fee_amount,number,pass,Fee charged on the transaction,transaction_fee_amount
+total_charge,number,arith,Transaction amount plus fee,transaction_amount + transaction_fee_amount

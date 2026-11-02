@@ -1,0 +1,6 @@
+coverage_start_date,transaction_fee_amount,insured_gender,insured_birth_date,agent_id,base_premium,claim_status_code,transaction_date,insured_province,claim_number,sum_insured_amount,insured_city,deductible_amount,claimed_amount,premium_tax_rate,transaction_amount
+2024-07-26,23000,M,2003-08-06,AGT83327,7880000,A,2025-09-06,Sulawesi Selatan,CLM-4569334,1304991000,Makassar,912000,25732000,0.09,48427000
+2024-02-14,25000,M,1992-03-14,AGT32763,8653000,A,2025-01-12,Jawa Tengah,CLM-2055583,345568000,Medan,701000,60530000,0.1,4851000
+2024-10-30,19000,F,1972-07-03,AGT75216,12816000,R,2025-03-28,Jawa Timur,CLM-6672000,202139000,Makassar,469000,57696000,0.1,1058000
+2024-03-12,6000,M,1980-04-05,AGT87214,5919000,R,2025-11-07,Jawa Timur,CLM-7359484,173973000,Jakarta,501000,10773000,0.01,48677000
+2024-11-01,34000,M,1968-05-07,AGT02102,16460000,A,2025-10-24,Sumatera Utara,CLM-2044031,354219000,Jakarta,239000,58985000,0.07,28563000

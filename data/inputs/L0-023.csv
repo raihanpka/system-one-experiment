@@ -1,0 +1,6 @@
+currency_code,insured_gender,insured_city,premium_tax_rate,agent_id,insured_birth_date,claim_incident_date,claim_paid_amount,deductible_amount,transaction_amount,sum_insured_amount,coverage_end_date,base_premium,transaction_fee_amount,insured_province,coverage_start_date,discount_rate
+IDR,F,Jakarta,0.06,AGT37539,1952-08-11,2025-01-24,18254000,156000,25754000,1535825000,2026-02-28,2140000,30000,Jawa Barat,2024-03-10,0.23
+USD,M,Jakarta,0.08,AGT11870,1954-03-12,2025-06-10,24701000,426000,15905000,130665000,2026-11-30,1724000,23000,Jawa Barat,2024-11-19,0.15
+SGD,F,Surabaya,0.15,AGT25377,1964-11-15,2025-05-05,64014000,225000,8880000,192973000,2026-12-12,15125000,48000,Sulawesi Selatan,2024-08-13,0.12
+SGD,F,Makassar,0.03,AGT86314,1966-05-11,2025-05-03,1210000,910000,44540000,149537000,2025-12-29,19937000,12000,Jawa Timur,2024-08-02,0.17
+SGD,M,Jakarta,0.06,AGT46748,1973-02-26,2025-04-01,1717000,125000,46103000,767983000,2026-05-12,4585000,4000,DKI Jakarta,2024-10-04,0.19

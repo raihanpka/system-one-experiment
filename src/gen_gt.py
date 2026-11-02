@@ -20,7 +20,7 @@ ARITH = ("add", "sub", "mul", "div")
 
 
 def style(name: str, how: str) -> str:
-    w = name.split("_")
+    w = name.lower().split("_")
     return {"snake": "_".join(w), "camel": w[0] + "".join(x.capitalize() for x in w[1:]),
             "pascal": "".join(x.capitalize() for x in w), "upper": "_".join(w).upper(),
             "kebab": "-".join(w), "space": " ".join(w), "title": " ".join(x.capitalize() for x in w)}[how]
@@ -89,6 +89,8 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
         lv = rng.randint(0, 5) if level == 6 else level
         base = sid if lv < 2 else srcs[sid]["names"][str(lv)]
         how = "snake" if lv == 0 else (rng.choice(STYLES[1:]) if lv == 1 else case_style)
+        if lv == 5:
+            how = "snake" if case_style == "snake" else "upper"   # legacy codes: OBJ_INFO_ADDR or obj_info_addr, never camelCase
         cols.append({"name": style(base, how), "src": sid, "level": lv, "decoy": None, "gen": srcs[sid]["gen"]})
     if level == 6:
         for d in rng.sample(t["decoys"], rng.randint(3, len(t["decoys"]))):

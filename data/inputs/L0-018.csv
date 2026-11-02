@@ -1,0 +1,6 @@
+claim_paid_amount,coverage_start_date,holder_last_name,premium_tax_rate,discount_rate,claim_status_code,transaction_fee_amount,deductible_amount,transaction_date,sum_insured_amount,currency_code,claim_incident_date,insured_gender,insured_city,postal_code,account_number,holder_first_name,insured_birth_date,claimed_amount
+37084000,2024-09-14,Hidayat,0.08,0.07,A,15000,871000,2025-06-02,1972962000,SGD,2025-06-07,M,Bandung,24144,7269995846,Budi,1967-09-10,92196000
+2968000,2024-01-17,Hidayat,0.2,0.04,R,34000,676000,2025-07-26,1098094000,SGD,2025-01-21,F,Surabaya,12597,9672439155,Andi,1954-11-11,21129000
+9325000,2024-08-22,Wijaya,0.07,0.2,A,44000,152000,2025-05-29,508665000,IDR,2025-06-22,F,Medan,18388,7042543586,Maya,1990-09-16,21309000
+64527000,2024-08-19,Kusuma,0.08,0.2,R,24000,694000,2025-06-18,846289000,IDR,2025-03-04,F,Semarang,30061,5667310900,Dewi,1959-08-14,68541000
+19213000,2024-02-26,Nasution,0.12,0.25,P,1000,695000,2025-12-30,1879981000,USD,2025-03-26,M,Semarang,30746,7467486489,Budi,1960-01-09,94666000

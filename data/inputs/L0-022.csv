@@ -1,0 +1,6 @@
+currency_code,insured_city,holder_first_name,claim_paid_amount,postal_code,claimed_amount,discount_rate,base_premium,transaction_date,insured_province,coverage_end_date,holder_last_name,claim_number,coverage_start_date,claim_incident_date,premium_tax_rate
+USD,Surabaya,Budi,30842000,97601,29800000,0.29,11171000,2025-08-13,Sumatera Utara,2025-09-07,Kusuma,CLM-5373298,2024-05-09,2025-05-29,0.14
+USD,Medan,Rina,76000000,39075,21687000,0.17,4895000,2025-02-25,DKI Jakarta,2025-08-08,Kusuma,CLM-4623556,2024-06-25,2025-04-08,0.14
+USD,Semarang,Joko,44065000,73901,96976000,0.28,5356000,2025-12-24,DKI Jakarta,2026-05-29,Wijaya,CLM-1951258,2024-01-21,2025-02-02,0.07
+SGD,Jakarta,Maya,37683000,41217,50824000,0.2,9279000,2025-04-14,Jawa Barat,2025-11-29,Pratama,CLM-2027916,2024-05-05,2025-01-04,0.08
+SGD,Medan,Dewi,70498000,10574,39716000,0.16,5730000,2025-09-27,Jawa Timur,2025-12-31,Hidayat,CLM-5818501,2024-10-26,2025-04-27,0.11

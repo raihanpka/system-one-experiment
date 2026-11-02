@@ -1,0 +1,6 @@
+insured_gender,insured_province,policy_number,deductible_amount,base_premium,currency_code,coverage_start_date,insured_city,discount_rate,transaction_date,holder_last_name,transaction_fee_amount,account_number,claim_paid_amount,insured_birth_date,sum_insured_amount,claim_status_code,claim_incident_date,claimed_amount,coverage_end_date,premium_tax_rate,postal_code,claim_number
+F,Sumatera Utara,POL-68484004,931000,12974000,SGD,2024-12-05,Surabaya,0.01,2025-06-26,Hidayat,42000,8812517705,18054000,1989-10-09,1534083000,P,2025-01-26,37604000,2026-04-13,0.08,19980,CLM-1865238
+F,Sumatera Utara,POL-40701137,190000,15232000,SGD,2024-05-24,Surabaya,0.07,2025-03-24,Putri,14000,6299733179,8050000,2000-11-26,1965941000,R,2025-03-15,60077000,2026-05-29,0.1,38351,CLM-5237818
+M,Sulawesi Selatan,POL-42349478,750000,2353000,USD,2024-07-19,Bandung,0.29,2025-04-24,Santoso,32000,3102150797,37741000,1976-02-20,1422823000,A,2025-05-03,73909000,2026-02-24,0.05,54869,CLM-3318575
+F,Jawa Tengah,POL-85836516,844000,7140000,IDR,2024-08-09,Medan,0.29,2025-08-18,Pratama,26000,0951377896,31004000,2001-08-01,1530368000,A,2025-06-21,14851000,2025-08-03,0.1,05840,CLM-7962168
+M,Sumatera Utara,POL-49060799,130000,16030000,USD,2024-05-16,Surabaya,0.13,2025-02-08,Kusuma,41000,6658681045,50166000,1980-06-20,610660000,A,2025-04-07,43149000,2025-08-16,0.1,05581,CLM-1772276

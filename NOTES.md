@@ -25,3 +25,11 @@
 - Known gaps: the exact element keys of `probabilities` are a guess (`{value, probability}`; score adds `label`). TypeSafe returns `probabilities` as an object keyed by option, OpenAI-compatible routes as an array. `raw_scores` is our own extension and is omitted when absent.
 - Differences for a future adapter: TypeSafe uses `state` + `questions` as an object keyed by name, `noul` instead of `predicate`, `criteria` instead of `choices`/`levels`, and a flat `answers` object.
 - Limits enforced locally: choice needs 2+ unique values; score needs 2 to 10 levels (Jev and LocalAI limit); question names unique.
+
+## T3-T5: data and runner
+
+- Template: 26 sources, 31 outputs (11 derived: concat, arith, format, lookup), 6 decoys. Level 5 names are legacy-style codes (`OBJ_INFO_ADDR_C`, `MVT_AMT_MAIN`), kept UPPER_SNAKE (or lower snake), never camelCase.
+- CSV views (requested): `uv run python -m src.export_csv` writes `data/template_header.csv` (empty template), `data/template_columns.csv` (name, type, kind, description, rule), `data/inputs/<case>.csv` (one input file per case) and `data/ground_truth_map.csv`. All of `data/` except `template.json` and the CSV schema files is regenerated from the seed and git-ignored. An `.xlsx` view needs `openpyxl` (not added); Excel opens the CSVs directly.
+- Runner config is `config.toml` (stdlib `tomllib`) instead of YAML, to avoid a dependency.
+- Throughput (Q8_0, M3): about 0.1 s per question regardless of state sharing (31 questions = 3.2 s). One case (about 26 input columns x 31 outputs + 31 kind questions) takes about 90 s of scoring plus load time. Default `n_per_level = 5` gives 35 cases, about 53 min per context condition, about 3.5 h for all four. Raise it in `config.toml` or with `--n`.
+- Smoke result, 1 case at level 5, condition `both`: best input column is a true source for 31/31 outputs, transformation kind 31/31. Optimistic, since descriptions and samples are given; `name` is the hard condition.

@@ -77,7 +77,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
 
 ## Phase 3: Eksperimen
 
-- [ ] **T5: Runner pemetaan**
+- [x] **T5: Runner pemetaan** (selesai; kontrol resume dan bentuk matriks di `tests/test_run_mapping.py`; kondisi konteks sudah di `src/context.py`)
   - Deskripsi: Untuk tiap kasus, satu pertanyaan `predicate` per pasangan (input i, output j), sehingga hasilnya matriks N×M yang independen. Satu pertanyaan `choice` per input untuk jenis transformasi (`passthrough`, `concat`, `arithmetic`, `format`, `lookup`, `none`). Alasan memakai predicate: satu laporan pihak ketiga menyebut probabilitas `choice` sensitif terhadap urutan opsi, sedangkan predicate stabil (belum direplikasi).
   - Acceptance:
     - [ ] `results/jev/*.jsonl` berisi matriks N×M per kasus beserta `raw_scores`

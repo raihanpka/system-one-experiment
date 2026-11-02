@@ -1,0 +1,6 @@
+claim_status_code,insured_city,premium_tax_rate,claim_incident_date,base_premium,holder_last_name,account_number,claimed_amount,transaction_date,claim_number,claim_paid_amount,postal_code,sum_insured_amount,insured_province,transaction_amount,deductible_amount,insured_birth_date,holder_first_name,coverage_end_date,discount_rate,policy_number,currency_code,agent_id
+R,Medan,0.02,2025-03-14,10222000,Putri,4297640613,91197000,2025-07-19,CLM-9659527,59050000,04190,1590106000,Sumatera Utara,13419000,570000,1975-07-19,Rina,2025-08-18,0.05,POL-33903211,SGD,AGT94856
+R,Semarang,0.05,2025-04-30,3192000,Pratama,2811357223,71638000,2025-02-11,CLM-6617356,1798000,39831,1313525000,Sumatera Utara,24664000,850000,2002-05-27,Rina,2026-11-06,0.26,POL-54393048,SGD,AGT55652
+A,Jakarta,0.16,2025-01-26,17076000,Lestari,5273109078,42296000,2025-11-12,CLM-2930999,33578000,35348,595677000,Sulawesi Selatan,40941000,202000,1968-03-12,Siti,2025-10-28,0.16,POL-93927955,SGD,AGT90795
+P,Makassar,0.0,2025-04-25,16308000,Putri,7893044093,89285000,2025-01-09,CLM-8753624,24201000,68048,1355179000,Sumatera Utara,22124000,547000,1972-02-27,Dewi,2026-01-02,0.05,POL-25315684,SGD,AGT07243
+A,Jakarta,0.11,2025-05-06,7320000,Pratama,0080018719,33109000,2025-07-24,CLM-1608743,80485000,77048,439603000,Sulawesi Selatan,18613000,550000,1991-06-30,Maya,2026-11-16,0.08,POL-70242754,SGD,AGT14182

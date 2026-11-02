@@ -1,0 +1,6 @@
+base_premium,claim_incident_date,coverage_end_date,insured_gender,claimed_amount,transaction_fee_amount,sum_insured_amount,discount_rate,coverage_start_date,holder_last_name,insured_city,transaction_date,claim_status_code,claim_paid_amount,agent_id,holder_first_name,account_number
+10087000,2025-03-08,2025-09-28,M,26508000,5000,1852812000,0.03,2024-12-25,Santoso,Surabaya,2025-11-02,A,1560000,AGT10684,Dewi,3432845602
+18595000,2025-06-20,2026-06-03,F,55899000,16000,1468970000,0.02,2024-12-14,Nasution,Makassar,2025-04-27,A,74183000,AGT19732,Dewi,8561901774
+14219000,2025-04-08,2025-07-08,M,44132000,11000,1010136000,0.18,2024-11-13,Nasution,Medan,2025-07-13,A,29880000,AGT18596,Rina,6643688003
+10698000,2025-05-11,2026-05-12,M,41839000,3000,1381140000,0.18,2024-03-06,Kusuma,Makassar,2025-05-05,P,52547000,AGT08635,Siti,8194580673
+1195000,2025-04-25,2026-04-03,M,66795000,6000,1952678000,0.2,2024-02-19,Kusuma,Makassar,2025-12-02,P,58636000,AGT98514,Rina,5437545919

@@ -1,0 +1,6 @@
+account_number,claim_status_code,premium_tax_rate,holder_last_name,discount_rate,base_premium,transaction_fee_amount,coverage_end_date,insured_city,claimed_amount,insured_gender,transaction_date,claim_paid_amount,holder_first_name,sum_insured_amount,currency_code,claim_incident_date,agent_id
+3342822650,P,0.15,Santoso,0.2,10195000,2000,2026-04-13,Medan,46999000,M,2025-09-17,38180000,Budi,1121080000,IDR,2025-02-12,AGT88767
+7553717607,R,0.18,Kusuma,0.05,6934000,11000,2026-03-25,Medan,61788000,M,2025-03-30,50269000,Andi,1526118000,USD,2025-01-28,AGT63885
+9778152547,A,0.08,Hidayat,0.3,1385000,50000,2026-09-28,Bandung,35542000,M,2025-03-19,82239000,Rina,1724113000,USD,2025-02-10,AGT79713
+2664642603,A,0.19,Wijaya,0.19,5893000,31000,2025-08-17,Medan,77250000,F,2025-05-24,9555000,Joko,1105826000,IDR,2025-04-13,AGT43854
+2209475311,A,0.01,Lestari,0.04,18056000,13000,2026-06-21,Surabaya,49474000,M,2025-04-09,79171000,Rina,1348274000,IDR,2025-03-27,AGT24194

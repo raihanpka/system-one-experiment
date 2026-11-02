@@ -1,0 +1,6 @@
+coverage_start_date,insured_birth_date,insured_city,deductible_amount,claim_paid_amount,agent_id,currency_code,discount_rate,insured_province,transaction_amount,insured_gender,holder_first_name,transaction_fee_amount,base_premium,claim_status_code,postal_code,account_number,sum_insured_amount,coverage_end_date,policy_number
+2024-06-28,1984-02-18,Makassar,690000,7055000,AGT12841,IDR,0.27,Sulawesi Selatan,9075000,F,Budi,20000,13318000,A,43084,2252894150,1175980000,2026-11-26,POL-75291161
+2024-08-01,2000-03-23,Bandung,256000,62065000,AGT69531,IDR,0.22,DKI Jakarta,40054000,F,Agus,28000,7818000,R,08844,2808561074,1631199000,2025-10-30,POL-07517288
+2024-08-15,1962-12-29,Bandung,185000,12573000,AGT75529,SGD,0.16,Sumatera Utara,19484000,F,Andi,36000,13445000,A,07829,1445146458,1608418000,2026-08-25,POL-73270421
+2024-01-25,1951-12-21,Bandung,851000,46125000,AGT45110,SGD,0.17,Jawa Barat,7883000,F,Siti,27000,15965000,R,81332,4403217001,199226000,2025-07-07,POL-01318711
+2024-05-08,1982-08-08,Medan,225000,50035000,AGT57755,SGD,0.12,Sulawesi Selatan,35505000,F,Joko,38000,6241000,A,06227,2029780604,1492205000,2026-02-27,POL-35011889
