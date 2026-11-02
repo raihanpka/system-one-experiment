@@ -53,7 +53,7 @@ def test_chosen_columns_are_those_passing_the_rule_best_first_and_capped():
 
 
 def test_only_field_names_rows_and_scores_go_in_never_ground_truth():
-    assert list(inspect.signature(run_fields).parameters) == ["decider", "fields", "rows", "matrix", "keep", "max_cols"]
+    assert list(inspect.signature(run_fields).parameters) == ["decider", "fields", "rows", "matrix", "keep", "max_cols", "types"]
 
 
 def test_single_text_column_is_copied_without_asking_the_model():

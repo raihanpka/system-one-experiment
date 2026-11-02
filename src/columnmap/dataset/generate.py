@@ -122,7 +122,7 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
     for o in t["outputs"]:
         ids = rule_sources(o["rule"])
         avail = set(ids) <= set(name_of)
-        out = {"name": o["name"], "kind": o["kind"], "rule": o["rule"], "source_ids": ids, "available": avail,
+        out = {"name": o["name"], "kind": o["kind"], "rule": o["rule"], "source_ids": ids, "type": o["type"], "available": avail,
                "sources": [name_of[s] for s in ids] if avail else [], "expected": None, "candidates": []}
         if avail:
             out["expected"] = [safe_evaluate(o["rule"], r) for r in by_id]

@@ -31,13 +31,13 @@ def _top(matrix: dict, field: str) -> list[list]:
     return [[c, pair_p({"d": d}, T0)] for d, c in best]
 
 
-def _field(decider, field: str, rows: list[dict], matrix: dict, keep: float, max_cols: int) -> dict:
+def _field(decider, field: str, rows: list[dict], matrix: dict, keep: float, max_cols: int, out_type: str | None = None) -> dict:
     chosen = chosen_columns(matrix, field, keep, max_cols)
     if not chosen:
         return {**_empty(), "top_cols": _top(matrix, field)}
     names = [c for c, _ in chosen]
     p_cols = [pair_p({"d": d}, T0) for _, d in chosen]
-    cands = candidates([(n, [r[n] for r in rows]) for n in names])
+    cands = candidates([(n, [r[n] for r in rows]) for n in names], out_type=out_type)
     rec = {**_empty(), "cols": names, "p_cols": p_cols, "cands": [expression_text(c) for c in cands], "top_cols": _top(matrix, field)}
     if not cands:
         return rec                                                    # no rule in the catalog fits these columns: needs a person
@@ -64,15 +64,18 @@ def _field(decider, field: str, rows: list[dict], matrix: dict, keep: float, max
     return rec
 
 
-def run_fields(decider: Decider, fields: list[str], rows: list[dict], matrix: dict, keep: float = 0.0, max_cols: int = 3) -> dict:
-    return {f: _field(decider, f, rows, matrix, keep, max_cols) for f in fields}
+def run_fields(decider: Decider, fields: list[str], rows: list[dict], matrix: dict, keep: float = 0.0, max_cols: int = 3,
+               types: dict | None = None) -> dict:
+    types = types or {}
+    return {f: _field(decider, f, rows, matrix, keep, max_cols, types.get(f)) for f in fields}
 
 
 # one record per case and context, built from the stored mapping scores
 def run_case(decider: Decider, case: dict, cond: str, map_row: dict, mode: str = "options", keep: float = 0.0) -> dict:
     fields = [o["name"] for o in case["outputs"]]
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode,
-            "fields": run_fields(decider, fields, case["rows"], map_row["matrix"], keep)}
+            "fields": run_fields(decider, fields, case["rows"], map_row["matrix"], keep,
+                                                types={o["name"]: o.get("type") for o in case["outputs"]})}
 
 
 def run(decider: Decider, cases, cond: str, store, mode: str = "options", keep: float = 0.0) -> int:

@@ -59,7 +59,7 @@ def test_limit_order_and_determinism():
 
 def test_candidates_see_only_names_and_values_not_ground_truth():
     import inspect
-    assert list(inspect.signature(candidates).parameters) == ["cols", "limit"]
+    assert list(inspect.signature(candidates).parameters) == ["cols", "limit", "out_type"]
 
 
 def _same(a, b):
@@ -95,3 +95,12 @@ def test_every_chosen_column_keeps_its_plain_copy_candidate():
 def test_date_column_keeps_year_next_to_copy_when_paired():
     c = candidates([("born", ["1990-05-17", "1985-01-02"]), ("name", ["Budi", "Siti"])])
     assert {"src": "born"} in c and {"op": "year", "args": [{"src": "born"}]} in c
+
+
+def test_output_type_filters_candidates_whose_result_has_another_type():
+    cols = [("born", ["1990-05-17", "1985-01-02"]), ("name", ["Budi", "Siti"])]
+    date_out = [render(c, lambda s: s) for c in candidates(cols, out_type="date")]
+    assert "year(born)" not in date_out and "born" in date_out                         # year gives a number, not a date
+    num_out = [render(c, lambda s: s) for c in candidates([("a", [1, 2]), ("b", [3, 4])], out_type="number")]
+    assert 'concat(a, " ", b)' not in num_out and "a + b" in num_out                    # concat gives text
+    assert candidates(cols, out_type=None) == candidates(cols)                          # no type given: no filtering

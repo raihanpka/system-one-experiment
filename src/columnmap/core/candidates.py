@@ -80,7 +80,16 @@ def _triple(cs: list[dict], ts: list[str]) -> list[dict]:
 
 
 # simplest first, at most `limit`; fields that need a rule outside this catalog (for example a code table) get none
-def candidates(cols, limit: int = LIMIT) -> list[dict]:
+# the type a candidate produces: a copy keeps its column's type, year and arithmetic give a number, concat and lookup give text
+def result_type(node: dict, types: dict) -> str:
+    if "src" in node:
+        return types[node["src"]]
+    if node.get("op") in ("year", "days_between", "add", "sub", "mul", "div"):
+        return "number"
+    return "string"
+
+
+def candidates(cols, limit: int = LIMIT, out_type: str | None = None) -> list[dict]:
     srcs = [{"src": name} for name, _ in cols]
     types = [column_type(v) for _, v in cols]
     if len(cols) == 1:
@@ -101,5 +110,8 @@ def candidates(cols, limit: int = LIMIT) -> list[dict]:
         if key not in seen:
             seen.add(key)
             unique.append((key, c))
+    if out_type in ("date", "number"):                             # a date or number field must receive a date or number
+        types_by_name = {name: t for (name, _), t in zip(cols, types)}
+        unique = [(k, c) for k, c in unique if result_type(c, types_by_name) == out_type]
     unique.sort(key=lambda kc: (_size(kc[1]), kc[0]))
     return [c for _, c in unique[:limit]]
