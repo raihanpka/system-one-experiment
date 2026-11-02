@@ -87,7 +87,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `src/run_mapping.py`, `config.yaml`
   - Scope: M
 
-- [ ] **T6: Ranking transformasi kandidat**
+- [x] **T6: Ranking transformasi kandidat** (selesai; `src/run_transform.py`, evaluator di `src/dsl.py`; smoke 4 run: choice 9-11/11 benar, predicate 6-11/11)
   - Deskripsi: Untuk output hasil transformasi, tanyakan ke Jev (`choice` atas ekspresi kandidat dari T4, dan `predicate` per kandidat). Eksekusi ekspresi yang menang pada nilai sampel dan bandingkan dengan nilai ground truth. Jev tidak menulis ekspresi sendiri, jadi ini menguji apakah ia bisa memilih transformasi yang benar.
   - Acceptance:
     - [ ] Evaluator ekspresi aman (bukan `eval` bebas): kolom, concat, `+ - * /`, format
