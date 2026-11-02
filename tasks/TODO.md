@@ -60,7 +60,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `data/template.json`, `src/check_template.py`
   - Scope: S
 
-- [x] **T4: Generator ground truth** (selesai; kasus dibangkitkan dari seed di memori, tidak ada file besar; CSV per kasus lewat `uv run python -m src.export_csv`; evaluator `src/dsl.py` dikerjakan di sini)
+- [x] **T4: Generator ground truth** (selesai; kasus dibangkitkan dari seed di memori, tidak ada file besar; CSV per kasus lewat `uv run python -m src.dataset.export`; evaluator `src/dsl.py` dikerjakan di sini)
   - Deskripsi: Bangkitkan nama kolom input per tingkat drift 0-6 (0 identik, 1 casing/underscore, 2 singkatan, 3 sinonim, 4 campur ID/EN, 5 absurd, 6 kolom jebakan tanpa padanan), nilai sampel, dan label (input→output, jenis transformasi, ekspresi). Termasuk kasus satu input ke dua output. Untuk tiap output non-passthrough, bangkitkan juga daftar ekspresi kandidat (satu benar, beberapa pengecoh) secara deterministik untuk T6.
   - Acceptance:
     - [ ] Kasus mencakup tujuh tingkat drift, seed tetap, hasil sama di dua kali run

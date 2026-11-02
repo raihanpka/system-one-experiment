@@ -4,7 +4,7 @@ import pytest
 
 from src.core.template import load_template
 from src.decisions.types import Answer, Response
-from src.gen_gt import generate
+from src.dataset.generate import generate
 from src.metrics import ece, lexical_mapping, mapping_metrics, pair_p, sweep
 from src.run_mapping import run_case
 

@@ -1,4 +1,4 @@
-"""Synthetic ground truth. Cases are rebuilt in memory from the seed (no big file on disk); `python -m src.export_csv` writes CSV views.
+"""Synthetic ground truth. Cases are rebuilt in memory from the seed (no big file on disk); `python -m src.dataset.export` writes CSV views.
 
 Drift levels: 0 identical, 1 style only (camel, UPPER, kebab...), 2 abbreviation, 3 synonym,
 4 Indonesian, 5 far/absurd phrase, 6 mixed levels + decoy columns. Each case = one input "file".
@@ -8,8 +8,8 @@ from __future__ import annotations
 import random
 from datetime import date, timedelta
 
-from .core.template import load_template, rule_sources
-from .core.dsl import safe_evaluate
+from ..core.template import load_template, rule_sources
+from ..core.dsl import safe_evaluate
 
 ROWS = (15, 30)                                            # rows per input file
 SAMPLE_K = 5

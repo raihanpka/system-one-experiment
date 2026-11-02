@@ -29,7 +29,7 @@ report: ## Rebuild figures and tables from results/latest/result.json, no model
 	$(PY) src --report-only
 
 data: ## Write the template and sample CSV files under data/
-	$(PY) -m src.export_csv
+	$(PY) -m src.dataset.export
 
 bench: ## Speed and accuracy of the two scoring modes (about 5 minutes)
 	$(PY) scripts/bench_modes.py

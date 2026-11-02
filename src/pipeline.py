@@ -9,8 +9,8 @@ from pathlib import Path
 
 from . import permute, run_mapping, run_transform
 from .core.template import load_template
-from .export_csv import write_cases, write_template
-from .gen_gt import generate
+from .dataset.export import write_cases, write_template
+from .dataset.generate import generate
 from .report import DEFAULT, SAMPLES, make_report
 from .core.store import Store
 

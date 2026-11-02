@@ -1,14 +1,14 @@
 """CSV views of the template, the generated input files and the ground-truth map.
-Run: uv run python -m src.export_csv [--n 5]   (writes under data/)"""
+Run: uv run python -m src.dataset.export [--n 5]   (writes under data/)"""
 from __future__ import annotations
 
 import csv
 from pathlib import Path
 
-from .core.template import load_template
-from .core.dsl import render
+from ..core.template import load_template
+from ..core.dsl import render
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def _write(path, header, rows):
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     import argparse
     import tomllib
 
-    from .gen_gt import generate
+    from .generate import generate
     cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=cfg["n_per_level"], help="cases per drift level")

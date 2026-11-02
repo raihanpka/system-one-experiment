@@ -2,7 +2,7 @@ from src.core.template import load_template
 from src.core.template import KIND_DESC, KIND_LABEL
 from src.decisions.types import Answer, Response
 from src.core.dsl import render
-from src.gen_gt import generate
+from src.dataset.generate import generate
 from src.run_transform import run
 from src.core.store import Store
 

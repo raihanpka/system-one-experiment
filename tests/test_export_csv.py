@@ -1,8 +1,8 @@
 import csv
 
 from src.core.template import load_template
-from src.export_csv import write_cases, write_template
-from src.gen_gt import generate
+from src.dataset.export import write_cases, write_template
+from src.dataset.generate import generate
 
 T = load_template()
 CASES = generate(T, n_per_level=2, seed=5)
