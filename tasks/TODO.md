@@ -143,13 +143,13 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
 ## Tambahan atas permintaan pengguna
 
 - [x] Hasil satu proses jadi satu file `result.json` yang rapi (`src/store.py`), bisa dilanjutkan
-- [x] Satu perintah: `uv run python src --samples abcd` (`src/pipeline.py`), sampel a sampai g
+- [x] Satu perintah: `uv run columnmap` (`src/columnmap/main.py`), sampel a sampai g
 - [x] Laporan otomatis `results/latest/report/`: ringkasan markdown, grafik SVG Times New Roman (batang berkelompok, batang bertumpuk, garis regresi, heatmap, kalibrasi), CSV prediksi per sampel
 - [x] `Makefile` (setup, test, sample, full, pairs, permute, report, data, bench, open, status, stop, clean) dan `README.md` minimalis
 - [x] Mode `options` (sekitar 7 kali lebih cepat) dan opsi model di `config.toml` (`quant`, `ngl`, `flash_attn`, `threads`)
 - [x] `make sample` dijalankan pada model asli; hasil pertama ada di `NOTES.md` (folder `results/` dikosongkan atas permintaan, dibuat ulang oleh `make sample`)
 - [ ] Ukur F16 versus Q8_0 versus Q4_K_M (perlu unduhan) dan pangkas pertanyaan (lihat `NOTES.md`)
-- [x] Struktur: slice vertikal (`mapping`, `transform`, `stability`, `convert`, `report`), `core`, `decisions`, `dataset`, `cli` dan `experiment`; tes mengikuti struktur; `make lint`
+- [x] Struktur: slice vertikal (`mapping`, `transform`, `stability`, `convert`, `report`), `core`, `decisions`, `dataset`, `main` dan `experiment`; tes mengikuti struktur; `make lint`
 - [x] Folder run `<samples>_<timestamp>` dengan `result.json`, file hasil konversi, keputusan, matriks probabilitas, `report/summary.md` dan grafik SVG; input, expected, ground truth hanya di `data/samples/`
 - [x] README dengan blok bash, contoh `uv run`, dan penjelasan tiap opsi
 
