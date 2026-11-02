@@ -35,38 +35,38 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     args = ["--root", str(root), "--data", str(data)]
     assert main(["--samples", "abcd", *args], decider_factory=Generic) == 0
     runs = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()]
-    assert len(runs) == 1 and re.fullmatch(r"identical-synonym-coded-mixed_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
+    assert len(runs) == 1 and re.fullmatch(r"easy_identical-medium_synonym-hard_codes-hardest_noisy_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
     run = runs[0]
     assert not (root / "latest").exists()                                                          # no extra link next to the runs
 
-    for f in ("input_coded.csv", "expected_coded.csv", "ground_truth_coded.csv"):              # single source of truth
-        assert (data / "samples" / "c_coded" / f).exists(), f
+    for f in ("input_hard_codes.csv", "expected_hard_codes.csv", "ground_truth_hard_codes.csv"):              # single source of truth
+        assert (data / "samples" / "c_hard_codes" / f).exists(), f
     assert (data / "template_header.csv").exists()
     assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
 
     data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
     assert set(data_json) == {"meta", "mapping", "mapping_pairs", "transform", "permute"} and data_json["meta"]["mode"] == "options"
     assert data_json["meta"]["samples"] == "abcd"
-    assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["identical-000", "synonym-000", "coded-000", "mixed-000"]
+    assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["easy_identical-000", "medium_synonym-000", "hard_codes-000", "hardest_noisy-000"]
     assert set(data_json["mapping"]) == {"name", "samples"}
 
-    for letter, word in (("a", "identical"), ("b", "synonym"), ("c", "coded"), ("d", "mixed")):
+    for letter, word in (("a", "easy_identical"), ("b", "medium_synonym"), ("c", "hard_codes"), ("d", "hardest_noisy")):
         d = run / f"{letter}_{word}"
         for f in (f"converted_{word}_name.csv", f"converted_{word}_samples.csv", f"decisions_{word}_name.csv",
                   f"probabilities_{word}_samples.csv"):
             assert (d / f).exists(), f"{d.name}/{f}"
-    converted = (run / "a_identical" / "converted_identical_name.csv").read_text().splitlines()
+    converted = (run / "a_easy_identical" / "converted_easy_identical_name.csv").read_text().splitlines()
     assert converted[0].startswith("policy_number,insured_full_name") and len(converted) > 10
-    assert len((run / "c_coded" / "decisions_coded_name.csv").read_text().splitlines()) == 32   # header + 31 fields
+    assert len((run / "c_hard_codes" / "decisions_hard_codes_name.csv").read_text().splitlines()) == 32   # header + 31 fields
 
     rep = run / "report"
     for f in ("summary.md", "figures/accuracy.svg", "figures/outcomes.svg", "figures/drift.svg", "figures/calibration.svg",
-              "figures/kind.svg", "figures/transform.svg", "figures/heatmap_a_identical_name.svg", "figures/heatmap_d_mixed_samples.svg"):
+              "figures/kind.svg", "figures/transform.svg", "figures/heatmap_a_easy_identical_name.svg", "figures/heatmap_d_hardest_noisy_samples.svg"):
         assert (rep / f).exists(), f
     svg = (rep / "figures/accuracy.svg").read_text()
     assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
     md = (rep / "summary.md").read_text()
-    assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_coded/" in md
+    assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_hard_codes/" in md
     assert "## Mapping" in md and "## Converted File Against the Expected File" in md
     assert "## At a Glance" in md and "## Rejecting Fields Without a Source" in md
 
@@ -74,7 +74,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     main(["--out", str(run), "--samples", "abcd", *args], decider_factory=Generic)              # same folder again: nothing recomputed
     assert "0 new, 4 resumed" in capsys.readouterr().out
     main(["--root", str(root), "--data", str(data), "--report-only"])                            # newest run, no model, samples from meta
-    assert "d_mixed" in (rep / "summary.md").read_text()
+    assert "d_hardest_noisy" in (rep / "summary.md").read_text()
 
 
 def test_each_run_gets_its_own_folder_and_report_only_takes_the_newest(tmp_path):
@@ -83,7 +83,7 @@ def test_each_run_gets_its_own_folder_and_report_only_takes_the_newest(tmp_path)
     time.sleep(1.1)                                                                              # names carry seconds
     main(["--samples", "b", "--root", str(root), "--data", str(data), "--conds", "name"], decider_factory=Generic)
     runs = sorted((p.name for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda n: n.rsplit("_", 1)[-1])
-    assert len(runs) == 2 and runs[0].startswith("identical_") and runs[1].startswith("synonym_")
+    assert len(runs) == 2 and runs[0].startswith("easy_identical_") and runs[1].startswith("medium_synonym_")
     assert all((root / r / "result.json").exists() for r in runs)                                # one result.json per run
     main(["--root", str(root), "--data", str(data), "--report-only"])                            # rebuilds the newest run only
     assert (root / runs[1] / "report" / "summary.md").stat().st_mtime > (root / runs[0] / "report" / "summary.md").stat().st_mtime
@@ -107,7 +107,7 @@ def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
     first = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()][0]
     main(["--samples", "d", "--calibrate-from", str(first), *args], decider_factory=Generic)
     second = sorted((p for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda p: p.name.rsplit("_", 1)[-1])[-1]
-    assert second != first and second.name.startswith("mixed_")
+    assert second != first and second.name.startswith("hardest_noisy_")
 
     store = json.loads((second / "result.json").read_text())
     assert set(store["mapping"]) == {"name", "table"} and set(store["mapping_pairs"]) == {"name", "table"}
@@ -117,7 +117,7 @@ def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
     md = (second / "report" / "summary.md").read_text()
     assert "## Options Mode Versus Pairs Mode" in md and "fitted on other run" in md
     assert "name + whole table, options mode" in md                                      # readable context labels in the headline
-    assert (second / "d_mixed" / "converted_mixed_name_calibrated.csv").exists()
+    assert (second / "d_hardest_noisy" / "converted_hardest_noisy_name_calibrated.csv").exists()
     main(["--report-only", "--out", str(second), "--data", str(data)])                          # contexts are read from the run itself
     assert "name + whole table, options mode" in (second / "report" / "summary.md").read_text()
     first_md = (first / "report" / "summary.md").read_text()

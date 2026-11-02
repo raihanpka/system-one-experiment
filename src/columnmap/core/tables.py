@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 
 
 def by_level(rows) -> dict:
-    g = defaultdict(list)
-    for r in rows:
-        g[r["level"]].append(r)
-    return dict(sorted(g.items()))
+    g: dict = {}
+    for r in sorted(rows, key=lambda r: r["level"]):
+        g.setdefault(r["case_id"].split("-")[0], []).append(r)
+    return g
 
 
 def pct(x) -> str:

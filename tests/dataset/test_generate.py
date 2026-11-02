@@ -13,8 +13,8 @@ CASES = generate(T, n_per_level=6, seed=7)
 def test_deterministic_and_covers_all_levels():
     assert json.dumps(generate(T, n_per_level=6, seed=7)) == json.dumps(CASES)
     assert json.dumps(generate(T, n_per_level=6, seed=8)) != json.dumps(CASES)
-    assert sorted({c["level"] for c in CASES}) == [0, 1, 2, 3, 4, 5, 6]
-    assert len(CASES) == 7 * 6 and len({c["case_id"] for c in CASES}) == len(CASES)
+    assert sorted({c["level"] for c in CASES}) == [0, 3, 4, 5, 6]
+    assert len(CASES) == 5 * 6 and len({c["case_id"] for c in CASES}) == len(CASES)
 
 
 def test_ground_truth_expressions_execute_to_expected_values():

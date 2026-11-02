@@ -13,8 +13,8 @@ def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[st
     lex = defaultdict(list)
     for c in cases.values():
         if only is None or c["case_id"] in only:
-            lex[c["level"]].append(c)
-    levels = sorted({r["level"] for rows in allmap.values() for r in rows}) or sorted(lex)
+            lex[c["case_id"].split("-")[0]].append(c)
+    levels = [w for _, w in sorted({(r["level"], r["case_id"].split("-")[0]) for rows in allmap.values() for r in rows})] or sorted(lex)
 
     out = [f"## Mapping: Which Input Column Feeds Each Output Field ({'options' if section == 'mapping' else 'pairs'} mode)", ""]
     for cond in conds:
@@ -25,15 +25,15 @@ def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[st
         for lv, rs in by_level(rows).items():
             m = mapping_metrics(rs, cases)
             trs.append([lv, m["cases"], pct(m["top1"]), pct(m["exact"]), pct(m["top3"]), pct(m["reject_unavailable"]),
-                        pct(m["decoy_flag"]) if lv == 6 else "-", pct(m["f1"]), f"{m['ece']:.3f}"])
+                        pct(m["decoy_flag"]), pct(m["f1"]), f"{m['ece']:.3f}"])
         m = mapping_metrics(rows, cases)
         trs.append(["all", m["cases"], pct(m["top1"]), pct(m["exact"]), pct(m["top3"]), pct(m["reject_unavailable"]),
                     "-", pct(m["f1"]), f"{m['ece']:.3f}"])
         out += [f"### Jev sees: {ctx(cond)}", "",
-                md_table(["level", "cases", "top1", "exact", "top3", "reject n/a", "decoy flagged", "pair F1", "ECE"], trs), ""]
+                md_table(["sample", "cases", "top1", "exact", "top3", "reject n/a", "decoy flagged", "pair F1", "ECE"], trs), ""]
 
     out += ["### Baseline without a model (string similarity of names only)", "",
-            md_table(["level", "top1", "exact", "top3"],
+            md_table(["sample", "top1", "exact", "top3"],
                      [[lv, *[pct(lexical_mapping(lex[lv])[k]) for k in ("top1", "exact", "top3")]] for lv in levels if lex[lv]]), ""]
 
     out += ["## Temperature and calibration (pooled)", "",
@@ -47,7 +47,7 @@ def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[st
     trs = [[ctx(cond), lv, (k := kind_metrics(rs, cases))["n"], pct(k["acc"])]
            for cond in conds for lv, rs in by_level(allmap[cond]).items()]
     return out + ["## Transformation kind (given the true source columns)", "",
-                  md_table(["Jev sees", "level", "n outputs", "accuracy"], trs), ""]
+                  md_table(["Jev sees", "sample", "n outputs", "accuracy"], trs), ""]
 
 
 # both scoring modes on the same files, side by side

@@ -17,7 +17,7 @@
 An experiment that maps messy input columns, with any naming, onto a canonical template using [Jev-Style-2B-Decision-v3](https://huggingface.co/chaoliangUNSW/Jev-Style-2B-Decision-v3-GGUF) running locally through llama.cpp on Apple Silicon. The model returns a probability for each output field and never generates text. Each run writes the template filled from the model's decisions, the raw model output, and a report with figures.
 
 - **Local Decision Model**: Jev-Style-2B-Decision-v3 (Q8_0) scored through llama.cpp on the Mac GPU, with no server and no API key.
-- **Synthetic Samples**: Seven samples whose column names drift from identical headers to system codes such as `OBJ_INFO_ADDR_C`. Each file has 15 to 30 rows and 1 to 2 anomalies, such as a zero, an empty cell, or a sentinel date.
+- **Synthetic Samples**: Five samples, easiest to hardest, whose column names drift from identical headers to system codes such as `OBJ_INFO_ADDR_C`. Each file has 15 to 30 rows and 1 to 2 anomalies, such as a zero, an empty cell, or a sentinel date.
 - **Real Mapping Problems**: Some output fields have no source column and must stay empty, some need a transformation (concat, calculation, lookup), and some input columns are decoys.
 - **Two Scoring Modes**: `options` asks one question per input column and is about 7 times faster. `pairs` asks one yes/no question per column and field and gives calibrated probabilities.
 - **Converted Files**: The template filled from the model's decisions, saved as CSV and scored against the expected file.
@@ -60,7 +60,7 @@ uv run columnmap
 # run only samples a and c
 uv run columnmap --samples ac
 
-# run all seven samples
+# run all five samples
 uv run columnmap --all
 
 # show the model only the column names, without sample values
@@ -73,7 +73,7 @@ uv run columnmap --mode pairs
 uv run columnmap --permute
 
 # continue (or extend) an existing run folder
-uv run columnmap --out results/identical-synonym-coded-mixed_20261102-153012
+uv run columnmap --out results/easy_identical-medium_synonym-hard_codes-hardest_noisy_20261102-153012
 
 # rebuild the files and figures of the newest run without the model
 uv run columnmap --report-only
@@ -85,7 +85,7 @@ uv run columnmap --help
 Options:
 
 - **`--samples abcd`**: Chooses which samples to run, by letter. The default is `abcd`.
-- **`--all`**: Runs all seven samples.
+- **`--all`**: Runs all five samples.
 - **`--conds name,samples`**: Sets what the model sees about each input column. `name` is the header text only, and `samples` is the header plus 5 values taken from the rows. `desc` and `both` also add a column description. They are off by default because the real template is a header only.
 - **`--mode options`**: The default. Asks one question per input column with all output fields as options and reads the score of each option. Probabilities are not calibrated.
 - **`--mode pairs`**: Asks one yes/no question per input column and output field. Slower, but calibrated.
@@ -99,13 +99,18 @@ Options:
 
 ### Samples
 
-- **a, `a_identical`**: Input columns are named exactly like the template.
-- **b, `b_synonym`**: Input columns use synonyms.
-- **c, `c_coded`**: Input columns are system codes, for example `OBJ_INFO_ADDR_C`.
-- **d, `d_mixed`**: A mix of all styles, plus decoy columns.
-- **e, `e_style`**: The same words in another style, such as camelCase, UPPER_SNAKE, or kebab-case.
-- **f, `f_abbreviation`**: Input columns are abbreviations.
-- **g, `g_indonesian`**: Input columns are in Indonesian.
+- **a, `a_easy_identical`**: Input columns are named exactly like the template.
+- **b, `b_medium_synonym`**: Input columns use synonyms.
+- **c, `c_hard_codes`**: Input columns are system codes, for example `OBJ_INFO_ADDR_C`.
+- **d, `d_hardest_noisy`**: A mix of all name styles, plus extra columns that match nothing in the template (distractors) and some missing sources.
+- **e, `e_indonesian`**: Input columns are in Indonesian.
+
+A few terms used in the reports:
+
+- **Field**: one column of the output template.
+- **Source**: the input column that should fill a field. Some fields have no source in a given file and must stay empty.
+- **Distractor** (called decoy in the code): an input column that looks related but matches nothing in the template, for example `policy_version` next to `policy_number`.
+- **Kind**: how a field is made from its source: copied as is, joined from several columns, calculated, reformatted, or looked up.
 
 ---
 
@@ -116,17 +121,17 @@ data/                                tracked, the single source of truth for inp
   template.json                      template definition
   template_header.csv                the empty target template
   template_columns.csv               template columns with type, kind, and rule
-  samples/c_coded/
-    input_coded.csv                  the messy input file
-    expected_coded.csv               what a perfect converter writes
-    ground_truth_coded.csv           true input column and expression per output field
+  samples/c_hard_codes/
+    input_hard_codes.csv                  the messy input file
+    expected_hard_codes.csv               what a perfect converter writes
+    ground_truth_hard_codes.csv           true input column and expression per output field
 
-results/<samples>_<timestamp>/       one folder per run, for example identical-synonym_20261102-153012
+results/<samples>_<timestamp>/       one folder per run, for example easy_identical-medium_synonym_20261102-153012
   result.json                        raw model output of this run, for transparency
-  c_coded/
-    converted_coded_name.csv         the template filled from the model's decisions
-    decisions_coded_name.csv         per output field: chosen input column, probability, kind, expression
-    probabilities_coded_name.csv     probability of every (input column, output field) pair
+  c_hard_codes/
+    converted_hard_codes_name.csv         the template filled from the model's decisions
+    decisions_hard_codes_name.csv         per output field: chosen input column, probability, kind, expression
+    probabilities_hard_codes_name.csv     probability of every (input column, output field) pair
   report/
     summary.md                       tables and figures of this run
     figures/*.svg                    accuracy, outcomes, drift regression, calibration, kinds, heatmaps

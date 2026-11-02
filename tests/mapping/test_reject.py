@@ -4,7 +4,7 @@ from columnmap.core.scoring import FIXED, accept_lift, accept_score
 from columnmap.mapping.reject import field_scores, fit_cut, fit_cuts, reject_metrics
 
 T = load_template()
-CASE = next(c for c in generate(T, n_per_level=1, seed=3) if c["case_id"] == "mixed-000")
+CASE = next(c for c in generate(T, n_per_level=1, seed=3) if c["case_id"] == "hardest_noisy-000")
 
 
 def rows_with(score_true: float, score_false: float, score_decoy: float | None = None):

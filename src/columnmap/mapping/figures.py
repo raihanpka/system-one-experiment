@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from ..core.prompts import context_label as ctx
 from ..core.scoring import T0, TS, pair_p
 from ..core.viz import save
-from ..dataset.samples import LEVEL_NAMES
+from ..dataset.samples import LEVEL_WORDS, RANK
 from .metrics import OUTCOMES, kind_metrics, lexical_mapping, mapping_metrics, outcomes, pair_scores
 
 
@@ -117,20 +117,21 @@ def fig_drift(rows_by_cond, cases, path):
     recs = []
     for cond, rows in rows_by_cond.items():
         for r in rows:
-            recs.append({"level": r["level"], "top1": 100 * mapping_metrics([r], cases)["top1"], "method": f"Jev, {ctx(cond)}"})
+            recs.append({"level": RANK[r["level"]], "top1": 100 * mapping_metrics([r], cases)["top1"], "method": f"Jev, {ctx(cond)}"})
     ids = {r["case_id"] for rows in rows_by_cond.values() for r in rows}
     for cid in ids:
-        recs.append({"level": cases[cid]["level"], "top1": 100 * lexical_mapping([cases[cid]])["top1"], "method": "Name similarity (no model)"})
+        recs.append({"level": RANK[cases[cid]["level"]], "top1": 100 * lexical_mapping([cases[cid]])["top1"], "method": "Name similarity (no model)"})
     df = pd.DataFrame(recs)
     fig, ax = plt.subplots(figsize=(7.2, 3.8))
     for (method, g), color in zip(df.groupby("method"), sns.color_palette("colorblind")):
         slope = ""
         if g.level.nunique() >= 3:
             sns.regplot(g, x="level", y="top1", ci=None, scatter=False, color=color, ax=ax, line_kws={"linewidth": 1.4})
-            slope = f" (slope {np.polyfit(g.level, g.top1, 1)[0]:+.1f}/level)"
+            slope = f" (slope {np.polyfit(g.level, g.top1, 1)[0]:+.1f}/step)"
         ax.scatter(g.level, g.top1, color=color, s=34, label=method + slope, zorder=3)
+    by_rank = {RANK[k]: w for k, w in LEVEL_WORDS.items()}
     lv = sorted(df.level.unique())
-    ax.set(xticks=lv, xticklabels=[f"{i}\n{LEVEL_NAMES[i]}" for i in lv], ylim=(-3, 105), xlabel="name drift level",
+    ax.set(xticks=lv, xticklabels=[by_rank[i].replace("_", "\n", 1) for i in lv], ylim=(-3, 105), xlabel="sample, easiest to hardest",
            ylabel="top-1 accuracy (%)", title="Accuracy as input names drift away from the template")
     ax.tick_params(axis="x", labelsize=8)
     ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=1)

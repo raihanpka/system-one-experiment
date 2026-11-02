@@ -146,4 +146,4 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
 
 
 def generate(t: dict, n_per_level: int = 50, seed: int = 1234) -> list[dict]:
-    return [_case(t, lv, i, seed) for lv in range(7) for i in range(n_per_level)]
+    return [_case(t, lv, i, seed) for lv in sorted(LEVEL_WORDS) for i in range(n_per_level)]

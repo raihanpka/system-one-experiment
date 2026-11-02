@@ -24,7 +24,7 @@ def oracle_rows(case, wrong_kind=False, p_true=0.9):
 
 
 def test_oracle_decisions_rebuild_the_expected_file():
-    case = CASES["coded-000"]
+    case = CASES["hard_codes-000"]
     m, tr = oracle_rows(case)
     header, rows, decisions = convert_case(m, tr, case)
     assert header == [o["name"] for o in case["outputs"]] and len(rows) == len(case["rows"])
@@ -38,7 +38,7 @@ def test_oracle_decisions_rebuild_the_expected_file():
 
 
 def test_low_probability_leaves_the_field_empty():
-    case = CASES["coded-000"]
+    case = CASES["hard_codes-000"]
     m, tr = oracle_rows(case, p_true=0.2)                                     # nothing reaches 0.5
     header, rows, decisions = convert_case(m, tr, case)
     assert all(v is None for r in rows for v in r)
@@ -48,7 +48,7 @@ def test_low_probability_leaves_the_field_empty():
 
 
 def test_wrong_kind_copies_instead_of_calculating():
-    case = CASES["synonym-000"]
+    case = CASES["medium_synonym-000"]
     m, tr = oracle_rows(case, wrong_kind=True)
     _, rows, decisions = convert_case(m, tr, case)
     calc = next(o["name"] for o in case["outputs"] if o["available"] and o["kind"] == "arith")
@@ -57,7 +57,7 @@ def test_wrong_kind_copies_instead_of_calculating():
 
 
 def test_cell_match_counts_wrong_fill_and_float_tolerance():
-    case = CASES["identical-000"]
+    case = CASES["easy_identical-000"]
     n = len(case["rows"])
     j = next(i for i, o in enumerate(case["outputs"]) if not o["available"])
     k = next(i for i, o in enumerate(case["outputs"]) if o["available"] and o["kind"] == "arith")

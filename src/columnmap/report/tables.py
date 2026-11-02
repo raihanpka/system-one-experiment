@@ -7,8 +7,9 @@ from ..mapping.tables import compare_tables, mapping_tables
 from ..stability.tables import stability_tables
 from ..transform.tables import transform_tables
 
-PREFACE = ("All numbers are percentages unless noted. Levels: 0 identical, 1 style only, 2 abbreviation, 3 synonym, "
-           "4 Indonesian, 5 system codes (OBJ_INFO_ADDR), 6 mixed + decoys. Few cases per level: read as indications.")
+PREFACE = ("All numbers are percentages unless noted. Samples, easiest to hardest: easy_identical (names equal the template), "
+           "medium_synonym, hard_codes (system codes such as OBJ_INFO_ADDR), hardest_noisy (mixed styles, extra columns, missing sources), "
+           "indonesian. One file per sample: read the numbers as indications.")
 
 
 def build_tables(store, cases, conds, only=None, other=None, section="mapping") -> str:

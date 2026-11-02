@@ -14,4 +14,4 @@ def transform_tables(store, conds, only=None) -> list[str]:
     if not trs:
         return []
     return ["## Right expression among 4 candidates (chance 25%)", "",
-            md_table(["Jev sees", "level", "n", "choice", "yes/no per candidate", "choice value ok", "yes/no value ok"], trs), ""]
+            md_table(["Jev sees", "sample", "n", "choice", "yes/no per candidate", "choice value ok", "yes/no value ok"], trs), ""]

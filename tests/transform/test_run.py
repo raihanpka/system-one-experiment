@@ -23,7 +23,7 @@ def test_oracle_gets_everything_right_and_resume(tmp_path):
 
 
 def test_wrong_pick_is_detected_by_value_check(tmp_path):
-    case = next(c for c in CASES if c["level"] == 2)
+    case = next(c for c in CASES if c["level"] == 5)
     store = Store(tmp_path / "t.json")
     run(Oracle(case, right=False), [case], "name", store, T)
     r = store.rows("transform", "name")[0]
