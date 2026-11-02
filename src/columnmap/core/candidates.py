@@ -84,13 +84,17 @@ def candidates(cols, limit: int = LIMIT) -> list[dict]:
     srcs = [{"src": name} for name, _ in cols]
     types = [column_type(v) for _, v in cols]
     if len(cols) == 1:
-        out = [srcs[0]] + ([_op("year", srcs[0])] if types[0] == "date" else [])
+        out = []
     elif len(cols) == 2:
         out = _pair(srcs[0], srcs[1], types[0], types[1])
     elif len(cols) == 3:
         out = _triple(srcs, types)
     else:
         out = []
+    # every chosen column also gives its plain copy (and year for dates), so a passthrough field is never missing from the list
+    single = [srcs[i] for i in range(len(cols))]
+    years = [_op("year", srcs[i]) for i in range(len(cols)) if types[i] == "date"]
+    out = single + years + out
     seen, unique = set(), []
     for c in out:
         key = render(c, lambda s: s)

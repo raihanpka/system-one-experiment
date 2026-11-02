@@ -83,3 +83,15 @@ def test_the_catalog_covers_every_derived_field_whose_sources_are_right_except_l
             total += 1
             covered += hit
     assert total > 0 and covered == total, f"catalog covers {covered} of {total} derived fields"
+
+
+def test_every_chosen_column_keeps_its_plain_copy_candidate():
+    two = candidates([("a", ["x", "y"]), ("b", ["p", "q"])])
+    three = candidates([("a", ["x"]), ("b", ["p"]), ("c", ["m"])])
+    assert {"src": "a"} in two and {"src": "b"} in two
+    assert {"src": "a"} in three and {"src": "b"} in three and {"src": "c"} in three
+
+
+def test_date_column_keeps_year_next_to_copy_when_paired():
+    c = candidates([("born", ["1990-05-17", "1985-01-02"]), ("name", ["Budi", "Siti"])])
+    assert {"src": "born"} in c and {"op": "year", "args": [{"src": "born"}]} in c
