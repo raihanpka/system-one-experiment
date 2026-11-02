@@ -68,3 +68,11 @@
 ## 7. Open Items
 
 1. None planned. Ignored on request: more cases per level, an `.xlsx` export, a quantization speed comparison, and other models.
+
+## 8. Lift Sweep on Dev (E2 and E3)
+
+1. Sweep on dev, seed 11, four samples, name plus values: 12 points (lift_top 0.5 to 4.0, lift_second 1.0 to 4.0). Table in `results/sweep/summary.md`.
+2. Baseline with the fixed rule (keep 0.0, probability 0.5): 47 of 74 fields with a source correct, 73 wrongly filled cells, 63.1 percent cells correct.
+3. Criterion: fields correct must rise and wrongly filled cells may rise by at most 10 percent (at most 80 cells).
+4. Result: no point qualifies. Points that fill more fields (lift_top 0.5 to 2.0) reach 49 to 57 fields correct but 481 to 867 wrongly filled cells. The strictest point (lift_top 4.0) fills fewer cells (88) but fields correct drops to 29 to 44.
+5. Decision: keep the fixed rule (keep 0.0). The lift rule stays in code and config (commented out) for later.
