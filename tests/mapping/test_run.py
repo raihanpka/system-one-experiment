@@ -106,3 +106,13 @@ def test_the_two_modes_do_not_overwrite_each_other(tmp_path):
     run(d, CASES[:1], "name", store, T, mode="pairs")
     assert len(store.rows("mapping", "name")) == 1 and len(store.rows("mapping_pairs", "name")) == 1
     assert store.rows("mapping", "name")[0]["mode"] == "options" and store.rows("mapping_pairs", "name")[0]["mode"] == "pairs"
+
+
+def test_the_prompt_version_changes_the_question_the_model_sees(tmp_path):
+    d = Fake()
+    run(d, CASES[:1], "name", Store(tmp_path / "v.json"), T, prompt="v2")
+    asks = [qs[0].instructions for _, qs in d.calls if qs[0].name == "field"]
+    assert asks and all("by joining it with other columns" in a for a in asks)
+    d1 = Fake()
+    run(d1, CASES[:1], "name", Store(tmp_path / "w.json"), T)
+    assert all("by joining it" not in qs[0].instructions for _, qs in d1.calls if qs[0].name == "field")
