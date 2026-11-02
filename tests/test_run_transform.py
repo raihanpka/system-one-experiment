@@ -3,7 +3,7 @@ from src.core.template import KIND_DESC, KIND_LABEL
 from src.decisions.types import Answer, Response
 from src.core.dsl import render
 from src.dataset.generate import generate
-from src.run_transform import run
+from src.transform.run import run
 from src.core.store import Store
 
 T = load_template()

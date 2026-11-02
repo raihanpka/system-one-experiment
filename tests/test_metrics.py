@@ -5,8 +5,9 @@ import pytest
 from src.core.template import load_template
 from src.decisions.types import Answer, Response
 from src.dataset.generate import generate
-from src.metrics import ece, lexical_mapping, mapping_metrics, pair_p, sweep
-from src.run_mapping import run_case
+from src.core.scoring import ece, pair_p
+from src.mapping.metrics import lexical_mapping, mapping_metrics, sweep
+from src.mapping.run import run_case
 
 T = load_template()
 CASES = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=2)}

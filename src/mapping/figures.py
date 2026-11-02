@@ -1,45 +1,14 @@
-"""SVG figures (Times New Roman, seaborn). Each function writes one file and returns its path."""
+"""Mapping figures (SVG): accuracy, outcome breakdown, drift regression, heatmap, calibration, kind accuracy."""
 from __future__ import annotations
 
-from pathlib import Path
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import pandas as pd  # noqa: E402
-import seaborn as sns  # noqa: E402
-from matplotlib import font_manager  # noqa: E402
-
-from .core.scoring import T0, TS, pair_p
-from .metrics import kind_metrics, lexical_mapping, mapping_metrics, transform_metrics  # noqa: E402
-
-FONT = "Times New Roman"
-
-
-def setup_style() -> bool:
-    """Seaborn theme with Times New Roman. Returns False if the font is not installed (falls back to a serif)."""
-    try:
-        font_manager.findfont(FONT, fallback_to_default=False)
-        ok = True
-    except ValueError:
-        ok = False
-    sns.set_theme(style="whitegrid", context="paper", palette="colorblind",
-                  rc={"font.family": "serif", "font.serif": [FONT, "Times", "DejaVu Serif"], "svg.fonttype": "none",
-                      "axes.titlesize": 11, "axes.labelsize": 10, "legend.fontsize": 9, "figure.dpi": 100})
-    return ok
-
-
-def _save(fig, path) -> Path:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, format="svg", bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
-def _label(labels, case_id):
-    return labels.get(case_id, case_id)
+from ..core.scoring import T0, TS, pair_p
+from ..core.viz import save
+from ..dataset.samples import LEVEL_NAMES
+from .metrics import OUTCOMES, kind_metrics, lexical_mapping, mapping_metrics, outcomes, pair_scores
 
 
 def fig_accuracy(rows_by_cond, cases, labels, path):
@@ -57,7 +26,7 @@ def fig_accuracy(rows_by_cond, cases, labels, path):
     sns.barplot(pd.DataFrame(recs), x="sample", y="top1", hue="method", ax=ax)
     ax.set(ylim=(0, 105), xlabel="", ylabel="Top-1 accuracy (%)", title="Which input column feeds each output field")
     ax.legend(title="", loc="lower left", frameon=True)
-    return _save(fig, path)
+    return save(fig, path)
 
 
 def _order(case):
@@ -89,7 +58,7 @@ def fig_heatmap(row, case, label, cond, path):
     ax.set_title(f"{label}, {cond}: probability per input column and output field (dot = true pair)")
     ax.set(xlabel="output field (template)", ylabel="input column (file)")
     plt.setp(ax.get_xticklabels(), rotation=90)
-    return _save(fig, path)
+    return save(fig, path)
 
 
 def fig_calibration(rows_by_cond, cases, path):
@@ -101,13 +70,7 @@ def fig_calibration(rows_by_cond, cases, path):
             continue
         for T in TS:
             recs.append({"T": T, "ECE": mapping_metrics(rows, cases, T)["ece"], "condition": cond})
-        ps, ys = [], []
-        for r in rows:
-            c = cases[r["case_id"]]
-            for col in r["matrix"]:
-                for o in c["outputs"]:
-                    ps.append(pair_p(r["matrix"][col][o["name"]], T0))
-                    ys.append(col in o["sources"])
+        ps, ys = pair_scores(rows, cases, T0)
         d = pd.DataFrame({"p": ps, "y": ys})
         d["bin"] = (d.p * 10).clip(upper=9.999).astype(int)
         g = d.groupby("bin").agg(conf=("p", "mean"), acc=("y", "mean"), n=("y", "size")).reset_index()
@@ -122,55 +85,7 @@ def fig_calibration(rows_by_cond, cases, path):
         b.plot([0, 1], [0, 1], color="gray", linestyle="--")
         b.set(title="Reliability at T = 0.828", xlabel="mean predicted probability", ylabel="observed share true",
               xlim=(0, 1), ylim=(0, 1.02))
-    return _save(fig, path)
-
-
-def fig_transform(transform_by_cond, kind_by_cond, cases, labels, path):
-    """Left: choosing the right expression among 4 candidates. Right: naming the transformation kind."""
-    t_recs, k_recs = [], []
-    for cond, rows in transform_by_cond.items():
-        for cid in labels:
-            rs = [r for r in rows if r["case_id"] == cid]
-            if rs:
-                m = transform_metrics(rs)
-                t_recs += [{"sample": labels[cid], "method": f"{cond}, choice", "acc": 100 * m["choice"]},
-                           {"sample": labels[cid], "method": f"{cond}, per-candidate yes/no", "acc": 100 * m["predicate"]}]
-    for cond, rows in kind_by_cond.items():
-        for cid in labels:
-            rs = [r for r in rows if r["case_id"] == cid]
-            if rs:
-                k_recs.append({"sample": labels[cid], "condition": cond, "acc": 100 * kind_metrics(rs, cases)["acc"]})
-    fig, (a, b) = plt.subplots(1, 2, figsize=(10, 3.6))
-    if t_recs:
-        sns.barplot(pd.DataFrame(t_recs), x="sample", y="acc", hue="method", ax=a)
-        a.axhline(25, color="gray", linestyle="--", linewidth=1)
-        a.set(title="Right expression among 4 candidates (dashed: chance)", ylim=(0, 105), xlabel="", ylabel="accuracy (%)")
-        a.legend(title="", fontsize=7)
-    if k_recs:
-        sns.barplot(pd.DataFrame(k_recs), x="sample", y="acc", hue="condition", ax=b)
-        b.axhline(20, color="gray", linestyle="--", linewidth=1)
-        b.set(title="Transformation kind (dashed: chance)", ylim=(0, 105), xlabel="", ylabel="accuracy (%)")
-        b.legend(title="", fontsize=8)
-    return _save(fig, path)
-
-
-CATS = ["Correct column", "Wrong column", "Left empty (no source)", "False match (no source)"]
-LEVEL_NAMES = ["identical", "style only", "abbreviation", "synonym", "Indonesian", "legacy code", "mixed + decoys"]
-
-
-def _outcomes(rs, cases) -> dict:
-    cnt = dict.fromkeys(CATS, 0)
-    for r in rs:
-        c = cases[r["case_id"]]
-        cols = [k["name"] for k in c["columns"]]
-        for o in c["outputs"]:
-            sc = {col: pair_p(r["matrix"][col][o["name"]], T0) for col in cols}
-            if o["available"]:
-                best = max(cols, key=lambda x: (sc[x], x))
-                cnt[CATS[0] if best in o["sources"] else CATS[1]] += 1
-            else:
-                cnt[CATS[2] if max(sc.values()) < 0.5 else CATS[3]] += 1
-    return cnt
+    return save(fig, path)
 
 
 def fig_outcomes(rows_by_cond, cases, labels, path):
@@ -183,15 +98,15 @@ def fig_outcomes(rows_by_cond, cases, labels, path):
         for cid, lab in labels.items():
             rs = [r for r in rows_by_cond[cond] if r["case_id"] == cid]
             if rs:
-                recs[lab] = _outcomes(rs, cases)
-        df = pd.DataFrame(recs).T[CATS]
+                recs[lab] = outcomes(rs, cases)
+        df = pd.DataFrame(recs).T[OUTCOMES]
         df = df.div(df.sum(axis=1), axis=0) * 100
         df.plot(kind="bar", stacked=True, ax=ax, color=colors, width=0.7, legend=False)
         ax.set(title=f"context: {cond}", xlabel="", ylabel="share of output fields (%)")
         ax.tick_params(axis="x", rotation=0, labelsize=8)
     h, lab = axes[0][0].get_legend_handles_labels()
     fig.legend(h, lab, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False)
-    return _save(fig, path)
+    return save(fig, path)
 
 
 def fig_drift(rows_by_cond, cases, path):
@@ -217,4 +132,20 @@ def fig_drift(rows_by_cond, cases, path):
            ylabel="top-1 accuracy (%)", title="Accuracy as input names drift away from the template")
     ax.tick_params(axis="x", labelsize=8)
     ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=1)
-    return _save(fig, path)
+    return save(fig, path)
+
+
+def fig_kind(kind_by_cond, cases, labels, path):
+    """Naming the transformation kind, given the true source columns."""
+    recs = []
+    for cond, rows in kind_by_cond.items():
+        for cid in labels:
+            rs = [r for r in rows if r["case_id"] == cid]
+            if rs:
+                recs.append({"sample": labels[cid], "context": cond, "acc": 100 * kind_metrics(rs, cases)["acc"]})
+    fig, ax = plt.subplots(figsize=(6, 3.4))
+    sns.barplot(pd.DataFrame(recs), x="sample", y="acc", hue="context", ax=ax)
+    ax.axhline(20, color="gray", linestyle="--", linewidth=1)
+    ax.set(title="Transformation kind (dashed: chance)", ylim=(0, 105), xlabel="", ylabel="accuracy (%)")
+    ax.legend(title="", fontsize=8)
+    return save(fig, path)

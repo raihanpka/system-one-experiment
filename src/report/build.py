@@ -1,29 +1,15 @@
-"""Samples, report files and figures from a result store."""
+"""Assemble figures, per-field predictions and summary.md from a result store."""
 from __future__ import annotations
 
 import csv
 from pathlib import Path
 
-from .core.scoring import T0, pair_p
-from .metrics import build_tables
-from . import plots
-
-SAMPLES = {"a": ("L0-000", "identical names"), "b": ("L3-000", "synonyms"), "c": ("L5-000", "legacy codes"),
-           "d": ("L6-000", "mixed, decoys"), "e": ("L1-000", "style only"), "f": ("L2-000", "abbreviations"),
-           "g": ("L4-000", "Indonesian")}
-DEFAULT = "abcd"
-
-
-def predictions(row, case):
-    """Per output field: true source(s), predicted input column, probability, runner-up."""
-    cols = [k["name"] for k in case["columns"]]
-    out = []
-    for o in case["outputs"]:
-        sc = sorted(((pair_p(row["matrix"][c][o["name"]], T0), c) for c in cols), reverse=True)
-        (p1, c1), (p2, c2) = sc[0], sc[1]
-        ok = c1 in o["sources"] if o["available"] else p1 < 0.5
-        out.append([o["name"], o["available"], "|".join(o["sources"]), c1, f"{p1:.4f}", c2, f"{p2:.4f}", ok])
-    return out
+from ..core.viz import setup_style
+from ..dataset.samples import SAMPLES
+from ..mapping.figures import fig_accuracy, fig_calibration, fig_drift, fig_heatmap, fig_kind, fig_outcomes
+from ..mapping.predictions import predictions
+from ..transform.figures import fig_transform
+from .tables import build_tables
 
 
 def make_report(store, cases, letters, conds, out_dir) -> list[Path]:
@@ -33,19 +19,20 @@ def make_report(store, cases, letters, conds, out_dir) -> list[Path]:
     rows_by_cond = {c: store.rows("mapping", c, set(labels)) for c in conds}
     rows_by_cond = {c: r for c, r in rows_by_cond.items() if r}
     transform = {c: store.rows("transform", c, set(labels)) for c in rows_by_cond}
-    font_ok = plots.setup_style()
+    font_ok = setup_style()
     figs, paths = out / "figures", []
     if rows_by_cond:
-        paths += [plots.fig_accuracy(rows_by_cond, cases, labels, figs / "accuracy.svg"),
-                  plots.fig_outcomes(rows_by_cond, cases, labels, figs / "outcomes.svg"),
-                  plots.fig_drift(rows_by_cond, cases, figs / "drift.svg"),
-                  plots.fig_calibration(rows_by_cond, cases, figs / "calibration.svg")]
+        paths += [fig_accuracy(rows_by_cond, cases, labels, figs / "accuracy.svg"),
+                  fig_outcomes(rows_by_cond, cases, labels, figs / "outcomes.svg"),
+                  fig_drift(rows_by_cond, cases, figs / "drift.svg"),
+                  fig_calibration(rows_by_cond, cases, figs / "calibration.svg")]
+        paths.append(fig_kind(rows_by_cond, cases, labels, figs / "kind.svg"))
         if any(transform.values()):
-            paths.append(plots.fig_transform(transform, rows_by_cond, cases, labels, figs / "transform.svg"))
+            paths.append(fig_transform(transform, labels, figs / "transform.svg"))
         for cond, rows in rows_by_cond.items():
             for r in rows:
                 x = letter[r["case_id"]]
-                paths.append(plots.fig_heatmap(r, cases[r["case_id"]], labels[r["case_id"]], cond, figs / f"heatmap_{x}_{cond}.svg"))
+                paths.append(fig_heatmap(r, cases[r["case_id"]], labels[r["case_id"]], cond, figs / f"heatmap_{x}_{cond}.svg"))
                 p = out / f"predictions_{x}_{cond}.csv"
                 with p.open("w", newline="", encoding="utf-8") as f:
                     w = csv.writer(f)

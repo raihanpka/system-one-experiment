@@ -7,11 +7,14 @@ import tomllib
 from datetime import datetime
 from pathlib import Path
 
-from . import permute, run_mapping, run_transform
+from .mapping import run as run_mapping
+from .stability import run as permute
+from .transform import run as run_transform
 from .core.template import load_template
 from .dataset.export import write_cases, write_template
 from .dataset.generate import generate
-from .report import DEFAULT, SAMPLES, make_report
+from .dataset.samples import DEFAULT, SAMPLES
+from .report.build import make_report
 from .core.store import Store
 
 ROOT = Path(__file__).resolve().parents[1]

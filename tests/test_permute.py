@@ -1,7 +1,7 @@
 from src.core.template import load_template
 from src.decisions.types import Answer, Response
 from src.dataset.generate import generate
-from src.permute import run
+from src.stability.run import run
 from src.core.store import Store
 from tests.test_run_transform import Oracle
 
