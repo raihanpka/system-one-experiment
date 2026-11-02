@@ -29,7 +29,7 @@ def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> 
             state = table_state(case)
             qs = [table_pair_question(c["name"], o) for o in outs] if mode == "pairs" else [table_options_question(c["name"], outs)]
         else:
-            state = input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]], [k["name"] for k in case["columns"] if k is not c])
+            state = input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]])
         res = decider.decide(state, qs)
         if mode == "pairs":
             matrix[c["name"]] = {a.name: {"p": a.probability, "d": a.raw_scores["true"] - a.raw_scores["false"]} for a in res.answers}
