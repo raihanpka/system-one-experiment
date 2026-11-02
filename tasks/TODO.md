@@ -108,7 +108,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `src/context.py`, `src/permute.py`
   - Scope: S
 
-- [ ] **T8: Metrik, baseline leksikal, dan sweep temperature**
+- [x] **T8: Metrik, baseline leksikal, dan sweep temperature** (kode selesai dan teruji; `src/metrics.py`; angka sebenarnya muncul setelah run penuh)
   - Deskripsi: Top-1 dan top-3 per tingkat drift dan per konteks; ECE untuk kalibrasi; probabilitas dihitung ulang dari `raw_scores` dengan beberapa nilai T. Baseline pembanding murah tanpa model: kemiripan string (`difflib` dari stdlib), untuk melihat di tingkat drift mana Jev mulai lebih baik.
   - Acceptance:
     - [ ] Satu tabel hasil (CSV dan markdown): metode × drift × konteks
