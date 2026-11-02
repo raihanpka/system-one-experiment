@@ -146,4 +146,4 @@ make lint
 make bench
 ```
 
-Notes, findings and the task plan are in `NOTES.md` and `tasks/`.
+Notes and findings are in `NOTES.md`.

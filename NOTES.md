@@ -54,4 +54,8 @@
 
 ## 7. Open items
 
-1. See `tasks/TODO.md`, section "Belum dikerjakan".
+1. More cases per level (5 per level is about 50 minutes for 2 contexts) to get confidence intervals; today it is 1 case per sample.
+2. A per-field threshold fitted on the ground truth so fields without a source and decoy columns get rejected; compare with `--mode pairs`.
+3. An extra context with whole rows or the whole table (a prompt change only).
+4. Check the OpenAI Decisions schema against the official page, and add an OpenAI or hosted Jev adapter if a migration is planned.
+5. An `.xlsx` export, only if CSV is not enough.
