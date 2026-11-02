@@ -1,0 +1,15 @@
+{
+  "model": "jev-v3-2b",
+  "input": "My order arrived broken and I want my money back. This is the second time.",
+  "questions": [
+    {"type": "predicate", "name": "refund_requested", "instructions": "The customer explicitly asks for a refund"},
+    {"type": "choice", "name": "team", "instructions": "Which team should handle this ticket?",
+     "choices": [
+       {"value": "billing", "description": "Payments, invoices, and refunds"},
+       {"value": "shipping", "description": "Delivery and damaged goods"},
+       {"value": "product"}
+     ]},
+    {"type": "score", "name": "urgency", "instructions": "How urgent is this ticket?",
+     "levels": [{"label": "not urgent"}, {"label": "somewhat urgent"}, {"label": "urgent", "description": "needs attention today"}, {"label": "critical"}]}
+  ]
+}

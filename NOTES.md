@@ -17,3 +17,11 @@
 - Cleanup done at the user's request: `brew uninstall python@3.12` (no formula or venv depended on it; `~/.zshrc` still has a now-dangling PATH entry for it), and removed global pip user-site dirs `~/Library/Python/3.9` and `~/Library/Python/3.14`. Kept `python@3.14` (the pipx `poetry` venv uses it) and `python@3.15` (needed by nmap, virtualenv, watchman).
 - `hf download` with explicit filenames ignores `--include`. Name every file you want.
 - `vendor/` and `.venv/` are git-ignored.
+
+## T1: contract (`src/decisions/`), done, OpenAI schema still unverified
+
+- `developers.openai.com/api/docs/guides/decisions` and `platform.openai.com/docs/guides/decisions` fail with `read ECONNRESET` (5 attempts). Retry later, or paste the page, then compare against `tests/fixtures/*.json`.
+- Shape assumed from LocalAI (`/v1/decisions`, "OpenAI-compatible contract"), LangChain (`langchain-openai>=1.7.0`) and TypeSafe (`/v1/systemone`). Request: `model`, `input`, `questions[]` (`type` predicate|choice|score, `name`, `instructions`, `choices[{value,description}]`, `levels[{label,description}]`). Response: `model`, `answers[]` (`name`, `type`, `probability` | `choice`+`confidence`+`probabilities` | `score`+`confidence`+`probabilities`, or `type: "refusal"`), `usage`.
+- Known gaps: the exact element keys of `probabilities` are a guess (`{value, probability}`; score adds `label`). TypeSafe returns `probabilities` as an object keyed by option, OpenAI-compatible routes as an array. `raw_scores` is our own extension and is omitted when absent.
+- Differences for a future adapter: TypeSafe uses `state` + `questions` as an object keyed by name, `noul` instead of `predicate`, `criteria` instead of `choices`/`levels`, and a flat `answers` object.
+- Limits enforced locally: choice needs 2+ unique values; score needs 2 to 10 levels (Jev and LocalAI limit); question names unique.

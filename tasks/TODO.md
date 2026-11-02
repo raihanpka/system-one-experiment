@@ -21,7 +21,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Scope: S
   - Catatan: ini gerbang. Isi `build_jev_score.sh` belum dibaca, jadi flag build Metal belum terkonfirmasi. Jika gagal, pindah ke cadangan yang sudah disetujui pengguna, berurutan: (1) MLX (`uv pip install "jev-style[mlx]"`, repo `chaoliangUNSW/Jev-Style-2B-Decision-v3-MLX`, card menyebut paling cepat di Mac), (2) PyTorch MPS (`uv pip install -r requirements.txt` dari repo utama v3, `torch==2.14.0`, `transformers==5.17.0`; cek `python jev_style_decision.py --help` untuk nilai `--device` MPS; sekitar 4x lebih lambat di input panjang). Catat backend yang dipakai di `NOTES.md`; `JevDecider` (T2) menyembunyikan perbedaannya.
 
-- [ ] **T1: Kontrak Decisions (meniru OpenAI) dan verifikasi dokumen**
+- [x] **T1: Kontrak Decisions (meniru OpenAI) dan verifikasi dokumen** (selesai; verifikasi ke halaman resmi OpenAI tertunda karena `ECONNRESET`, lihat `NOTES.md`)
   - Deskripsi: Tipe internal yang bentuknya sama dengan OpenAI Decisions API (`POST /v1/decisions`): pertanyaan `predicate`, `choice` (`choices` dengan `value` dan `description`), `score` (`levels` dengan `label` dan `description`); jawaban `probability`, `choice`/`confidence`/`probabilities`, `score`/`legend`; plus `usage`. Satu interface `Decider.decide(input, questions) -> Response`. Tujuannya: bila nanti pindah ke OpenAI atau Jev hosted, cukup menambah satu adapter. Adapter OpenAI sendiri tidak dibuat sekarang.
   - Acceptance:
     - [ ] `src/decisions/types.py` dan `src/decisions/base.py`
