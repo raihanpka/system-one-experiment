@@ -6,7 +6,7 @@ import sys
 from typing import Sequence
 
 from ..core.paths import VENDOR
-from .types import Answer, Question, Response
+from ..decisions.types import Answer, Question, Response
 
 
 def _load_backend(quant: str, ngl: int = 999, flash_attn: str = "default", threads: int | None = None):

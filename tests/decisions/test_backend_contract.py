@@ -3,8 +3,8 @@ import math
 
 import pytest
 
-from columnmap.decisions.jev import JevDecider
-from columnmap.decisions.openrouter import OpenRouterDecider
+from columnmap.backends.jev_gguf import JevDecider
+from columnmap.backends.openrouter import OpenRouterDecider
 from columnmap.decisions.types import Choice, Level, Question
 
 

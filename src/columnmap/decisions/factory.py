@@ -9,10 +9,10 @@ def make_decider(cfg: dict) -> Callable:
     from ..core.settings import model_options, openrouter_settings
 
     if cfg["backend"]["type"] == "openrouter":
-        from .openrouter import OpenRouterDecider
+        from ..backends.openrouter import OpenRouterDecider
         opts = openrouter_settings(cfg)
         return lambda: OpenRouterDecider(**opts)
-    from .jev import JevDecider
+    from ..backends.jev_gguf import JevDecider
     opts = model_options(cfg)
     return lambda: JevDecider(**opts)
 

@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from columnmap.decisions.openrouter import OpenRouterDecider
+from columnmap.backends.openrouter import OpenRouterDecider
 from columnmap.decisions.types import Choice, Level, Question
 
 

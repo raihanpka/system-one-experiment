@@ -12,7 +12,7 @@ from columnmap.core.store import Store
 from columnmap.core.tables import md_table, pct
 from columnmap.core.template import load_template
 from columnmap.dataset.generate import generate
-from columnmap.decisions.jev import JevDecider
+from columnmap.backends.jev_gguf import JevDecider
 from columnmap.honest.run import run_case
 
 CONDS = ("name", "samples", "table")

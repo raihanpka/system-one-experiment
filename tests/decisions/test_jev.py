@@ -5,7 +5,7 @@ import pytest
 
 from columnmap.core.paths import VENDOR
 
-from columnmap.decisions.jev import JevDecider
+from columnmap.backends.jev_gguf import JevDecider
 from columnmap.decisions.types import Choice, Level, Question, request_from_dict, response_to_dict
 
 FIX = Path(__file__).parents[1] / "fixtures"

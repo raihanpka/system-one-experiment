@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from typing import Callable, Sequence
 
-from .types import Answer, Question, Response
+from ..decisions.types import Answer, Question, Response
 
 def _logit(p: float) -> float:
     p = min(max(p, P_CLIP), 1 - P_CLIP)
