@@ -154,8 +154,8 @@ def test_keep_option_decides_how_many_columns_are_chosen_and_is_recorded(tmp_pat
     main([*base, "--keep", "-50"], decider_factory=Generic)
     strict, loose = _runs(root)
 
-    def answered(run):
+    def chosen(run):
         d = json.loads((run / "result.json").read_text())
-        return sum(f["best"] is not None for f in d["honest"]["name"][0]["fields"].values()), d["meta"]["keep_d"]
+        return sum(len(f["cols"]) for f in d["honest"]["name"][0]["fields"].values()), d["meta"]["keep_d"]
 
-    assert answered(strict) == (0, 50.0) and answered(loose)[0] > 0 and answered(loose)[1] == -50.0
+    assert chosen(strict) == (0, 50.0) and chosen(loose)[0] > 0 and chosen(loose)[1] == -50.0
