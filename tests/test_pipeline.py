@@ -33,7 +33,7 @@ def test_one_command_writes_result_json_figures_tables_and_resumes(tmp_path, cap
     assert main(["--samples", "abcd", "--out", str(out)], decider_factory=Generic) == 0
     data = json.loads((out / "result.json").read_text())                      # one plain JSON file
     assert set(data) == {"meta", "mapping", "transform", "permute"} and data["meta"]["mode"] == "options"
-    assert [r["case_id"] for r in data["mapping"]["name"]] == ["L0-000", "L3-000", "L5-000", "L6-000"]
+    assert [r["case_id"] for r in data["mapping"]["name"]] == ["identical-000", "synonym-000", "legacy-000", "mixed-000"]
     assert set(data["mapping"]) == {"name", "samples"}
 
     rep = out / "report"
@@ -45,7 +45,7 @@ def test_one_command_writes_result_json_figures_tables_and_resumes(tmp_path, cap
     assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
     md = (rep / "summary.md").read_text()
     assert "![accuracy](figures/accuracy.svg)" in md and "| sample | case | input naming |" in md and "## Mapping" in md
-    assert (out / "samples" / "L5-000" / "input.csv").exists() and (out / "samples" / "template_header.csv").exists()
+    assert (out / "samples" / "legacy-000" / "input.csv").exists() and (out / "samples" / "template_header.csv").exists()
     assert len((rep / "predictions_a_name.csv").read_text().splitlines()) == 32      # header + 31 output fields
 
     capsys.readouterr()

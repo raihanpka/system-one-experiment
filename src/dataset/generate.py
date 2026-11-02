@@ -8,6 +8,7 @@ from __future__ import annotations
 import random
 from datetime import date, timedelta
 
+from .samples import LEVEL_WORDS
 from ..core.template import load_template, rule_sources
 from ..core.dsl import safe_evaluate
 
@@ -144,7 +145,7 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
         outputs.append(out)
     for c in cols:
         del c["gen"], c["type"]
-    return {"case_id": f"L{level}-{i:03d}", "level": level, "columns": cols, "rows": rows, "anomalies": anomalies,
+    return {"case_id": f"{LEVEL_WORDS[level]}-{i:03d}", "level": level, "columns": cols, "rows": rows, "anomalies": anomalies,
             "outputs": outputs}
 
 
