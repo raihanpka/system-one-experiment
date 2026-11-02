@@ -1,6 +1,7 @@
 """Report tables: the preface plus each slice's own tables."""
 from __future__ import annotations
 
+from ..convert.tables import convert_tables
 from ..mapping.tables import mapping_tables
 from ..stability.tables import stability_tables
 from ..transform.tables import transform_tables
@@ -11,4 +12,5 @@ PREFACE = ("All numbers are percentages unless noted. Levels: 0 identical, 1 sty
 
 def build_tables(store, cases, conds, only=None) -> str:
     return "\n".join([PREFACE, "", *mapping_tables(store, cases, conds, only),
-                      *transform_tables(store, conds, only), *stability_tables(store, conds, only)])
+                      *convert_tables(store, cases, conds, only), *transform_tables(store, conds, only),
+                      *stability_tables(store, conds, only)])

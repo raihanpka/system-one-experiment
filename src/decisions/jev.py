@@ -44,13 +44,6 @@ class JevDecider:
     def __init__(self, quant: str = "Q8_0", backend=None, **opts):
         self._b = backend if backend is not None else _load_backend(quant, **opts)
 
-    @classmethod
-    def from_config(cls, path=None):
-        """Build from the [model] table of config.toml (quant, ngl, flash_attn, threads)."""
-        import tomllib
-        path = path or Path(__file__).resolve().parents[2] / "config.toml"
-        return cls(**tomllib.loads(Path(path).read_text())["model"])
-
     def decide(self, text: str, questions: Sequence[Question]) -> Response:
         if not questions:
             return Response("Jev-Style-2B-Decision-v3")

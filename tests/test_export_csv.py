@@ -23,20 +23,21 @@ def test_template_files(tmp_path):
 
 def test_each_case_is_input_expected_output_and_mapping(tmp_path):
     write_cases(CASES, tmp_path)
-    assert len(list(tmp_path.glob("*/input.csv"))) == len(CASES)
+    assert len(list(tmp_path.glob("*/input_*.csv"))) == len(CASES)
     c = next(c for c in CASES if c["level"] == 6)
+    assert c["case_id"].startswith("mixed-")
     d = tmp_path / c["case_id"]
 
-    inp = rows(d / "input.csv")
+    inp = rows(d / "input_mixed.csv")
     assert inp[0] == [k["name"] for k in c["columns"]] and len(inp) == 1 + len(c["rows"])
 
-    exp = rows(d / "expected_output.csv")                       # the converted file, ready to upload
+    exp = rows(d / "expected_mixed.csv")                       # the converted file, ready to upload
     assert exp[0] == [o["name"] for o in T["outputs"]] and len(exp) == 1 + len(c["rows"])
     for j, o in enumerate(c["outputs"]):
         col = [r[j] for r in exp[1:]]
         assert col == (["" if v is None else str(v) for v in o["expected"]] if o["available"] else [""] * len(c["rows"]))
 
-    m = rows(d / "mapping.csv")
+    m = rows(d / "ground_truth_mixed.csv")
     assert m[0] == ["output", "kind", "available", "input_columns", "expression"]
     gross = next(r for r in m[1:] if r[0] == "gross_premium")
     if gross[2] == "True":
