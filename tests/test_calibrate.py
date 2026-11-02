@@ -88,7 +88,7 @@ def test_a_calibrated_cutoff_keeps_low_confidence_fields_out_of_the_converted_fi
                                                                 "curve": [[0.9999, 1.0, 100]]}}}))        # only a near-certain field would pass
     main(["--report-only", "--out", str(dev), "--calibration", str(path), "--root", str(root), "--data", str(data)])
     md = (dev / "report" / "summary.md").read_text()
-    assert "at least 0.999" in md and "target precision 99%" in md
+    assert "at least 0.999" in md and "target precision 100%" in md
     converted = (dev / "a_easy_identical" / "converted_easy_identical_name.csv").read_text().splitlines()[1:]
     assert all(set(line) <= {","} for line in converted)                                                  # nothing filled
     decisions = (dev / "a_easy_identical" / "decisions_easy_identical_name.csv").read_text()

@@ -114,7 +114,10 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     other = Store(_abs(a.calibrate_from) / "result.json") if a.calibrate_from else None
     if other is not None and other.data["meta"].get("seed", cfg["run"]["seed"]) != seed:
         ap.error("--calibrate-from needs a run built from the same seed, otherwise its answers do not belong to these files")
-    keep = store.data["meta"].get("keep_d") if (a.report_only or a.out) and store.data["meta"].get("keep_d") is not None else (a.keep if a.keep is not None else cfg["run"]["keep_d"])
+    honest_cfg = cfg.get("honest", {})
+    default_keep = ("lift", honest_cfg["lift_top"], honest_cfg["lift_second"]) if "lift_top" in honest_cfg else cfg["run"]["keep_d"]
+    stored = store.data["meta"].get("keep_d")
+    keep = tuple(stored) if isinstance(stored, list) else stored if (a.report_only or a.out) and stored is not None else (a.keep if a.keep is not None else default_keep)
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, seed)}
     sel = [cases[SAMPLES[x][0]] for x in letters]

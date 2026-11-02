@@ -89,3 +89,29 @@ def test_the_shortlist_gets_a_yes_no_check_and_confidence_combines_columns_and_e
     rec = run_fields(j, ["full_name"], ROWS, MATRIX)["full_name"]
     assert len(rec["shortlist"]) <= 3 and rec["best_idx"] in rec["shortlist"] and 0 < rec["p_expr"] <= 1
     assert abs(rec["conf"] - rec["p_expr"] * rec["p_cols"][0] * rec["p_cols"][1]) < 1e-9
+
+
+def test_lift_rule_takes_top_column_only_when_it_stands_above_the_median():
+    from columnmap.honest.run import chosen_by_lift
+    matrix = {"a": {"f": cell(5.0)}, "b": {"f": cell(-2.0)}, "c": {"f": cell(-2.5)}, "d": {"f": cell(-3.0)}}
+    assert chosen_by_lift(matrix, "f", lift_top=2.0, lift_second=2.0) == ["a"]            # lift of a is 5 - (-2.25) = 7.25
+    assert chosen_by_lift(matrix, "f", lift_top=8.0, lift_second=2.0) == []                 # nothing stands far enough above the median
+
+
+def test_second_column_only_when_its_own_lift_is_high():
+    from columnmap.honest.run import chosen_by_lift
+    matrix = {"a": {"f": cell(5.0)}, "b": {"f": cell(4.5)}, "c": {"f": cell(-2.0)}, "d": {"f": cell(-2.5)}}
+    assert chosen_by_lift(matrix, "f", lift_top=1.0, lift_second=20.0) == ["a"]           # b is close to a, not far above the median
+    assert chosen_by_lift(matrix, "f", lift_top=1.0, lift_second=1.0) == ["a", "b"]
+
+
+def test_no_lift_rule_argument_means_no_change_for_the_old_keep_rule():
+    from columnmap.honest.run import chosen_columns
+    matrix = {"a": {"f": cell(1.0)}, "b": {"f": cell(-1.0)}}
+    assert [c for c, _ in chosen_columns(matrix, "f", keep=0.0)] == ["a"]
+
+
+def test_tuple_keep_selects_the_lift_rule_in_the_honest_stage():
+    from columnmap.honest.run import run_fields
+    recs = run_fields(Judge({"full_name": 'concat(first, " ", last)'}), ["full_name"], ROWS, MATRIX, keep=("lift", 2.0, 2.0))
+    assert recs["full_name"]["cols"] == ["first", "last"]

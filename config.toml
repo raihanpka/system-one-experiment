@@ -6,9 +6,14 @@ ngl = 999               # layers on the GPU (Metal); 0 = CPU only
 flash_attn = "default"  # default | auto | on | off
 # threads = 8           # CPU threads of the scorer process (optional)
 
+# lift rule for choosing input columns; uncomment to use it instead of keep_d (values set in E2 on dev)
+# [honest]
+# lift_top = 2.0
+# lift_second = 2.0
+
 [run]
 keep_d = 0.0             # a column is chosen for a field when its score is at least this (0.0 is probability 0.5)
-target_precision = 0.99   # fields are filled automatically only above the cutoff that reaches this precision
+target_precision = 1.0    # fields are filled automatically only above the cutoff that reaches this precision (100 percent)
 prompt_version = "v1"   # part of the calibration key: change it whenever a prompt changes
 mode = "options"   # options: one question per input column (fast); pairs: one yes/no per (column, field), calibrated
 seed = 1234
