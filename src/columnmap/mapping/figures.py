@@ -139,3 +139,21 @@ def fig_drift(rows_by_cond, cases, path):
 
 
 # Naming the transformation kind, given the true source columns
+
+
+# reliability: predicted probability against how often it was right; the diagonal is perfect calibration
+def fig_reliability(curves: list[dict], path):
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.8), sharey=True)
+    for ax, level in zip(axes, ("pair", "field")):
+        ax.plot([0, 1], [0, 1], color="gray", linestyle="--", label="perfect calibration")
+        for c in (c for c in curves if c["level"] == level):
+            for key, style in (("bins_raw", {"linestyle": ":", "alpha": 0.8}), ("bins_cal", {"linestyle": "-"})):
+                bins = c[key]
+                if bins:
+                    ax.plot([b["confidence"] for b in bins], [b["observed"] for b in bins], marker="o", markersize=4,
+                            label=f"{ctx(c['cond'])}, {'uncalibrated' if key == 'bins_raw' else 'calibrated'}", **style)
+        ax.set(title={"pair": "Column and field pairs", "field": "Whole fields"}[level], xlabel="predicted probability",
+               xlim=(0, 1), ylim=(0, 1.02))
+        ax.legend(fontsize=7, loc="upper left")
+    axes[0].set_ylabel("observed share correct")
+    return save(fig, path)

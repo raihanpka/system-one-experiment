@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 
 from .core.paths import CONFIG, DATA, ROOT
+from .calibrate import fit as fit_calibration
+from .core.calibration import Calibration
 from .core.runs import new_run_dir, newest_run
 from .core.store import Store
 from .core.template import load_template
@@ -25,6 +27,7 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --mode pairs          slower, calibrated probabilities
   columnmap --mode both           run both modes and compare them
   columnmap --conds name,samples,table    also show the model the whole table
+  columnmap --fit-calibration results/A results/B    fit calibration.json from dev or calibration runs A and B
   columnmap --calibrate-from results/X    fit the rejection cutoffs on run X (a fair test on another case)
   columnmap --seed 5              build the samples from another seed (not written to data/)
   columnmap --split calibration   one run per seed of a split from config.toml: dev, calibration, or test (test needs --final)
@@ -54,12 +57,24 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from config.toml, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
     ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
+    ap.add_argument("--fit-calibration", nargs="+", metavar="RUN", help="fit calibration parameters from these dev or calibration runs, write calibration.json, and stop")
+    ap.add_argument("--calibration", default=str(ROOT / "calibration.json"), help="calibration file (default calibration.json in the project)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
     ap.add_argument("--root", default="results", help="folder that holds all runs (default results)")
     ap.add_argument("--data", default=str(DATA), help="folder with the template and the samples (default data/)")
     ap.add_argument("--out", help="use this run folder (continue it) instead of creating a new one named <samples>_<timestamp>")
     a = ap.parse_args(argv)
 
+    if a.fit_calibration:
+        calibration = Calibration(_abs(a.calibration))
+        try:
+            lines = fit_calibration([_abs(p) for p in a.fit_calibration], calibration, cfg["run"]["prompt_version"])
+        except ValueError as e:
+            ap.error(str(e))
+        calibration.save()
+        print("\n".join(lines) or "nothing to fit")
+        print(f"written {calibration.path}")
+        return 0
     seeds = cfg["splits"][a.split] if a.split else [a.seed if a.seed is not None else cfg["run"]["seed"]]
     if a.split == "test" and not a.final:
         ap.error("the test split is looked at once, at the end: add --final to run it")
@@ -112,10 +127,10 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
         with decider_factory() as d:
             run_models(d, sel, conds, modes, store, t)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
-                                   "seed": seed, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
+                                   "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 
-    paths = make_report(store, cases, letters, conds, run, other)
+    paths = make_report(store, cases, letters, conds, run, other, Calibration(_abs(a.calibration)), cfg["run"]["prompt_version"])
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")
     print(f"raw model output: {run / 'result.json'}")
