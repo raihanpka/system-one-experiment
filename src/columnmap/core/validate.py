@@ -24,6 +24,8 @@ def valid_value(value, typ: str) -> bool:
     return typ == "string"
 
 
-# a field is valid when every converted cell of it passes the type check
+# a field is valid when it has at least one value and every non-blank cell passes the type check.
+# Blank cells are allowed: a source gap stays blank in the output, as in the expected files.
 def field_valid(values, typ: str) -> bool:
-    return all(valid_value(v, typ) for v in values)
+    filled = [v for v in values if v is not None and str(v).strip() != ""]
+    return bool(filled) and all(valid_value(v, typ) for v in filled)

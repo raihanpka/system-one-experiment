@@ -19,7 +19,8 @@ def test_value_checks_follow_the_template_type(value, typ, ok):
     assert valid_value(value, typ) is ok
 
 
-def test_a_field_is_valid_only_when_every_cell_passes():
+def test_blank_cells_are_allowed_but_any_filled_cell_must_pass_the_type():
     assert field_valid(["2024-01-01", "2024-02-02"], "date")
-    assert not field_valid(["2024-01-01", None], "date")
-    assert not field_valid(["2024-01-01", "soon"], "date")
+    assert field_valid(["2024-01-01", None, ""], "date")          # source gaps stay blank
+    assert not field_valid(["2024-01-01", "soon"], "date")         # a filled cell with the wrong type blocks the field
+    assert not field_valid([None, ""], "date")                    # nothing filled at all
