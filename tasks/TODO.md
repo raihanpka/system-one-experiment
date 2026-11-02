@@ -33,7 +33,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `src/decisions/types.py`, `src/decisions/base.py`, `tests/fixtures/*.json`, `tests/test_contract.py`
   - Scope: M
 
-- [ ] **T2: `JevDecider`**
+- [x] **T2: `JevDecider`** (selesai)
   - Deskripsi: Implementasi `Decider` yang membungkus `JevStyleDecisionGGUF(quant="Q8_0")` dari repo v3 (metode `decide` dan `score_many`). Pemetaan: predicate → `noul`, choice → `choice`, score → `score`. Skor mentah (`scores`) disimpan di field ekstra `raw_scores`. Mode batch JSONL dan resume.
   - Acceptance:
     - [ ] Respons berbentuk sama dengan fixture T1
@@ -44,7 +44,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `src/decisions/jev.py`, `tests/test_jev.py`
   - Scope: M
 
-### Checkpoint: Kontrak
+### Checkpoint: Kontrak (tercapai: Jev jalan, test kontrak lolos)
 - [ ] Jev jalan di Mac dan lolos test kontrak
 - [ ] Review dengan pengguna
 
