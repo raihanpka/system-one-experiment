@@ -75,6 +75,22 @@ uv run columnmap --out results/easy_identical-medium_synonym-hard_codes-hardest_
 # rebuild the files and figures of the newest run without the model
 uv run columnmap --report-only
 
+# build the samples from another seed (not written to data/)
+uv run columnmap --seed 5
+
+# run every seed of the dev split (for tuning), or the calibration split
+uv run columnmap --split dev
+uv run columnmap --split calibration
+
+# fit calibration.json from finished dev or calibration runs (never from a test run)
+uv run columnmap --fit-calibration results/RUN_A results/RUN_B
+
+# report a run with a given calibration file
+uv run columnmap --report-only --out results/RUN --calibration calibration.json
+
+# the test split is looked at once, at the very end
+uv run columnmap --split test --final
+
 # show all options
 uv run columnmap --help
 ```
@@ -106,7 +122,17 @@ A few terms used in the reports:
 - **Field**: one column of the output template.
 - **Source**: the input column that should fill a field. Some fields have no source in a given file and must stay empty.
 - **Distractor** (called decoy in the code): an input column that looks related but matches nothing in the template, for example `policy_version` next to `policy_number`.
-- **Kind**: how a field is made from its source: copied as is, joined from several columns, calculated, reformatted, or looked up.
+- **Expression**: the rule that makes a field from input columns: copied as is, joined, calculated, reformatted, or looked up. The model picks one among candidates built from the columns it chose; it never writes a formula.
+
+---
+
+### Splits, Calibration, and Auto-Fill
+
+Data comes from three seed splits in `config.toml`: `dev` for tuning, `calibration` for fitting, and `test` for the final look. Only the baseline seed is written to `data/`; other seeds are rebuilt from their number.
+
+The model's scores are turned into probabilities with Platt scaling (two numbers, a slope and a bias). They are fitted on calibration runs and stored in `calibration.json`, keyed by model, quantization, mode, context, prompt version, and column cutoff. A key that does not match the current setup is refused with a message, so a change in the setup needs a new fit.
+
+A field is filled automatically only when its calibrated confidence reaches the cutoff that gives the target precision (`target_precision` in `config.toml`, 99% by default). Every other field stays empty in the converted file and is listed in `review_*.csv` with its three best candidates. If no cutoff reaches the target with enough fields behind it, nothing is filled automatically.
 
 ---
 
@@ -126,11 +152,12 @@ results/<samples>_<timestamp>/       one folder per run, for example easy_identi
   result.json                        raw model output of this run, for transparency
   c_hard_codes/
     converted_hard_codes_name.csv         the template filled from the model's decisions
-    decisions_hard_codes_name.csv         per output field: chosen input column, probability, kind, expression
+    decisions_hard_codes_name.csv         per output field: chosen input column, confidence, calibrated confidence, method, expression
+    review_hard_codes_name.csv            fields left for a person, with three candidates and their probabilities
     probabilities_hard_codes_name.csv     probability of every (input column, output field) pair
   report/
     summary.md                       tables and figures of this run
-    figures/*.svg                    accuracy, outcomes, drift regression, calibration, kinds, heatmaps
+    figures/*.svg                    accuracy, outcomes, drift regression, calibration, reliability, precision against coverage, heatmaps
 ```
 
 Files ending in `_name` or `_samples` show what the model saw for that context. The `results/` folder is not tracked by git.

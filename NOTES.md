@@ -37,17 +37,25 @@
 4. Candidate expressions come from the ground truth (1 true, 3 distractors). Jev picks one; it does not write formulas.
 5. A field is kept when its best input column passes a rule: fixed 0.5, or a cutoff on the best score or on its lift above the median column, fitted on ground truth (`--calibrate-from RUN` fits it on another run).
 
-## 5. Real Runs on Two Cases
+## 5. Real Runs
 
-1. Two separate runs, each with 3 contexts and both modes: `coded-000` (26 columns, 21 of 31 fields have a source) in `results/coded_20261102-103424` and `mixed-000` (32 columns with 6 decoys, 16 of 31 fields have a source) in `results/mixed_20261102-104030`. Each folder has its own `report/summary.md`. One file per case, so read the numbers as indications.
-2. Correction: an earlier note said fields without a source were never rejected. That was a division by zero: those samples had no such fields. The generator now keeps only 14 to 22 of 26 source columns, and undefined rates print as "-".
-3. Top-1 (options / pairs). Coded: name only 61.9 / 52.4, name + values 71.4 / 52.4, name + whole table 57.1 / 33.3. Mixed: name only 81.2 / 93.8, name + values 87.5 / 93.8, name + whole table 93.8 / 93.8.
-4. Time per file: options 14 to 33 s, pairs 70 to 144 s.
-5. Fixed rule (probability 0.5): on coded it keeps only 33 to 57 percent of the fields that have a source and leaves 100 percent of the no-source fields empty (too cautious on system codes). On mixed it keeps 75 to 81 percent and leaves 80 to 93 percent of the no-source fields empty.
-6. Cutoffs fitted on ground truth: on the same run they help a little (coded name only: fields kept 33 to 57 percent, converted cells correct 28.6 to 42.9 percent) but that is optimistic. Fitted on the other run they do not help and are often worse (mixed name only, options: no-source fields left empty 80 to 66.7 percent; mixed name + values, pairs: 93.3 to 53.3). Scores sit on a different scale in each sample, so one cutoff does not transfer; more files are needed to say more.
-7. Whole table: helps mixed (top-1 93.8 in options mode), hurts coded (57.1 vs 71.4 with values), and in pairs mode the model accepts almost every field (only 20 to 27 percent of no-source fields left empty at the fixed rule). It costs about 1.5 times the time of name + values.
-8. Converted cells correct (fixed rule): coded 14 to 48 percent, mixed 69 to 81 percent. Derived fields lose accuracy through the kind and expression picks.
-9. Takeaway: name + values in options mode is the best default for speed and accuracy. Pairs mode is better only on the easier file and is 5 to 6 times slower.
+1. Earlier runs (`coded`, `mixed`, one file each, 3 contexts, 2 modes) are frozen in `baselines/v1/`. Their converted cells use the true transformation kind and candidate expressions, so their cell numbers are optimistic. `baselines/v1/honest.md` recomputes them without ground truth help.
+2. Honest stage (no ground truth reaches the model or the conversion): the three best columns per field, a program builds candidate expressions from their names and types, the model ranks them with three example results each. Baseline v1 without ground truth help: 3 to 7 of 16 to 21 fields with a source correct, depending on sample and context.
+3. Dev split (seed 11, five samples, name plus values): top-1 92,1 percent, fields correct 51 of 101, wrongly filled cells 73. Ground truth enters only as the test of the result, never as input.
+4. Calibration split (seeds 12 and 13) fitted Platt parameters. Pair-level calibration is good: ECE 0.006 raw and 0.005 calibrated on the test split. Field-level calibration is not: 76 and 73 points, ECE 0.114 raw and 0.126 calibrated on seed 21, 0.181 raw and 0.093 calibrated on seed 22. Target was 0.03 or less, so this fails. Few points are the likely cause.
+5. Test split (seeds 21 and 22, looked at once, after the calibration fit): top-1 90,0 and 90,6 percent. No cutoff reaches the 99 percent target precision with enough fields, so nothing is filled automatically. Every field goes to the review list with three candidates. The highest precision cutoff with 15 or more fields on the calibration split was about 92 percent.
+6. Experiments on dev that were tried and rejected (the rule: keep only if top-1 or correct cells rise and precision does not fall). Each was reverted in the code:
+   - Whole-table context: top-1 down on coded, up on mixed; not adopted.
+   - Profile context (type, range, distinct count): top-1 91,1 vs 92,1, more wrong fills.
+   - Prompt wording versions v2 and v3: fields correct 47 vs 51, wrong fills 135 and 141 vs 73.
+   - Option order averaging, three orders: top-1 91,1, wrong fills 120, time about 2,2 times.
+   - Schema context (all other headers): top-1 90,1, wrong fills 191.
+   - Neighbouring columns: top-1 89,1, wrong fills 135.
+   - Two-stage (options shortlist, yes/no check): top-1 81,2, fields correct 38, correct cells 37,9; fewer wrong fills (30) but many more misses.
+   - Full pairs mode: top-1 79,2, 7,7 minutes and 31k tokens per run.
+7. Column cutoff (`--keep`): on dev the best cutoff is 0.0 (probability 0.5); stricter or looser cutoffs lose more than they gain.
+8. Cost: options mode about 13 s and 6 to 8k prompt tokens per file on the M3; a dev split of five samples runs in about 1 to 2 minutes per context.
+9. Takeaway: the reliable part is the mapping ranking (top-1 around 90 percent on these files). Field-level confidence does not yet separate right from wrong fills well enough to fill automatically at 99 percent, so the review list carries most of the work. More calibration data, or a better field-level score, is the next step; that needs more cases than this experiment has.
 
 ## 6. Structure
 
