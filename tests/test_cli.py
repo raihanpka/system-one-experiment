@@ -5,7 +5,7 @@ import time
 import pytest
 
 from src.decisions.types import Answer, Response
-from src.pipeline import main
+from src.cli import main
 
 
 class Generic:

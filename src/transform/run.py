@@ -7,10 +7,9 @@ from __future__ import annotations
 
 import math
 
-from ..core.template import rule_sources
+from ..core.dsl import safe_evaluate
+from ..decisions.types import Question
 from .prompts import pick_question, prepare
-from ..decisions.types import Choice, Question
-from ..core.dsl import render, safe_evaluate
 
 
 def _same(a, b):

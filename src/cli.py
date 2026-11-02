@@ -1,11 +1,10 @@
-"""One command: samples -> Jev -> result.json -> converted files, figures and tables.
+"""Command line: pick samples and a run folder, run the model, write the results.
 
     uv run python src                      # samples a,b,c,d into results/<samples>_<timestamp>/
 """
 from __future__ import annotations
 
 import argparse
-import time
 import tomllib
 from datetime import datetime
 from pathlib import Path
@@ -16,10 +15,8 @@ from .core.template import load_template
 from .dataset.export import write_samples
 from .dataset.generate import generate
 from .dataset.samples import DEFAULT, SAMPLES, word
-from .mapping import run as run_mapping
+from .experiment import run_models
 from .report.build import make_report
-from .stability import run as permute
-from .transform import run as run_transform
 
 ROOT = Path(__file__).resolve().parents[1]
 EPILOG = """examples:
@@ -83,16 +80,11 @@ def main(argv=None, decider_factory=None) -> int:
     print(f"samples {letters}, contexts {conds}, mode {a.mode}, run folder {run}")
 
     if not a.report_only:
-        t0 = time.time()
         if decider_factory is None:
             from .decisions.jev import JevDecider
             decider_factory = lambda: JevDecider(**cfg["model"])              # noqa: E731
         with decider_factory() as d:
-            for cond in conds:
-                steps = (("mapping", lambda *x: run_mapping.run(*x, mode=a.mode)), ("transform", run_transform.run))
-                for name, fn in steps + ((("permute", permute.run),) if a.permute else ()):
-                    n = fn(d, sel, cond, store, t)
-                    print(f"[{cond}] {name}: {n} new, {len(sel) - n} resumed ({time.time() - t0:.0f}s)")
+            run_models(d, sel, conds, a.mode, a.permute, store, t)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
                                    "seed": cfg["run"]["seed"], "mode": a.mode, "contexts": conds,
                                    "updated": datetime.now().isoformat(timespec="seconds")})

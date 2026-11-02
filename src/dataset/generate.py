@@ -8,12 +8,11 @@ from __future__ import annotations
 import random
 from datetime import date, timedelta
 
-from .samples import LEVEL_WORDS
-from ..core.template import load_template, rule_sources
 from ..core.dsl import safe_evaluate
+from ..core.template import rule_sources
+from .samples import LEVEL_WORDS
 
 ROWS = (15, 30)                                            # rows per input file
-SAMPLE_K = 5
 STYLES = ("snake", "camel", "pascal", "upper", "kebab", "space", "title")
 ARITH = ("add", "sub", "mul", "div")
 
