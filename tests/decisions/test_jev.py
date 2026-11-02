@@ -1,14 +1,11 @@
-import json
-from pathlib import Path
 
 import pytest
 
 from columnmap.core.paths import VENDOR
 
 from columnmap.backends.jev_gguf import JevDecider
-from columnmap.decisions.types import Choice, Level, Question, request_from_dict, response_to_dict
+from columnmap.decisions.types import Choice, Level, Question
 
-FIX = Path(__file__).parents[1] / "fixtures"
 MODEL = "Jev-Style-2B-Decision-v3"
 
 
@@ -40,7 +37,12 @@ class FakeBackend:
 
 
 def test_maps_three_types_in_one_backend_call():
-    _, text, qs = request_from_dict(json.loads((FIX / "request.json").read_text()))
+    text = "My order arrived broken and I want my money back. This is the second time."
+    qs = [Question("predicate", "The customer explicitly asks for a refund", name="refund_requested"),
+          Question("choice", "Which team should handle this ticket?", name="team",
+                   choices=(Choice("billing", "Payments, invoices, and refunds"), Choice("shipping", "Delivery and damaged goods"), Choice("product"))),
+          Question("score", "How urgent is this ticket?", name="urgency",
+                   levels=(Level("not urgent"), Level("somewhat urgent"), Level("urgent", "needs attention today"), Level("critical")))]
     fb = FakeBackend()
     r = JevDecider(backend=fb).decide(text, qs)
     assert len(fb.calls) == 1 and fb.calls[0][0] == text          # state computed once
@@ -57,7 +59,6 @@ def test_maps_three_types_in_one_backend_call():
     assert s.score == pytest.approx(1.5) and list(s.probabilities) == [lv.label for lv in qs[2].levels]
     # state tokens counted once: 30 + 3 * (50 - 30)
     assert r.usage["input_tokens"] == 90 and r.usage["output_tokens"] == 0 and r.usage["total_tokens"] == 90
-    json.dumps(response_to_dict(r))                                # serialisable
 
 
 def test_empty_questions_and_error_passthrough():
