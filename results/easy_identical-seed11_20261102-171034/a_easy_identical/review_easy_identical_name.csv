@@ -1,0 +1,32 @@
+output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3
+policy_number,low confidence,0.8812,policy_number,0.9531,,,,
+insured_full_name,low confidence,0.8911,holder_last_name,0.9671,,,,
+insured_birth_date,low confidence,0.8347,insured_birth_date,0.8291,,,,
+insured_birth_year,no column passes,0.0,insured_birth_date,0.1136,insured_gender,0.003,coverage_start_date,0.0014
+insured_gender,low confidence,0.9189,insured_gender,0.99,,,,
+insured_city,no column passes,0.0,insured_province,0.0212,postal_code,0.0206,coverage_start_date,0.0018
+insured_province,low confidence,0.8557,insured_province,0.8984,,,,
+postal_code,low confidence,0.863,postal_code,0.9171,,,,
+insured_address,no column passes,0.0,insured_province,0.0368,postal_code,0.0194,holder_last_name,0.0035
+coverage_start_date,low confidence,0.8239,coverage_start_date,0.7846,,,,
+coverage_end_date,no column passes,0.0,coverage_start_date,0.0132,base_premium,0.0016,discount_rate,0.0007
+coverage_days,no column passes,0.0,coverage_start_date,0.0685,discount_rate,0.0055,base_premium,0.0055
+sum_insured_amount,no column passes,0.0,base_premium,0.0062,coverage_start_date,0.0013,discount_rate,0.001
+currency_code,no column passes,0.0,base_premium,0.0062,discount_rate,0.0027,transaction_fee_amount,0.0011
+gross_premium,low confidence,0.8296,base_premium,0.8088,,,,
+net_premium_after_discount,low confidence,0.8408,discount_rate,0.8514,,,,
+claim_number,low confidence,0.8612,claim_number,0.9126,,,,
+claim_incident_date,no column passes,0.0,claim_number,0.0025,coverage_start_date,0.002,account_number,0.0006
+claim_age_days,no column passes,0.0,coverage_start_date,0.0241,claim_number,0.0126,claim_status_code,0.0025
+claimed_amount,no column passes,0.0,transaction_amount,0.0043,claim_number,0.0015,base_premium,0.001
+deductible_amount,no column passes,0.0,base_premium,0.0013,discount_rate,0.0005,claim_number,0.0005
+net_claim_payable,no column passes,0.0,base_premium,0.0012,account_number,0.001,discount_rate,0.001
+claim_paid_amount,no column passes,0.0,transaction_amount,0.0025,claim_status_code,0.001,account_number,0.001
+claim_paid_ratio,no column passes,0.0,claim_status_code,0.0017,base_premium,0.0012,discount_rate,0.0011
+claim_status,low confidence,0.9022,claim_status_code,0.9787,,,,
+agent_id,low confidence,0.8898,agent_id,0.9654,,,,
+account_number,low confidence,0.8424,account_number,0.8571,,,,
+transaction_date,no column passes,0.0,transaction_amount,0.0084,account_number,0.008,claim_number,0.0061
+transaction_amount,low confidence,0.8517,transaction_amount,0.8868,,,,
+transaction_fee_amount,low confidence,0.8426,transaction_fee_amount,0.8578,,,,
+total_charge,no column passes,0.0,transaction_fee_amount,0.0768,transaction_amount,0.0319,account_number,0.0138
