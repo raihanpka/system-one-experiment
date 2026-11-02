@@ -8,10 +8,11 @@ import io
 from ..decisions.types import Choice, Question
 from .template import KIND_DESC
 
-CONDS = ("name", "desc", "samples", "both", "table")
+CONDS = ("name", "desc", "samples", "both", "table", "schema")
 SAMPLE_K = 5
 CONTEXT_LABEL = {"name": "name only", "samples": "name + values", "desc": "name + description",
-                 "both": "name + description + values", "table": "name + whole table"}
+                 "both": "name + description + values", "table": "name + whole table",
+                 "schema": "name + values + other headers"}
 
 
 # What the model sees about each input column, in words (file names keep the short key)
@@ -30,7 +31,7 @@ def _desc(cond):
 
 
 def _samples(cond):
-    return cond in ("samples", "both")
+    return cond in ("samples", "both", "schema")
 
 
 def _col_text(name, cond, desc, samples):
@@ -42,12 +43,14 @@ def _col_text(name, cond, desc, samples):
     return s
 
 
-def input_state(col: dict, cond: str, desc: str | None = None, samples=()) -> str:
+def input_state(col: dict, cond: str, desc: str | None = None, samples=(), others=()) -> str:
     lines = [f"Input column: {col['name']}"]
     if _desc(cond) and desc:
         lines.append(f"Description: {desc}")
     if _samples(cond) and samples:
         lines.append("Sample values: " + ", ".join(map(str, samples)))
+    if cond == "schema" and others:
+        lines.append("Other columns in this file: " + ", ".join(others))
     return "\n".join(lines)
 
 
