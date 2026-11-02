@@ -22,7 +22,7 @@ def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> 
     if cond != "table":
         qs = ([mapping_question(o, odesc[o], cond) for o in outs] if mode == "pairs" else
               [Question("choice", "Which output fields does this input column provide data for?", name="field",
-                        choices=tuple(Choice(o) for o in outs))])
+                        choices=tuple(Choice(o, odesc[o] if cond == "outdesc" else None) for o in outs))])
     matrix = {}
     for c in case["columns"]:
         if cond == "table":

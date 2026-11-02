@@ -106,3 +106,13 @@ def test_the_two_modes_do_not_overwrite_each_other(tmp_path):
     run(d, CASES[:1], "name", store, T, mode="pairs")
     assert len(store.rows("mapping", "name")) == 1 and len(store.rows("mapping_pairs", "name")) == 1
     assert store.rows("mapping", "name")[0]["mode"] == "options" and store.rows("mapping_pairs", "name")[0]["mode"] == "pairs"
+
+
+def test_outdesc_context_gives_output_descriptions_but_no_input_descriptions():
+    from columnmap.core.prompts import input_state, mapping_question
+    col = {"name": "PRTY_NM_1"}
+    state = input_state(col, "outdesc", "secret source concept", [1, 2])
+    assert "secret source concept" not in state and "Description" not in state            # input side stays name only
+    q = mapping_question("insured_full_name", "Full name of the insured", "outdesc")
+    assert "Full name of the insured" in q.instructions                                    # output side gets its description
+    assert "outdesc" not in mapping_question("f", "x", "name").instructions

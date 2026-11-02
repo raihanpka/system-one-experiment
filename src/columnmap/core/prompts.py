@@ -8,10 +8,11 @@ import io
 from ..decisions.types import Choice, Question
 from .template import KIND_DESC
 
-CONDS = ("name", "desc", "samples", "both", "table")
+CONDS = ("name", "desc", "samples", "both", "table", "outdesc")
 SAMPLE_K = 5
 CONTEXT_LABEL = {"name": "name only", "samples": "name + values", "desc": "name + description",
-                 "both": "name + description + values", "table": "name + whole table"}
+                 "both": "name + description + values", "table": "name + whole table",
+                 "outdesc": "name + output field descriptions"}
 
 
 # What the model sees about each input column, in words (file names keep the short key)
@@ -51,8 +52,9 @@ def input_state(col: dict, cond: str, desc: str | None = None, samples=()) -> st
     return "\n".join(lines)
 
 
+# output field descriptions come from the template; input descriptions are never shown in outdesc
 def _label(name, desc, cond):
-    return f"'{name}'" + (f" (meaning: {desc})" if _desc(cond) and desc else "")
+    return f"'{name}'" + (f" (meaning: {desc})" if (_desc(cond) or cond == "outdesc") and desc else "")
 
 
 def mapping_question(name: str, desc: str | None, cond: str) -> Question:
