@@ -122,3 +122,46 @@ def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
     assert "name + whole table, options mode" in (second / "report" / "summary.md").read_text()
     first_md = (first / "report" / "summary.md").read_text()
     assert "fitted on this run, optimistic" in first_md and "fitted on other run" not in first_md
+
+
+def _runs(root):
+    return sorted(p for p in root.iterdir() if p.is_dir())
+
+
+def test_seed_option_builds_other_data_and_is_recorded(tmp_path):
+    root, data = tmp_path / "r", tmp_path / "d"
+    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    main([*base, "--seed", "5"], decider_factory=Generic)
+    other = _runs(root)[0]
+    assert "-seed5_" in other.name                                                       # the seed is in the folder name
+    meta = json.loads((other / "result.json").read_text())["meta"]
+    assert meta["seed"] == 5
+    assert not (data / "samples").exists()                                               # only the baseline seed is written to data/
+    time.sleep(1.1)
+    main(base, decider_factory=Generic)
+    default = _runs(root)[-1]
+    assert "seed" not in default.name and json.loads((default / "result.json").read_text())["meta"]["seed"] == 1234
+    assert (data / "samples" / "a_easy_identical").exists()
+    cols = lambda run: list(json.loads((run / "result.json").read_text())["mapping"]["name"][0]["matrix"])      # noqa: E731
+    assert cols(other) != cols(default)                                                  # another seed gives another file
+
+
+def test_splits_run_one_folder_per_seed_and_the_test_split_needs_final(tmp_path):
+    root, data = tmp_path / "r", tmp_path / "d"
+    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    main([*base, "--split", "calibration"], decider_factory=Generic)
+    names = [p.name for p in _runs(root)]
+    assert len(names) == 2 and any("-seed12_" in n for n in names) and any("-seed13_" in n for n in names)
+    with pytest.raises(SystemExit):
+        main([*base, "--split", "test"], decider_factory=Generic)                        # the test split is looked at once
+    main([*base, "--split", "test", "--final"], decider_factory=Generic)
+    assert len(_runs(root)) == 4
+
+
+def test_calibrate_from_a_run_with_another_seed_is_refused(tmp_path):
+    root, data = tmp_path / "r", tmp_path / "d"
+    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    main([*base, "--seed", "5"], decider_factory=Generic)
+    other = _runs(root)[0]
+    with pytest.raises(SystemExit):
+        main([*base, "--calibrate-from", str(other)], decider_factory=Generic)

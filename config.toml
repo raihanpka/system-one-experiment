@@ -13,3 +13,9 @@ out_dir = "results"
 conds = ["name", "samples"]   # desc and both (column descriptions) exist in code but are not given to the model: the real template has headers only
 levels = [0, 1, 2, 3, 4, 5, 6]
 n_per_level = 3   # 21 cases; ~0.1 s per question, ~90 s per case per condition on M3 (Q8_0)
+
+[splits]
+# seeds that build the data; only the baseline seed (run.seed) is written to data/, the others are rebuilt from the seed
+dev = [11]               # tune prompts and contexts here
+calibration = [12, 13]   # fit calibration parameters and thresholds here
+test = [21, 22]          # look at this once, at the end (needs --final)
