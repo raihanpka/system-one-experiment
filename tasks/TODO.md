@@ -50,7 +50,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
 
 ## Phase 2: Data
 
-- [ ] **T3: Template kanonik dan aturan transformasi**
+- [x] **T3: Template kanonik dan aturan transformasi** (selesai: 26 sumber, 31 output, 11 turunan, 6 decoy)
   - Deskripsi: Sekitar 30 kolom output (insurance: polis/klaim; finance: transaksi) dengan tipe, deskripsi, dan aturan transformasi (passthrough, concat, aritmetika, format).
   - Acceptance:
     - [ ] `data/template.json` valid terhadap schema sederhana
