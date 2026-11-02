@@ -1,0 +1,34 @@
+output,kind,available,input_columns,expression
+policy_number,pass,True,policy_number,policy_number
+insured_full_name,concat,True,holder_first_name|holder_last_name,"concat(holder_first_name, "" "", holder_last_name)"
+insured_birth_date,pass,True,insured_birth_date,insured_birth_date
+insured_birth_year,format,True,insured_birth_date,year(insured_birth_date)
+insured_gender,pass,True,insured_gender,insured_gender
+insured_city,pass,True,insured_city,insured_city
+insured_province,pass,True,insured_province,insured_province
+postal_code,pass,False,,
+insured_address,concat,False,,
+coverage_start_date,pass,True,coverage_start_date,coverage_start_date
+coverage_end_date,pass,True,coverage_end_date,coverage_end_date
+coverage_days,arith,True,coverage_start_date|coverage_end_date,"days_between(coverage_start_date, coverage_end_date)"
+sum_insured_amount,pass,False,,
+currency_code,pass,False,,
+gross_premium,arith,True,base_premium|premium_tax_rate,base_premium * (1 + premium_tax_rate)
+net_premium_after_discount,arith,True,base_premium|discount_rate,base_premium * (1 - discount_rate)
+claim_number,pass,True,claim_number,claim_number
+claim_incident_date,pass,True,claim_incident_date,claim_incident_date
+claim_age_days,arith,True,coverage_start_date|claim_incident_date,"days_between(coverage_start_date, claim_incident_date)"
+claimed_amount,pass,False,,
+deductible_amount,pass,True,deductible_amount,deductible_amount
+net_claim_payable,arith,False,,
+claim_paid_amount,pass,True,claim_paid_amount,claim_paid_amount
+claim_paid_ratio,arith,True,claim_paid_amount|base_premium,claim_paid_amount / base_premium
+claim_status,lookup,False,,
+agent_id,pass,False,,
+account_number,pass,True,account_number,account_number
+transaction_date,pass,True,transaction_date,transaction_date
+transaction_amount,pass,True,transaction_amount,transaction_amount
+transaction_fee_amount,pass,True,transaction_fee_amount,transaction_fee_amount
+total_charge,arith,True,transaction_amount|transaction_fee_amount,transaction_amount + transaction_fee_amount
+,anomaly,False,insured_gender@row9,na: 'N/A'
+,anomaly,False,insured_birth_date@row22,sentinel: '1900-01-01'

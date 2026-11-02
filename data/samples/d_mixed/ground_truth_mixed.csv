@@ -1,0 +1,39 @@
+output,kind,available,input_columns,expression
+policy_number,pass,True,NomorPolis,NomorPolis
+insured_full_name,concat,True,holder first name|holder last name,"concat(holder first name, "" "", holder last name)"
+insured_birth_date,pass,True,Dob,Dob
+insured_birth_year,format,True,Dob,year(Dob)
+insured_gender,pass,True,insured_gender,insured_gender
+insured_city,pass,True,Town,Town
+insured_province,pass,True,Provinsi,Provinsi
+postal_code,pass,True,OBJ_INFO_ADDR_Z,OBJ_INFO_ADDR_Z
+insured_address,concat,True,Town|Provinsi|OBJ_INFO_ADDR_Z,"concat(concat(Town, "", "", Provinsi), "" "", OBJ_INFO_ADDR_Z)"
+coverage_start_date,pass,True,PERIOD_FROM_X,PERIOD_FROM_X
+coverage_end_date,pass,True,ExpiryDate,ExpiryDate
+coverage_days,arith,True,PERIOD_FROM_X|ExpiryDate,"days_between(PERIOD_FROM_X, ExpiryDate)"
+sum_insured_amount,pass,True,SumIns,SumIns
+currency_code,pass,True,Ccy,Ccy
+gross_premium,arith,True,PremiDasar|PersenPajakPremi,PremiDasar * (1 + PersenPajakPremi)
+net_premium_after_discount,arith,True,PremiDasar|CHG_RBT_PCT,PremiDasar * (1 - CHG_RBT_PCT)
+claim_number,pass,True,CaseRef,CaseRef
+claim_incident_date,pass,True,TglKejadian,TglKejadian
+claim_age_days,arith,True,PERIOD_FROM_X|TglKejadian,"days_between(PERIOD_FROM_X, TglKejadian)"
+claimed_amount,pass,True,JumlahKlaim,JumlahKlaim
+deductible_amount,pass,True,Ded,Ded
+net_claim_payable,arith,True,JumlahKlaim|Ded,JumlahKlaim - Ded
+claim_paid_amount,pass,True,SettledSum,SettledSum
+claim_paid_ratio,arith,True,SettledSum|PremiDasar,SettledSum / PremiDasar
+claim_status,lookup,True,claim_status_code,"lookup(claim_status_code, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,pass,True,BrokerId,BrokerId
+account_number,pass,True,AcctNo,AcctNo
+transaction_date,pass,True,PostingDate,PostingDate
+transaction_amount,pass,True,MovementValue,MovementValue
+transaction_fee_amount,pass,True,FeeAmt,FeeAmt
+total_charge,arith,True,MovementValue|FeeAmt,MovementValue + FeeAmt
+,decoy,False,AdjusterName,
+,decoy,False,PolicyVersion,
+,decoy,False,PremiumReceiptDate,
+,decoy,False,InternalRemark,
+,decoy,False,AgentCommissionAmount,
+,anomaly,False,Provinsi@row2,empty: ''
+,anomaly,False,AgentCommissionAmount@row8,huge: 242000001

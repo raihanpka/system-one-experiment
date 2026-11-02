@@ -37,6 +37,7 @@ Tugas dan checklist ada di `tasks/TODO.md`.
 - **Baseline pembanding tanpa model:** kemiripan string (`difflib` stdlib), untuk melihat di tingkat drift mana Jev mulai lebih baik.
 - **Kontrak meniru OpenAI Decisions API (`POST /v1/decisions`).** Satu interface `Decider.decide(input, questions) -> Response` dengan tipe `predicate`, `choice`, `score`, dan bentuk jawaban seperti OpenAI. Hanya `JevDecider` yang dibuat sekarang. Bila nanti pindah ke OpenAI atau Jev hosted (`/v1/systemone`: `noul` = predicate, `criteria` = `choices`/`levels`, jawaban datar di `answers`), cukup menambah satu adapter. Adapter OpenAI tidak dibuat sekarang.
 - **Skema OpenAI belum terverifikasi dari sumber resmi.** Halaman resmi gagal dibuka (`ECONNRESET`). Skema dirangkum dari LocalAI, LangChain, dan berita (Oct 2026: public beta, model `gpt-6-luna`, input $0,10 per juta token, output gratis). T1 memverifikasi ulang.
+- **Struktur dan hasil:** slice vertikal per fitur (lihat `NOTES.md`). Setiap run menulis folder `results/<samples>_<timestamp>/` berisi `result.json`, file hasil konversi, keputusan, matriks probabilitas, dan `report/` (ringkasan dan grafik SVG). Input, expected, dan ground truth hanya di `data/samples/` (ter-track di git).
 - **Tooling:** Python bawaan (`/opt/homebrew/bin/python3`, 3.12) dikelola dengan `uv`. Tidak memakai `pip`, dan `UV_PYTHON_DOWNLOADS=never` agar uv tidak mengunduh Python lain. llama.cpp dari brew sudah terpasang; source llama.cpp di commit pin hanya dipakai untuk build `jev-score-v2`.
 
 ## Task List

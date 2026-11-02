@@ -1,13 +1,11 @@
 #!/bin/sh
 # Reproduce the Jev v3 GGUF runtime under vendor/. Idempotent. Run from the repo root.
-# Needs: uv. Python comes from uv (brew Python is broken here, see NOTES.md). cmake comes from the uv dev group.
+# Needs: uv and Homebrew. Python comes from uv; llama.cpp comes from brew.
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
-PIN=441df11f65ea0b6d0c72965aaf70c8241070ddcb
 
 uv sync
-PATH="$ROOT/.venv/bin:$PATH"
 
 # Model + runtime scripts. Download the Q8_0 file by name; --include is ignored when filenames are given.
 uvx --from huggingface_hub hf download chaoliangUNSW/Jev-Style-2B-Decision-v3-GGUF \
@@ -16,14 +14,8 @@ uvx --from huggingface_hub hf download chaoliangUNSW/Jev-Style-2B-Decision-v3-GG
   tokenizer/tokenizer.json tokenizer/tokenizer_config.json \
   --local-dir vendor/jev-v3-2b-gguf
 
-# llama.cpp at the pinned commit, only to build the scorer.
-if [ ! -d vendor/llama.cpp/.git ]; then
-  git init -q vendor/llama.cpp
-  git -C vendor/llama.cpp fetch -q --depth 1 https://github.com/ggml-org/llama.cpp "$PIN"
-  git -C vendor/llama.cpp checkout -q FETCH_HEAD
-fi
-
-[ -x vendor/jev-v3-2b-gguf/build/jev-score-v2 ] || (cd vendor/jev-v3-2b-gguf && sh build_jev_score.sh ../llama.cpp)
+# The scorer is compiled against the Homebrew llama.cpp (scripts/build_scorer.sh); no llama.cpp source is kept.
+sh scripts/build_scorer.sh
 
 # Smoke test: the model card example, expect answer ask_user with p ~ 0.86.
 (cd vendor/jev-v3-2b-gguf && "$ROOT/.venv/bin/python" jev_style_decision_gguf.py --quant Q8_0 \

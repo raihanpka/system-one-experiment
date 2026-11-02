@@ -29,15 +29,15 @@
 ## T3-T5: data and runner
 
 - Template: 26 sources, 31 outputs (11 derived: concat, arith, format, lookup), 6 decoys. Level 5 names are legacy-style codes (`OBJ_INFO_ADDR_C`, `MVT_AMT_MAIN`), kept UPPER_SNAKE (or lower snake), never camelCase.
-- Files on disk (per the user's request: light, one file per converter run): `uv run python -m src.dataset.export [--n 3]` writes `data/template_header.csv` (empty target template), `data/template_columns.csv` (name, type, kind, description, rule) and, per case, a folder `data/cases/<case_id>/` with `input.csv` (the messy file), `expected_output.csv` (the converted, upload-ready file) and `mapping.csv` (ground truth: output, kind, available, input_columns, expression; decoy inputs listed with kind `decoy`). 21 cases = 63 small files, about 250 KB, git-ignored. There is no JSONL ground-truth file anymore: runners rebuild cases in memory from the seed (`config.toml`, `seed = 1234`; ids are stable across `--n`). An `.xlsx` view needs `openpyxl` (not added); Excel opens the CSVs directly.
+- Files: see `README.md` ("Where files go"). `data/` is tracked and is the single source of truth for inputs; each run writes only its own outputs under `results/<samples>_<timestamp>/`.
 - Runner config is `config.toml` (stdlib `tomllib`) instead of YAML, to avoid a dependency.
 - Throughput (Q8_0, M3): about 0.1 s per question regardless of state sharing (31 questions = 3.2 s). One case (about 26 input columns x 31 outputs + 31 kind questions) takes about 90 s of scoring plus load time. Default `n_per_level = 3` gives 21 cases, about 32 min per context condition, about 2 h for all four. Raise it in `config.toml` or with `--n`.
 - Smoke result, 1 case at level 5, condition `both`: best input column is a true source for 31/31 outputs, transformation kind 31/31. Optimistic, since descriptions and samples are given; `name` is the hard condition.
 
 ## T7: context ablation and option-order stability, done
 
-- Can Jev read row contents? Yes. `state` is free text or JSON up to 25,600 tokens, so any part of the table can go in. Today the `samples`/`both` conditions send 5 values per column (evenly spaced rows, `SAMPLE_K` in `src/context.py`). Sending whole rows (cross-column context) or the full column is a prompt change only; cost grows with state length (the state is computed once per column and reused across the 31 output questions), and a 2B model gets less reliable on long tables, so it is worth testing as an extra condition rather than assuming.
-- Data per file: 15 to 30 rows, wider value pools, and 1 to 2 anomalies per file (zero, negative, x1000 outlier, empty string, `N/A`, sentinel date `1900-01-01`). Anomalies are listed in `mapping.csv` as kind `anomaly` (`column@rowN`). Expected outputs stay computed from the row as it is; where a rule cannot handle the value (0 divisor, unknown status code) the expected cell is blank (`safe_evaluate` returns None).
+- Can Jev read row contents? Yes. `state` is free text or JSON up to 25,600 tokens, so any part of the table can go in. Today the `samples`/`both` conditions send 5 values per column (evenly spaced rows, `SAMPLE_K` in `src/core/prompts.py`). Sending whole rows (cross-column context) or the full column is a prompt change only; cost grows with state length (the state is computed once per column and reused across the 31 output questions), and a 2B model gets less reliable on long tables, so it is worth testing as an extra condition rather than assuming.
+- Data per file: 15 to 30 rows, wider value pools, and 1 to 2 anomalies per file (zero, negative, x1000 outlier, empty string, `N/A`, sentinel date `1900-01-01`). Anomalies are listed in `ground_truth_<word>.csv` as kind `anomaly` (`column@rowN`). Expected outputs stay computed from the row as it is; where a rule cannot handle the value (0 divisor, unknown status code) the expected cell is blank (`safe_evaluate` returns None).
 - Order stability smoke (Q8_0, condition `name`, 1 case each at levels 3 and 5, 3 orders): transform choice picks the same expression across orders for 10/11 and 9/11 outputs (mean accuracy over orders 0.88 and 0.82); kind choice is order-consistent for 25/31 and 28/31 (0.84 and 0.78). Picks are not stuck on slot 0 (25 to 34 percent). So option order does change answers sometimes; `choice` results should be averaged over orders.
 
 ## Decision: no column descriptions for the model
@@ -57,3 +57,18 @@
   - So `options` mode (one choice question per column, raw score read per output field) is about 7 times faster with similar top-1. Its probabilities are sigmoid(score / T) per field and are not calibrated; `pairs` stays available for calibrated numbers.
 - Already in place: all layers on the GPU, flash attention auto, one long-lived scorer process, state reused across questions of one column.
 - Not done yet, worth measuring: F16 versus Q8_0 versus Q4_K_M speed (F16 may prefill faster on Metal since it skips dequantisation; needs a 3.8 GB or 1.3 GB download), shorter question text, a two-stage prune (options mode, then yes/no only on the top candidates), kind questions only for outputs that matter, MLX, and running on a machine with a fan or a discrete GPU.
+
+## Structure (vertical slices, low coupling)
+
+- Dependency direction: `core` and `decisions` depend on nothing above them; `dataset` uses `core`; each slice (`mapping`, `transform`, `stability`, `convert`) uses `core`, `decisions` and, for prompts only, `transform.prompts`; `report` assembles slices; `experiment` runs the model; `cli` is the only place that knows the concrete Jev adapter and reads `config.toml`.
+- Each slice owns its run function, metrics, figures and tables. `stability` imports `transform.prompts` (prompt builders only); nothing imports a slice's figures except `report`.
+- `decisions` is the port: types shaped like OpenAI's Decisions API and a `Decider` protocol. Swapping to OpenAI or hosted Jev means adding one adapter in `src/decisions/` and one line in `cli.py`.
+- Tests mirror `src/` and use fake deciders in `tests/fakes.py`. `make lint` runs pyflakes.
+
+## First real run (4 samples, 2 contexts, options mode, Q8_0, M3, 6 minutes)
+
+- Top-1 (best input column is a true source): name only 79.3 percent, name + values 86.2 percent. By sample (name only / name + values): identical 95.7 / 95.7, synonym 87.1 / 90.3, legacy codes 48.4 / 71.0, mixed 90.3 / 90.3. A string-similarity baseline gets 82.6 percent on identical names and about 19 percent on the others.
+- Calibration: pooled ECE 0.007 at T = 0.828 and it worsens for higher T (0.21 at T = 3). The pooled number is flattered by the many negative pairs.
+- Weak spots: output fields with no source column are not rejected at levels 3 to 6 (reject rate 0 percent at threshold 0.5), and 60 percent of decoy columns reached P >= 0.5 for some field. Pair recall at 0.5 is low (44 to 50 percent), so the options-mode scores sit below 0.5 for many true pairs. A per-field threshold fitted on the ground truth, or `--mode pairs`, is the next thing to try.
+- Transformation kind given the true sources: 77 to 100 percent depending on sample and context.
+- These numbers came from the layout before the restructure; `results/` was cleared at the user's request and is regenerated by `make sample`.

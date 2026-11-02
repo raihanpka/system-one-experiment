@@ -1,0 +1,34 @@
+output,kind,available,input_columns,expression
+policy_number,pass,True,contract-ref,contract-ref
+insured_full_name,concat,True,given-name|surname,"concat(given-name, "" "", surname)"
+insured_birth_date,pass,True,born-on,born-on
+insured_birth_year,format,True,born-on,year(born-on)
+insured_gender,pass,True,sex,sex
+insured_city,pass,True,town,town
+insured_province,pass,True,state-region,state-region
+postal_code,pass,True,zip,zip
+insured_address,concat,True,town|state-region|zip,"concat(concat(town, "", "", state-region), "" "", zip)"
+coverage_start_date,pass,True,effective-date,effective-date
+coverage_end_date,pass,True,expiry-date,expiry-date
+coverage_days,arith,True,effective-date|expiry-date,"days_between(effective-date, expiry-date)"
+sum_insured_amount,pass,True,cover-limit,cover-limit
+currency_code,pass,True,money-unit,money-unit
+gross_premium,arith,True,base-charge|levy-rate,base-charge * (1 + levy-rate)
+net_premium_after_discount,arith,True,base-charge|rebate-rate,base-charge * (1 - rebate-rate)
+claim_number,pass,True,case-ref,case-ref
+claim_incident_date,pass,True,loss-date,loss-date
+claim_age_days,arith,True,effective-date|loss-date,"days_between(effective-date, loss-date)"
+claimed_amount,pass,True,requested-payout,requested-payout
+deductible_amount,pass,True,excess,excess
+net_claim_payable,arith,True,requested-payout|excess,requested-payout - excess
+claim_paid_amount,pass,True,settled-sum,settled-sum
+claim_paid_ratio,arith,True,settled-sum|base-charge,settled-sum / base-charge
+claim_status,lookup,True,case-state,"lookup(case-state, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,pass,True,broker-id,broker-id
+account_number,pass,True,ledger-ref,ledger-ref
+transaction_date,pass,True,posting-date,posting-date
+transaction_amount,pass,True,movement-value,movement-value
+transaction_fee_amount,pass,True,service-charge,service-charge
+total_charge,arith,True,movement-value|service-charge,movement-value + service-charge
+,anomaly,False,ledger-ref@row10,empty: ''
+,anomaly,False,service-charge@row7,zero: 0

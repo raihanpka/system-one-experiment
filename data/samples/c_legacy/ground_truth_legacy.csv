@@ -1,0 +1,33 @@
+output,kind,available,input_columns,expression
+policy_number,pass,True,COV_UNIQ_KEY,COV_UNIQ_KEY
+insured_full_name,concat,True,PRTY_NM_1|PRTY_NM_2,"concat(PRTY_NM_1, "" "", PRTY_NM_2)"
+insured_birth_date,pass,True,PRTY_DT_A,PRTY_DT_A
+insured_birth_year,format,True,PRTY_DT_A,year(PRTY_DT_A)
+insured_gender,pass,True,PRTY_CAT_B,PRTY_CAT_B
+insured_city,pass,True,OBJ_INFO_ADDR_C,OBJ_INFO_ADDR_C
+insured_province,pass,True,OBJ_INFO_ADDR_P,OBJ_INFO_ADDR_P
+postal_code,pass,True,OBJ_INFO_ADDR_Z,OBJ_INFO_ADDR_Z
+insured_address,concat,True,OBJ_INFO_ADDR_C|OBJ_INFO_ADDR_P|OBJ_INFO_ADDR_Z,"concat(concat(OBJ_INFO_ADDR_C, "", "", OBJ_INFO_ADDR_P), "" "", OBJ_INFO_ADDR_Z)"
+coverage_start_date,pass,True,PERIOD_FROM_X,PERIOD_FROM_X
+coverage_end_date,pass,True,PERIOD_TO_X,PERIOD_TO_X
+coverage_days,arith,True,PERIOD_FROM_X|PERIOD_TO_X,"days_between(PERIOD_FROM_X, PERIOD_TO_X)"
+sum_insured_amount,pass,True,LMT_VAL_MAX,LMT_VAL_MAX
+currency_code,pass,True,VAL_UNIT_CD,VAL_UNIT_CD
+gross_premium,arith,True,CHG_AMT_RAW|CHG_LVY_PCT,CHG_AMT_RAW * (1 + CHG_LVY_PCT)
+net_premium_after_discount,arith,True,CHG_AMT_RAW|CHG_RBT_PCT,CHG_AMT_RAW * (1 - CHG_RBT_PCT)
+claim_number,pass,True,EVT_CASE_KEY,EVT_CASE_KEY
+claim_incident_date,pass,True,EVT_DT_LOSS,EVT_DT_LOSS
+claim_age_days,arith,True,PERIOD_FROM_X|EVT_DT_LOSS,"days_between(PERIOD_FROM_X, EVT_DT_LOSS)"
+claimed_amount,pass,True,EVT_AMT_REQ,EVT_AMT_REQ
+deductible_amount,pass,True,EVT_AMT_SELF,EVT_AMT_SELF
+net_claim_payable,arith,True,EVT_AMT_REQ|EVT_AMT_SELF,EVT_AMT_REQ - EVT_AMT_SELF
+claim_paid_amount,pass,True,EVT_AMT_DONE,EVT_AMT_DONE
+claim_paid_ratio,arith,True,EVT_AMT_DONE|CHG_AMT_RAW,EVT_AMT_DONE / CHG_AMT_RAW
+claim_status,lookup,True,EVT_PHS_CD,"lookup(EVT_PHS_CD, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,pass,True,SLS_CHNL_KEY,SLS_CHNL_KEY
+account_number,pass,True,LDG_OWNR_KEY,LDG_OWNR_KEY
+transaction_date,pass,True,MVT_DT_POST,MVT_DT_POST
+transaction_amount,pass,True,MVT_AMT_MAIN,MVT_AMT_MAIN
+transaction_fee_amount,pass,True,MVT_AMT_SVC,MVT_AMT_SVC
+total_charge,arith,True,MVT_AMT_MAIN|MVT_AMT_SVC,MVT_AMT_MAIN + MVT_AMT_SVC
+,anomaly,False,PRTY_DT_A@row1,sentinel: '1900-01-01'
