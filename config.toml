@@ -11,6 +11,12 @@ flash_attn = "default"  # default | auto | on | off
 # lift_top = 2.0
 # lift_second = 2.0
 
+[backend]
+type = "local_gguf"    # the only backend for now; the scorer is the Jev GGUF runtime in vendor/
+
+[device]
+mode = "auto"           # auto (Metal on Apple Silicon, else CPU) | metal | cpu
+
 [run]
 keep_d = 0.0             # a column is chosen for a field when its score is at least this (0.0 is probability 0.5)
 target_precision = 1.0    # fields are filled automatically only above the cutoff that reaches this precision (100 percent)

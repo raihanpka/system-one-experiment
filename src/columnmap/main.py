@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import tomllib
 from datetime import datetime
 from pathlib import Path
 
+from .core.config import load_config, model_options
 from .core.paths import CONFIG, DATA, ROOT
 from .calibrate import fit as fit_calibration
 from .core.calibration import Calibration
@@ -41,7 +41,7 @@ def _abs(p: str) -> Path:
 
 
 def main(argv=None, decider_factory=None) -> int:
-    cfg = tomllib.loads(CONFIG.read_text())
+    cfg = load_config(CONFIG.read_text())
     ap = argparse.ArgumentParser(prog="columnmap", description="Run Jev on sample files and write the results.",
                                  epilog=EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--samples", help=f"letters from {''.join(SAMPLES)} (default {DEFAULT}): "
@@ -132,7 +132,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     if not a.report_only:
         if decider_factory is None:
             from .decisions.jev import JevDecider
-            decider_factory = lambda: JevDecider(**cfg["model"])              # noqa: E731
+            decider_factory = lambda: JevDecider(**model_options(cfg))        # noqa: E731
         with decider_factory() as d:
             run_models(d, sel, conds, modes, store, t, keep=keep)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
