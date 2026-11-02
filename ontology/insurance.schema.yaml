@@ -1,0 +1,68 @@
+# LinkML schema for the output template: one output field and the source concepts it is derived from.
+# Built only from the template's own descriptions, types, and rules. The template's generated column names
+# (synonyms per level) are NOT used here: they are the answer key of the synthetic samples.
+id: https://example.org/columnmap/insurance
+name: insurance_output_template
+description: Output fields of the insurance and finance template, and their relations to source concepts.
+default_prefix: columnmap
+prefixes:
+  linkml: https://w3id.org/linkml/
+  columnmap: https://example.org/columnmap/
+imports:
+  - linkml:types
+default_range: string
+classes:
+  Template:
+    description: "The whole output template: its source concepts and its output fields."
+    attributes:
+      sources:
+        range: SourceConcept
+        multivalued: true
+        inlined_as_list: true
+      fields:
+        range: OutputField
+        multivalued: true
+        inlined_as_list: true
+  OutputField:
+    description: One field of the output template.
+    attributes:
+      name:
+        identifier: true
+        description: Field name in the output file.
+      kind:
+        range: FieldKind
+        required: true
+        description: How the field is built from sources.
+      type:
+        range: FieldType
+        required: true
+        description: Value type the field must have. Checked before a value is filled.
+      description:
+        required: true
+      derived_from:
+        range: SourceConcept
+        multivalued: true
+        description: Source concepts the rule reads. Empty when the field has no source.
+  SourceConcept:
+    description: One input concept of the template.
+    attributes:
+      name:
+        identifier: true
+      type:
+        range: FieldType
+        required: true
+      description:
+        required: true
+enums:
+  FieldKind:
+    permissible_values:
+      pass: {description: copied from one source}
+      concat: {description: joined from several sources}
+      arith: {description: arithmetic on sources}
+      format: {description: formatted from one source}
+      lookup: {description: looked up from a table}
+  FieldType:
+    permissible_values:
+      date: {description: ISO date yyyy-mm-dd}
+      number: {description: finite number}
+      string: {description: "text, not blank"}

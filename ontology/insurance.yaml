@@ -1,0 +1,281 @@
+# Output fields of the template as LinkML instances (see insurance.schema.yaml).
+# Generated from data/template.json: descriptions, types, kinds, and the source ids each rule reads.
+# Synthetic column names are deliberately left out.
+
+sources:
+  - name: policy_number
+    type: string
+    description: "Unique identifier of the insurance policy"
+  - name: holder_first_name
+    type: string
+    description: "Given name of the policy holder"
+  - name: holder_last_name
+    type: string
+    description: "Family name of the policy holder"
+  - name: insured_birth_date
+    type: date
+    description: "Date of birth of the insured person"
+  - name: insured_gender
+    type: string
+    description: "Gender of the insured person (M or F)"
+  - name: coverage_start_date
+    type: date
+    description: "First day the policy covers risk"
+  - name: coverage_end_date
+    type: date
+    description: "Last day the policy covers risk"
+  - name: sum_insured_amount
+    type: number
+    description: "Maximum amount the insurer pays out under the policy"
+  - name: base_premium
+    type: number
+    description: "Premium before tax and discount"
+  - name: premium_tax_rate
+    type: number
+    description: "Tax rate applied to the premium, as a fraction (0.11 = 11 percent)"
+  - name: discount_rate
+    type: number
+    description: "Discount given on the premium, as a fraction"
+  - name: currency_code
+    type: string
+    description: "ISO currency code of all monetary amounts"
+  - name: claim_number
+    type: string
+    description: "Unique identifier of the claim"
+  - name: claim_incident_date
+    type: date
+    description: "Date the insured event happened"
+  - name: claimed_amount
+    type: number
+    description: "Amount requested by the claimant"
+  - name: deductible_amount
+    type: number
+    description: "Part of the loss the insured pays themselves"
+  - name: claim_paid_amount
+    type: number
+    description: "Amount already paid out on the claim"
+  - name: claim_status_code
+    type: string
+    description: "One-letter claim status: A approved, R rejected, P pending"
+  - name: insured_city
+    type: string
+    description: "City where the insured lives"
+  - name: insured_province
+    type: string
+    description: "Province where the insured lives"
+  - name: postal_code
+    type: string
+    description: "Postal code of the insured address"
+  - name: agent_id
+    type: string
+    description: "Identifier of the selling agent"
+  - name: account_number
+    type: string
+    description: "Bank or ledger account number of the customer"
+  - name: transaction_date
+    type: date
+    description: "Date the transaction was booked"
+  - name: transaction_amount
+    type: number
+    description: "Amount of money moved by the transaction"
+  - name: transaction_fee_amount
+    type: number
+    description: "Fee charged on the transaction"
+
+fields:
+  - name: policy_number
+    kind: pass
+    type: string
+    description: "Official policy identifier"
+    derived_from:
+      - policy_number
+  - name: insured_full_name
+    kind: concat
+    type: string
+    description: "Full name of the insured, given name then family name"
+    derived_from:
+      - holder_first_name
+      - holder_last_name
+  - name: insured_birth_date
+    kind: pass
+    type: date
+    description: "Date of birth of the insured"
+    derived_from:
+      - insured_birth_date
+  - name: insured_birth_year
+    kind: format
+    type: number
+    description: "Year of birth of the insured"
+    derived_from:
+      - insured_birth_date
+  - name: insured_gender
+    kind: pass
+    type: string
+    description: "Gender of the insured"
+    derived_from:
+      - insured_gender
+  - name: insured_city
+    kind: pass
+    type: string
+    description: "City of the insured address"
+    derived_from:
+      - insured_city
+  - name: insured_province
+    kind: pass
+    type: string
+    description: "Province of the insured address"
+    derived_from:
+      - insured_province
+  - name: postal_code
+    kind: pass
+    type: string
+    description: "Postal code of the insured address"
+    derived_from:
+      - postal_code
+  - name: insured_address
+    kind: concat
+    type: string
+    description: "Single-line address: city, province postal code"
+    derived_from:
+      - insured_city
+      - insured_province
+      - postal_code
+  - name: coverage_start_date
+    kind: pass
+    type: date
+    description: "Date coverage begins"
+    derived_from:
+      - coverage_start_date
+  - name: coverage_end_date
+    kind: pass
+    type: date
+    description: "Date coverage ends"
+    derived_from:
+      - coverage_end_date
+  - name: coverage_days
+    kind: arith
+    type: number
+    description: "Number of days between coverage start and coverage end"
+    derived_from:
+      - coverage_end_date
+      - coverage_start_date
+  - name: sum_insured_amount
+    kind: pass
+    type: number
+    description: "Maximum payout under the policy"
+    derived_from:
+      - sum_insured_amount
+  - name: currency_code
+    kind: pass
+    type: string
+    description: "Currency of all amounts"
+    derived_from:
+      - currency_code
+  - name: gross_premium
+    kind: arith
+    type: number
+    description: "Base premium plus tax: base premium times (1 + tax rate)"
+    derived_from:
+      - base_premium
+      - premium_tax_rate
+  - name: net_premium_after_discount
+    kind: arith
+    type: number
+    description: "Base premium after discount: base premium times (1 - discount rate)"
+    derived_from:
+      - base_premium
+      - discount_rate
+  - name: claim_number
+    kind: pass
+    type: string
+    description: "Official claim identifier"
+    derived_from:
+      - claim_number
+  - name: claim_incident_date
+    kind: pass
+    type: date
+    description: "Date of the insured event"
+    derived_from:
+      - claim_incident_date
+  - name: claim_age_days
+    kind: arith
+    type: number
+    description: "Days from coverage start to the incident"
+    derived_from:
+      - claim_incident_date
+      - coverage_start_date
+  - name: claimed_amount
+    kind: pass
+    type: number
+    description: "Amount requested in the claim"
+    derived_from:
+      - claimed_amount
+  - name: deductible_amount
+    kind: pass
+    type: number
+    description: "Deductible borne by the insured"
+    derived_from:
+      - deductible_amount
+  - name: net_claim_payable
+    kind: arith
+    type: number
+    description: "Claimed amount minus deductible"
+    derived_from:
+      - claimed_amount
+      - deductible_amount
+  - name: claim_paid_amount
+    kind: pass
+    type: number
+    description: "Amount already paid on the claim"
+    derived_from:
+      - claim_paid_amount
+  - name: claim_paid_ratio
+    kind: arith
+    type: number
+    description: "Paid amount divided by base premium"
+    derived_from:
+      - base_premium
+      - claim_paid_amount
+  - name: claim_status
+    kind: lookup
+    type: string
+    description: "Claim status in words (Approved, Rejected, Pending)"
+    derived_from:
+      - claim_status_code
+  - name: agent_id
+    kind: pass
+    type: string
+    description: "Selling agent identifier"
+    derived_from:
+      - agent_id
+  - name: account_number
+    kind: pass
+    type: string
+    description: "Customer account number"
+    derived_from:
+      - account_number
+  - name: transaction_date
+    kind: pass
+    type: date
+    description: "Booking date of the transaction"
+    derived_from:
+      - transaction_date
+  - name: transaction_amount
+    kind: pass
+    type: number
+    description: "Transaction amount"
+    derived_from:
+      - transaction_amount
+  - name: transaction_fee_amount
+    kind: pass
+    type: number
+    description: "Fee charged on the transaction"
+    derived_from:
+      - transaction_fee_amount
+  - name: total_charge
+    kind: arith
+    type: number
+    description: "Transaction amount plus fee"
+    derived_from:
+      - transaction_amount
+      - transaction_fee_amount

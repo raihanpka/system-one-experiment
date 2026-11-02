@@ -3,6 +3,7 @@ name = "columnmap"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "linkml>=1.12.1",
     "numpy==2.5.3",
     "seaborn>=0.13.2",
     "tokenizers==0.23.2",
