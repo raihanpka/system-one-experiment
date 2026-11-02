@@ -31,8 +31,8 @@
 
 ## 4. Decisions
 
-1. `decisions/` copies the shape of OpenAI's Decisions API (predicate, choice, score). The official page failed to load five times (`ECONNRESET`), so field names come from LocalAI, LangChain and TypeSafe docs and are unverified, notably the element keys of `probabilities`.
-2. Temperature on Jev only rescales scores (calibration) and never changes the top answer. OpenAI and TypeSafe expose no temperature.
+1. `decisions/` defines the question types (predicate, choice, score) and a `Decider` protocol. `JevDecider` is the only adapter.
+2. Temperature on Jev only rescales scores (calibration) and never changes the top answer.
 3. Option order matters for `choice` (smoke test, 3 orders): the transform pick stayed the same for 10/11 and 9/11 outputs, the kind pick for 25/31 and 28/31. Average over orders when it matters.
 4. Candidate expressions come from the ground truth (1 true, 3 distractors). Jev picks one; it does not write formulas.
 5. A field is kept when its best input column passes a rule: fixed 0.5, or a cutoff on the best score or on its lift above the median column, fitted on ground truth (`--calibrate-from RUN` fits it on another run).
@@ -54,13 +54,9 @@
 1. Package `columnmap` in `src/`, one command: `uv run columnmap`.
 2. Layers: `core` and `decisions` depend on nothing above them. `dataset` uses `core`. The slices `mapping`, `transform`, `stability`, `convert` use `core` and `decisions`. `report` assembles the slices. `experiment` runs the model. `main` is the only place that knows the Jev adapter and reads `config.toml`.
 3. Each slice owns its run, metrics, figures and tables. `stability` imports only `transform.prompts`, and `convert` uses `mapping.reject` for the keep rules. Only `report` imports figures.
-4. Moving to OpenAI or hosted Jev means one new adapter in `decisions/` and one line in `main.py`.
+4. A new model backend means one adapter in `decisions/` and one line in `main.py`.
 5. Tests mirror `src/` and use fake deciders (`tests/fakes.py`). `make test`, `make lint`.
 
-## 7. Open items
+## 7. Open Items
 
-1. More cases per level (5 per level is about 50 minutes for 2 contexts) to get confidence intervals; today it is 1 case per sample.
-2. A per-field threshold fitted on the ground truth so fields without a source and decoy columns get rejected; compare with `--mode pairs`.
-3. An extra context with whole rows or the whole table (a prompt change only).
-4. Check the OpenAI Decisions schema against the official page, and add an OpenAI or hosted Jev adapter if a migration is planned.
-5. An `.xlsx` export, only if CSV is not enough.
+1. None planned. Ignored on request: more cases per level, an `.xlsx` export, a quantization speed comparison, and other models.

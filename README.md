@@ -148,7 +148,7 @@ llama.cpp comes from Homebrew only. After `brew upgrade llama.cpp`, run `make se
 src/columnmap/
   main.py, experiment.py          entry point (the columnmap command) and the run over the samples
   core/                           template, expression language, prompts, scoring math, result store, run folders, paths
-  decisions/                      contract shaped like OpenAI's Decisions API, and the Jev adapter
+  decisions/                      question types (predicate, choice, score) and the Jev adapter
   dataset/                        synthetic samples and their CSV files
   mapping/ transform/ stability/  one slice each: run, metrics, figures, tables
   convert/                        builds the converted file from the model's decisions and scores it

@@ -1,4 +1,4 @@
-# Decisions contract shaped like OpenAI's POST /v1/decisions
+# decision questions (predicate, choice, score) and their answers, as plain dataclasses
 
 from __future__ import annotations
 
