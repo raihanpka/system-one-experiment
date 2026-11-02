@@ -4,7 +4,7 @@ import pytest
 
 from src.check_template import load_template
 from src.dsl import evaluate
-from src.gen_gt import generate, write
+from src.gen_gt import generate
 
 T = load_template()
 CASES = generate(T, n_per_level=6, seed=7)
@@ -74,9 +74,3 @@ def test_candidates_have_one_truth_and_distinct_distractors():
                 assert vals != truth
             seen += 1
     assert seen > 0
-
-
-def test_write_roundtrip(tmp_path):
-    p = tmp_path / "gt.jsonl"
-    write(CASES, p)
-    assert [json.loads(l) for l in p.read_text().splitlines()] == json.loads(json.dumps(CASES))

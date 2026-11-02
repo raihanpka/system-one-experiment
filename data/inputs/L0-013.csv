@@ -1,6 +1,0 @@
-coverage_end_date,claimed_amount,discount_rate,claim_status_code,deductible_amount,policy_number,premium_tax_rate,claim_incident_date,currency_code,insured_city,agent_id,claim_paid_amount,base_premium,holder_first_name,insured_province,transaction_date,coverage_start_date,transaction_fee_amount,postal_code,insured_birth_date
-2026-09-23,57600000,0.05,R,581000,POL-13433122,0.03,2025-03-14,USD,Jakarta,AGT74810,6231000,17018000,Joko,DKI Jakarta,2025-02-16,2024-01-08,27000,60416,1950-08-22
-2026-09-27,80733000,0.17,P,881000,POL-59633284,0.09,2025-06-20,IDR,Jakarta,AGT43339,35104000,18173000,Joko,Sumatera Utara,2025-11-28,2024-08-29,29000,54703,1980-08-06
-2026-02-13,43113000,0.13,A,714000,POL-33724086,0.03,2025-04-11,IDR,Makassar,AGT32611,76592000,7091000,Agus,Sulawesi Selatan,2025-10-12,2024-03-04,19000,91152,1961-01-30
-2025-11-15,33242000,0.05,R,404000,POL-30334861,0.1,2025-05-07,IDR,Makassar,AGT14823,64229000,13016000,Dewi,Sulawesi Selatan,2025-05-01,2024-12-16,28000,54590,1981-04-02
-2025-11-21,82183000,0.06,A,603000,POL-00696183,0.02,2025-03-23,USD,Bandung,AGT24975,43818000,11231000,Joko,Sulawesi Selatan,2025-03-16,2024-07-13,34000,20810,1954-07-27

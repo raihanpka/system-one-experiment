@@ -1,8 +1,8 @@
 # Defaults for the experiment runners; CLI flags override.
 [run]
 quant = "Q8_0"
-gt = "data/gt.jsonl"
+seed = 1234
 out_dir = "results"
 conds = ["name", "desc", "samples", "both"]
 levels = [0, 1, 2, 3, 4, 5, 6]
-n_per_level = 5   # ~0.1 s per question, ~90 s per case per condition on M3 (Q8_0)
+n_per_level = 3   # 21 cases; ~0.1 s per question, ~90 s per case per condition on M3 (Q8_0)

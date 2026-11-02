@@ -1,6 +1,0 @@
-coverage_end_date,premium_tax_rate,insured_birth_date,claimed_amount,insured_province,insured_gender,deductible_amount,account_number,claim_status_code,claim_incident_date,base_premium,postal_code,currency_code,coverage_start_date,agent_id,insured_city
-2025-10-23,0.15,1999-12-05,49794000,Jawa Timur,F,189000,1514573250,R,2025-06-15,13230000,48975,IDR,2024-10-08,AGT97684,Makassar
-2026-11-21,0.11,1965-01-11,94651000,Jawa Barat,F,511000,3264100584,P,2025-01-05,18658000,80994,IDR,2024-11-21,AGT42887,Bandung
-2026-09-26,0.12,1982-03-14,13964000,Jawa Barat,F,526000,8744534275,R,2025-02-04,5942000,16241,IDR,2024-03-07,AGT33170,Surabaya
-2025-08-06,0.17,1976-03-06,79424000,Sulawesi Selatan,M,967000,8567782809,R,2025-06-20,19015000,43620,IDR,2024-03-26,AGT81548,Bandung
-2026-02-22,0.08,1950-08-20,27025000,Jawa Timur,M,308000,0397959513,R,2025-06-22,16052000,71617,USD,2024-12-17,AGT61482,Bandung

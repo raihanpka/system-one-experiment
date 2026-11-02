@@ -1,6 +1,0 @@
-coverage_start_date,holder_last_name,insured_province,claim_paid_amount,claim_incident_date,deductible_amount,base_premium,transaction_amount,account_number,policy_number,holder_first_name,premium_tax_rate,insured_city,transaction_fee_amount,insured_gender,transaction_date,insured_birth_date,claim_number,discount_rate,coverage_end_date
-2024-04-27,Kusuma,DKI Jakarta,3386000,2025-04-05,293000,17560000,37323000,5561450446,POL-21495854,Rina,0.09,Jakarta,44000,M,2025-01-20,1978-06-10,CLM-5436001,0.09,2026-11-07
-2024-05-24,Santoso,Jawa Barat,72191000,2025-04-05,337000,10893000,7458000,1080087201,POL-12791409,Rina,0.19,Bandung,41000,F,2025-12-28,1980-02-01,CLM-5305829,0.09,2026-02-27
-2024-08-05,Putri,Sumatera Utara,45719000,2025-01-28,658000,6105000,11773000,9708132275,POL-62332208,Andi,0.19,Medan,48000,F,2025-06-19,2001-11-29,CLM-4136144,0.26,2026-11-24
-2024-07-12,Pratama,Sulawesi Selatan,76011000,2025-03-05,968000,4475000,42625000,0200265392,POL-77008350,Dewi,0.02,Medan,21000,F,2025-01-21,1962-01-13,CLM-4938808,0.2,2025-07-06
-2024-11-09,Santoso,Sulawesi Selatan,3748000,2025-04-03,843000,3502000,3762000,9102418513,POL-86862649,Joko,0.1,Medan,9000,F,2025-07-22,1978-03-02,CLM-8568652,0.18,2026-01-07

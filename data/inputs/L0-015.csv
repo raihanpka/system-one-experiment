@@ -1,6 +1,0 @@
-coverage_start_date,base_premium,insured_gender,transaction_amount,account_number,sum_insured_amount,claim_incident_date,transaction_date,coverage_end_date,insured_province,insured_birth_date,claim_paid_amount,premium_tax_rate,currency_code,transaction_fee_amount,agent_id,holder_last_name,holder_first_name,policy_number,insured_city,claimed_amount,claim_status_code,discount_rate
-2024-02-04,18036000,M,26017000,5345792735,488183000,2025-03-23,2025-05-14,2026-01-23,DKI Jakarta,1979-10-25,75662000,0.19,USD,30000,AGT53235,Nasution,Rina,POL-79905479,Makassar,35977000,A,0.0
-2024-10-23,7585000,F,40397000,0981456781,1431943000,2025-06-20,2025-01-16,2025-08-29,Jawa Barat,2000-04-25,72520000,0.01,IDR,17000,AGT45228,Kusuma,Dewi,POL-48758001,Surabaya,81380000,A,0.23
-2024-06-10,17999000,M,11185000,1708125769,1155976000,2025-06-20,2025-01-01,2026-02-01,Jawa Timur,1961-04-21,20175000,0.11,IDR,22000,AGT78403,Kusuma,Joko,POL-88771379,Surabaya,39464000,A,0.23
-2024-10-19,15973000,F,30542000,0026659581,417462000,2025-03-31,2025-12-04,2026-01-14,Jawa Barat,2002-10-13,61831000,0.19,USD,21000,AGT68390,Hidayat,Budi,POL-05584795,Makassar,95853000,A,0.16
-2024-09-24,10137000,F,49638000,5504717106,1728285000,2025-01-19,2025-12-28,2026-08-23,Jawa Barat,2002-07-23,58032000,0.19,IDR,44000,AGT66454,Putri,Andi,POL-34847193,Bandung,66425000,R,0.04

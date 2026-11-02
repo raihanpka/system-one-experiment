@@ -1,6 +1,0 @@
-coverage_start_date,claim_incident_date,postal_code,agent_id,base_premium,insured_province,insured_city,insured_gender,coverage_end_date,holder_first_name,claim_number,deductible_amount,sum_insured_amount,account_number,insured_birth_date,premium_tax_rate,transaction_date,claim_status_code
-2024-12-26,2025-02-09,61323,AGT64120,9698000,Jawa Barat,Surabaya,M,2025-07-13,Dewi,CLM-2539198,351000,358354000,6971768015,1960-05-10,0.1,2025-10-17,R
-2024-12-11,2025-05-26,95211,AGT99146,7745000,Sulawesi Selatan,Jakarta,F,2025-07-29,Budi,CLM-6295053,281000,1142925000,8901597075,1958-04-28,0.17,2025-06-10,P
-2024-10-15,2025-06-01,22548,AGT81219,11507000,Sulawesi Selatan,Makassar,M,2026-07-31,Budi,CLM-8958468,208000,211485000,6866459991,1982-10-21,0.03,2025-11-08,P
-2024-11-01,2025-01-26,41750,AGT57660,10304000,Sulawesi Selatan,Surabaya,F,2026-11-17,Andi,CLM-1276937,352000,799208000,0560292698,1959-09-14,0.16,2025-01-14,A
-2024-03-02,2025-03-05,89001,AGT62312,14296000,Jawa Timur,Surabaya,F,2026-09-06,Rina,CLM-3320952,856000,221590000,4463421895,2003-10-05,0.17,2025-06-10,R

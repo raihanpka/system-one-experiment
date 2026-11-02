@@ -1,6 +1,0 @@
-postal_code,coverage_end_date,claim_paid_amount,deductible_amount,claim_number,insured_birth_date,base_premium,claim_incident_date,insured_city,insured_province,transaction_fee_amount,premium_tax_rate,currency_code,holder_first_name,account_number,holder_last_name,claim_status_code
-29283,2025-12-17,46723000,861000,CLM-0267252,1950-10-19,1108000,2025-01-12,Semarang,Jawa Timur,24000,0.2,IDR,Agus,6332818712,Kusuma,P
-25650,2026-12-03,21047000,684000,CLM-8761437,1985-01-07,3747000,2025-03-12,Makassar,Jawa Tengah,26000,0.18,IDR,Dewi,5508187452,Putri,P
-93663,2025-07-24,41276000,367000,CLM-2990651,1994-05-01,17822000,2025-02-05,Semarang,Jawa Timur,40000,0.07,IDR,Andi,8010337805,Wijaya,A
-69842,2025-11-30,30615000,442000,CLM-5680370,1952-03-02,18724000,2025-03-29,Medan,Sumatera Utara,3000,0.1,USD,Andi,3731886350,Lestari,R
-54633,2026-03-31,40444000,715000,CLM-8069098,1993-11-28,15080000,2025-04-01,Surabaya,Jawa Timur,40000,0.12,USD,Joko,8479779147,Santoso,A

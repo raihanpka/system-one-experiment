@@ -1,6 +1,0 @@
-claim_incident_date,transaction_amount,agent_id,coverage_start_date,insured_gender,holder_last_name,claimed_amount,discount_rate,claim_paid_amount,coverage_end_date,claim_status_code,currency_code,policy_number,insured_city,claim_number,holder_first_name,transaction_fee_amount,postal_code,sum_insured_amount
-2025-02-27,2453000,AGT39567,2024-08-25,M,Hidayat,11648000,0.17,38869000,2026-10-05,P,SGD,POL-22711167,Medan,CLM-5590950,Andi,28000,29602,867231000
-2025-04-10,48435000,AGT68840,2024-12-14,M,Nasution,18007000,0.05,14541000,2026-09-27,R,SGD,POL-93006895,Semarang,CLM-0425136,Dewi,39000,36031,140908000
-2025-03-02,23867000,AGT34597,2024-05-19,F,Wijaya,95928000,0.14,58852000,2025-10-19,A,IDR,POL-65500512,Makassar,CLM-0611080,Dewi,11000,55901,823909000
-2025-01-05,9328000,AGT70494,2024-10-07,F,Kusuma,5897000,0.27,23822000,2026-02-12,A,SGD,POL-54381869,Jakarta,CLM-8172639,Budi,44000,74538,1053712000
-2025-02-23,19019000,AGT58346,2024-04-06,M,Nasution,43811000,0.3,11918000,2025-08-15,P,IDR,POL-63204083,Surabaya,CLM-1982494,Siti,36000,93071,1404947000

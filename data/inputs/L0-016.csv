@@ -1,6 +1,0 @@
-holder_first_name,agent_id,policy_number,postal_code,transaction_date,insured_birth_date,claim_incident_date,premium_tax_rate,holder_last_name,transaction_fee_amount,coverage_end_date,claimed_amount,insured_city,claim_status_code,claim_paid_amount,account_number,insured_gender,insured_province,coverage_start_date,claim_number,currency_code,deductible_amount,discount_rate
-Rina,AGT30179,POL-93137209,89047,2025-11-07,1969-05-09,2025-06-21,0.07,Nasution,49000,2026-06-15,96447000,Medan,R,66687000,7609749482,M,Jawa Timur,2024-05-03,CLM-7450061,USD,279000,0.06
-Agus,AGT26848,POL-13056291,24387,2025-09-03,2001-02-10,2025-06-22,0.1,Kusuma,13000,2026-07-12,84791000,Surabaya,A,1756000,7046737661,F,Jawa Barat,2024-06-20,CLM-3201537,IDR,839000,0.21
-Maya,AGT74711,POL-17890253,78897,2025-04-08,2001-04-19,2025-02-26,0.14,Pratama,43000,2025-07-29,76877000,Semarang,R,25820000,1344993891,F,Jawa Timur,2024-07-27,CLM-3485584,USD,689000,0.02
-Budi,AGT22841,POL-20251663,70479,2025-09-21,1958-10-27,2025-06-21,0.19,Pratama,26000,2026-10-15,51927000,Semarang,A,82739000,4941547335,M,Jawa Tengah,2024-10-23,CLM-1008252,SGD,320000,0.14
-Agus,AGT14853,POL-56233949,12230,2025-11-25,1966-07-08,2025-02-11,0.09,Kusuma,12000,2026-03-11,73697000,Bandung,R,16732000,8746602438,M,Jawa Tengah,2024-12-26,CLM-0335410,SGD,527000,0.27

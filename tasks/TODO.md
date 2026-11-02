@@ -60,10 +60,10 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `data/template.json`, `src/check_template.py`
   - Scope: S
 
-- [x] **T4: Generator ground truth** (selesai; `data/gt.jsonl` dibangkitkan ulang dengan `uv run python -m src.gen_gt`, tidak di-commit; evaluator `src/dsl.py` sudah dikerjakan di sini)
+- [x] **T4: Generator ground truth** (selesai; kasus dibangkitkan dari seed di memori, tidak ada file besar; CSV per kasus lewat `uv run python -m src.export_csv`; evaluator `src/dsl.py` dikerjakan di sini)
   - Deskripsi: Bangkitkan nama kolom input per tingkat drift 0-6 (0 identik, 1 casing/underscore, 2 singkatan, 3 sinonim, 4 campur ID/EN, 5 absurd, 6 kolom jebakan tanpa padanan), nilai sampel, dan label (input→output, jenis transformasi, ekspresi). Termasuk kasus satu input ke dua output. Untuk tiap output non-passthrough, bangkitkan juga daftar ekspresi kandidat (satu benar, beberapa pengecoh) secara deterministik untuk T6.
   - Acceptance:
-    - [ ] `data/gt.jsonl` mencakup tujuh tingkat drift, seed tetap, hasil sama di dua kali run
+    - [ ] Kasus mencakup tujuh tingkat drift, seed tetap, hasil sama di dua kali run
     - [ ] Ekspresi ground truth bisa dieksekusi pada nilai sampel dan menghasilkan nilai output yang benar
     - [ ] Ada kasus 1→2 kolom, kolom jebakan, dan kandidat ekspresi dengan pengecoh
   - Verifikasi: test: dua kali generate menghasilkan file identik; ekspresi menghasilkan nilai yang benar.

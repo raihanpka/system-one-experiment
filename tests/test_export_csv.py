@@ -1,7 +1,7 @@
 import csv
 
 from src.check_template import load_template
-from src.export_csv import write_inputs, write_template, write_truth
+from src.export_csv import write_cases, write_template
 from src.gen_gt import generate
 
 T = load_template()
@@ -18,22 +18,31 @@ def test_template_files(tmp_path):
     assert rows(tmp_path / "template_header.csv") == [[o["name"] for o in T["outputs"]]]
     cols = rows(tmp_path / "template_columns.csv")
     assert cols[0] == ["name", "type", "kind", "description", "rule"] and len(cols) == 1 + len(T["outputs"])
-    gross = next(r for r in cols if r[0] == "gross_premium")
-    assert gross[4] == "base_premium * (1 + premium_tax_rate)"
+    assert next(r for r in cols if r[0] == "gross_premium")[4] == "base_premium * (1 + premium_tax_rate)"
 
 
-def test_input_files_and_truth(tmp_path):
-    write_inputs(CASES, tmp_path / "inputs")
-    c = next(c for c in CASES if c["level"] == 5)
-    r = rows(tmp_path / "inputs" / f"{c['case_id']}.csv")
-    assert r[0] == [k["name"] for k in c["columns"]] and len(r) == 1 + len(c["rows"])
-    write_truth(CASES, tmp_path / "truth.csv")
-    t = rows(tmp_path / "truth.csv")
-    assert t[0] == ["case_id", "level", "output", "kind", "available", "input_columns", "expression"]
-    line = next(x for x in t[1:] if x[0] == c["case_id"] and x[2] == "gross_premium")
-    assert line[4] in ("True", "False")
-    if line[4] == "True":
-        assert "*" in line[6] and all(n in line[6] for n in line[5].split("|"))
+def test_each_case_is_input_expected_output_and_mapping(tmp_path):
+    write_cases(CASES, tmp_path)
+    assert len(list(tmp_path.glob("*/input.csv"))) == len(CASES)
+    c = next(c for c in CASES if c["level"] == 6)
+    d = tmp_path / c["case_id"]
+
+    inp = rows(d / "input.csv")
+    assert inp[0] == [k["name"] for k in c["columns"]] and len(inp) == 1 + len(c["rows"])
+
+    exp = rows(d / "expected_output.csv")                       # the converted file, ready to upload
+    assert exp[0] == [o["name"] for o in T["outputs"]] and len(exp) == 1 + len(c["rows"])
+    for j, o in enumerate(c["outputs"]):
+        col = [r[j] for r in exp[1:]]
+        assert col == ([str(v) for v in o["expected"]] if o["available"] else [""] * len(c["rows"]))
+
+    m = rows(d / "mapping.csv")
+    assert m[0] == ["output", "kind", "available", "input_columns", "expression"]
+    gross = next(r for r in m[1:] if r[0] == "gross_premium")
+    if gross[2] == "True":
+        assert "*" in gross[4] and all(n in gross[4] for n in gross[3].split("|"))
+    decoys = [r for r in m[1:] if r[1] == "decoy"]
+    assert len(decoys) == sum(bool(k["decoy"]) for k in c["columns"]) > 0
 
 
 def test_level5_has_legacy_style_codes():

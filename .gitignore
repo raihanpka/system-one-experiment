@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 results/
 .pytest_cache/
-data/gt.jsonl
+data/cases/

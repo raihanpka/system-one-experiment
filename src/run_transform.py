@@ -31,9 +31,26 @@ def _ok(rule, by_id, expected):
         return False
 
 
-def run_case(decider, case: dict, cond: str, t: dict) -> dict:
+def prepare(case: dict, cond: str, t: dict, o: dict):
+    """State text, label and candidate texts for one derived output."""
     desc = {s["id"]: s["desc"] for s in t["sources"]}
-    odesc = {o["name"]: o["description"] for o in t["outputs"]}
+    odesc = {x["name"]: x["description"] for x in t["outputs"]}
+    name_of = {c["src"]: c["name"] for c in case["columns"] if c["src"]}
+    cands = o["candidates"]
+    texts = [render(c, name_of.get) for c in cands]
+    texts = [x if texts.count(x) == 1 else f"{x}  (#{i})" for i, x in enumerate(texts)]
+    ids = list(dict.fromkeys(s for c in cands for s in rule_sources(c)))
+    state = kind_state([(name_of[s], desc[s], [r[name_of[s]] for r in case["rows"][:3]]) for s in ids], cond)
+    label = f"'{o['name']}'" + (f" (meaning: {odesc[o['name']]})" if cond in ("desc", "both") else "")
+    return state, label, texts
+
+
+def pick_question(label: str, texts) -> Question:
+    return Question("choice", f"Which expression produces the output field {label} from the input columns?", name="pick",
+                    choices=tuple(Choice(x) for x in texts))
+
+
+def run_case(decider, case: dict, cond: str, t: dict) -> dict:
     name_of = {c["src"]: c["name"] for c in case["columns"] if c["src"]}
     by_id = [{s: row[n] for s, n in name_of.items()} for row in case["rows"]]
     res = {}
@@ -41,13 +58,8 @@ def run_case(decider, case: dict, cond: str, t: dict) -> dict:
         if not o["available"] or o["kind"] == "pass":
             continue
         cands = o["candidates"]
-        texts = [render(c, name_of.get) for c in cands]
-        texts = [x if texts.count(x) == 1 else f"{x}  (#{i})" for i, x in enumerate(texts)]
-        ids = list(dict.fromkeys(s for c in cands for s in rule_sources(c)))
-        state = kind_state([(name_of[s], desc[s], [r[name_of[s]] for r in case["rows"][:3]]) for s in ids], cond)
-        label = f"'{o['name']}'" + (f" (meaning: {odesc[o['name']]})" if cond in ("desc", "both") else "")
-        qs = [Question("choice", f"Which expression produces the output field {label} from the input columns?", name="pick",
-                       choices=tuple(Choice(x) for x in texts))]
+        state, label, texts = prepare(case, cond, t, o)
+        qs = [pick_question(label, texts)]
         qs += [Question("predicate", f"The output field {label} is computed as: {x}", name=f"c{i}") for i, x in enumerate(texts)]
         a = decider.decide(state, qs).answers
         ci = texts.index(a[0].choice)
@@ -83,12 +95,12 @@ if __name__ == "__main__":
     ap.add_argument("--cond", default=",".join(cfg["conds"]))
     ap.add_argument("--levels", default=",".join(map(str, cfg["levels"])))
     ap.add_argument("--n", type=int, default=cfg["n_per_level"])
-    ap.add_argument("--gt", default=cfg["gt"])
+    ap.add_argument("--seed", type=int, default=cfg["seed"])
     ap.add_argument("--out-dir", default=cfg["out_dir"])
     a = ap.parse_args()
     from .decisions.jev import JevDecider
     t = load_template()
-    cases = load_cases(ROOT / a.gt, {int(x) for x in a.levels.split(",")}, a.n)
+    cases = load_cases({int(x) for x in a.levels.split(",")}, a.n, a.seed)
     with JevDecider(cfg["quant"]) as d:
         for cond in a.cond.split(","):
             assert cond in CONDS, cond

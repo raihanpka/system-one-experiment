@@ -54,19 +54,10 @@ def run(decider, cases, cond: str, out, t: dict) -> int:
     return n
 
 
-def load_cases(gt, levels=None, n=None):
-    cs = [json.loads(l) for l in Path(gt).read_text().splitlines()]
-    if levels is not None:
-        cs = [c for c in cs if c["level"] in levels]
-    if n is not None:
-        seen: dict[int, int] = {}
-        keep = []
-        for c in cs:
-            seen[c["level"]] = seen.get(c["level"], 0) + 1
-            if seen[c["level"]] <= n:
-                keep.append(c)
-        cs = keep
-    return cs
+def load_cases(levels=None, n=5, seed=1234):
+    """Cases are rebuilt from the seed; the first n per level (ids are stable across n)."""
+    from .gen_gt import generate
+    return [c for c in generate(load_template(), n, seed) if levels is None or c["level"] in levels]
 
 
 if __name__ == "__main__":
@@ -75,12 +66,12 @@ if __name__ == "__main__":
     ap.add_argument("--cond", default=",".join(cfg["conds"]))
     ap.add_argument("--levels", default=",".join(map(str, cfg["levels"])))
     ap.add_argument("--n", type=int, default=cfg["n_per_level"])
-    ap.add_argument("--gt", default=cfg["gt"])
+    ap.add_argument("--seed", type=int, default=cfg["seed"])
     ap.add_argument("--out-dir", default=cfg["out_dir"])
     a = ap.parse_args()
     from .decisions.jev import JevDecider
     t = load_template()
-    cases = load_cases(ROOT / a.gt, {int(x) for x in a.levels.split(",")}, a.n)
+    cases = load_cases({int(x) for x in a.levels.split(",")}, a.n, a.seed)
     with JevDecider(cfg["quant"]) as d:
         for cond in a.cond.split(","):
             assert cond in CONDS, cond

@@ -1,6 +1,0 @@
-coverage_end_date,insured_birth_date,claim_incident_date,agent_id,claim_paid_amount,currency_code,coverage_start_date,premium_tax_rate,claim_number,claimed_amount,insured_gender,insured_city,holder_first_name,account_number,holder_last_name,postal_code,transaction_date,insured_province,discount_rate,deductible_amount,claim_status_code
-2026-06-12,1973-03-20,2025-01-07,AGT09477,32611000,USD,2024-01-26,0.1,CLM-3453489,36205000,M,Surabaya,Andi,8403953660,Putri,28637,2025-03-18,Jawa Tengah,0.13,643000,P
-2026-06-13,1992-08-25,2025-04-20,AGT04240,31165000,SGD,2024-06-25,0.11,CLM-2631160,38223000,M,Makassar,Siti,3197157090,Pratama,29553,2025-07-25,Jawa Barat,0.14,966000,P
-2026-05-14,1972-02-11,2025-01-13,AGT36188,19372000,IDR,2024-08-04,0.04,CLM-8749137,61936000,F,Surabaya,Andi,4672866390,Kusuma,01031,2025-01-23,DKI Jakarta,0.13,174000,P
-2026-06-06,1979-03-23,2025-02-02,AGT01205,25773000,USD,2024-06-18,0.11,CLM-5746768,98380000,M,Makassar,Joko,1345389923,Kusuma,25092,2025-12-20,Jawa Timur,0.16,733000,A
-2026-03-14,1981-12-03,2025-06-29,AGT37144,52152000,USD,2024-12-15,0.16,CLM-0706139,15366000,M,Bandung,Joko,3727770271,Hidayat,24692,2025-06-30,Sumatera Utara,0.2,511000,R

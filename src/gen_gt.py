@@ -1,15 +1,12 @@
-"""Synthetic ground truth. Run: uv run python -m src.gen_gt --n 50 --seed 1234
+"""Synthetic ground truth. Cases are rebuilt in memory from the seed (no big file on disk); `python -m src.export_csv` writes CSV views.
 
 Drift levels: 0 identical, 1 style only (camel, UPPER, kebab...), 2 abbreviation, 3 synonym,
 4 Indonesian, 5 far/absurd phrase, 6 mixed levels + decoy columns. Each case = one input "file".
 """
 from __future__ import annotations
 
-import argparse
-import json
 import random
 from datetime import date, timedelta
-from pathlib import Path
 
 from .check_template import load_template, rule_sources
 from .dsl import evaluate
@@ -132,19 +129,3 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
 
 def generate(t: dict, n_per_level: int = 50, seed: int = 1234) -> list[dict]:
     return [_case(t, lv, i, seed) for lv in range(7) for i in range(n_per_level)]
-
-
-def write(cases: list[dict], path) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases))
-
-
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--n", type=int, default=50)
-    ap.add_argument("--seed", type=int, default=1234)
-    ap.add_argument("--out", default="data/gt.jsonl")
-    a = ap.parse_args()
-    cs = generate(load_template(), a.n, a.seed)
-    write(cs, a.out)
-    print(f"{len(cs)} cases -> {a.out}")

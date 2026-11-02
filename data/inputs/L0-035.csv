@@ -1,6 +1,0 @@
-agent_id,holder_first_name,insured_city,claim_paid_amount,premium_tax_rate,postal_code,insured_province,insured_gender,currency_code,transaction_fee_amount,sum_insured_amount,claim_number,coverage_start_date,discount_rate,claim_status_code,base_premium,account_number,transaction_amount,policy_number
-AGT79174,Andi,Semarang,11853000,0.05,59843,Jawa Tengah,M,SGD,29000,1867325000,CLM-3831106,2024-11-28,0.07,P,7902000,5319393923,27252000,POL-19403211
-AGT99561,Maya,Makassar,14042000,0.12,09472,Jawa Barat,F,IDR,17000,527304000,CLM-3490756,2024-04-16,0.18,P,2466000,0558271650,40564000,POL-41447726
-AGT33095,Budi,Medan,38045000,0.11,17948,Jawa Barat,M,SGD,31000,994468000,CLM-1032567,2024-07-24,0.09,A,18537000,5265281380,22252000,POL-04779565
-AGT21643,Siti,Bandung,69066000,0.2,35406,Sulawesi Selatan,F,IDR,39000,80071000,CLM-8469484,2024-02-01,0.1,R,2428000,3026939198,2408000,POL-83612795
-AGT26964,Maya,Makassar,40718000,0.1,49326,Jawa Barat,M,USD,24000,1257374000,CLM-5388270,2024-08-04,0.15,R,6360000,2475310534,12290000,POL-89852999

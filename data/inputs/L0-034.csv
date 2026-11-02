@@ -1,6 +1,0 @@
-coverage_start_date,claim_incident_date,currency_code,insured_gender,transaction_fee_amount,transaction_amount,claim_paid_amount,policy_number,discount_rate,transaction_date,coverage_end_date,claim_status_code,sum_insured_amount,holder_first_name,insured_province,claimed_amount,claim_number,deductible_amount,premium_tax_rate
-2024-02-09,2025-05-29,IDR,M,14000,1759000,44205000,POL-90510885,0.14,2025-08-13,2026-12-28,R,63242000,Agus,Sulawesi Selatan,98627000,CLM-6773335,109000,0.03
-2024-12-13,2025-06-07,IDR,F,17000,48146000,72726000,POL-39907367,0.05,2025-01-09,2025-07-29,A,253702000,Dewi,Sumatera Utara,37488000,CLM-2969117,613000,0.02
-2024-07-06,2025-01-09,SGD,M,18000,25133000,62669000,POL-98663366,0.21,2025-10-23,2025-12-20,P,1848299000,Andi,Sumatera Utara,70036000,CLM-5704694,699000,0.15
-2024-06-16,2025-03-28,USD,F,18000,39031000,74717000,POL-22686778,0.2,2025-05-27,2025-10-25,R,1678373000,Joko,DKI Jakarta,58271000,CLM-6190538,116000,0.07
-2024-03-31,2025-03-13,IDR,F,25000,27433000,67277000,POL-11581815,0.16,2025-03-07,2026-03-06,P,1561125000,Joko,Jawa Timur,20504000,CLM-7255606,397000,0.16
