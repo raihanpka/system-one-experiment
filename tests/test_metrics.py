@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from src.check_template import load_template
+from src.core.template import load_template
 from src.decisions.types import Answer, Response
 from src.gen_gt import generate
 from src.metrics import ece, lexical_mapping, mapping_metrics, pair_p, sweep

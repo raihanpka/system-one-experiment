@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from src.check_template import load_template
-from src.dsl import safe_evaluate
+from src.core.template import load_template
+from src.core.dsl import safe_evaluate
 from src.gen_gt import generate
 
 T = load_template()

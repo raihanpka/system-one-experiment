@@ -4,7 +4,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from .metrics import T0, build_tables, pair_p
+from .core.scoring import T0, pair_p
+from .metrics import build_tables
 from . import plots
 
 SAMPLES = {"a": ("L0-000", "identical names"), "b": ("L3-000", "synonyms"), "c": ("L5-000", "legacy codes"),

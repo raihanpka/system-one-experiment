@@ -1,14 +1,23 @@
-"""Validate data/template.json. Run: uv run python -m src.check_template"""
+"""Validate data/template.json. Run: uv run python -m src.core.template"""
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
 
-TEMPLATE = Path(__file__).resolve().parents[1] / "data" / "template.json"
+TEMPLATE = Path(__file__).resolve().parents[2] / "data" / "template.json"
 OPS = {"concat", "add", "sub", "mul", "div", "year", "days_between", "lookup"}
 GENS = {"id", "pick", "date", "money", "rate"}
 KINDS = {"pass", "concat", "arith", "format", "lookup"}
+# how a template output kind is named when the model is asked about it, and what each name means
+KIND_LABEL = {"pass": "passthrough", "concat": "concat", "arith": "arithmetic", "format": "format", "lookup": "lookup"}
+KIND_DESC = {
+    "passthrough": "the value is copied unchanged from one input column",
+    "concat": "text from several input columns is joined together",
+    "arithmetic": "the value is calculated from input columns with + - * / or a difference between dates",
+    "format": "the value is a reformatted part of one input column, such as the year of a date",
+    "lookup": "a code in an input column is translated into a label",
+}
 
 
 def load_template(path=TEMPLATE) -> dict:

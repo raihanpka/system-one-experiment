@@ -1,9 +1,9 @@
-from src.check_template import load_template
-from src.context import CONDS, input_state
+from src.core.template import load_template
+from src.core.prompts import CONDS, input_state
 from src.decisions.types import Answer, Response
 from src.gen_gt import generate
 from src.run_mapping import run
-from src.store import Store
+from src.core.store import Store
 
 T = load_template()
 CASES = generate(T, n_per_level=2, seed=3)

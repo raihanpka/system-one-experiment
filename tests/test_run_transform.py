@@ -1,10 +1,10 @@
-from src.check_template import load_template
-from src.context import KIND_DESC, KIND_LABEL
+from src.core.template import load_template
+from src.core.template import KIND_DESC, KIND_LABEL
 from src.decisions.types import Answer, Response
-from src.dsl import render
+from src.core.dsl import render
 from src.gen_gt import generate
 from src.run_transform import run
-from src.store import Store
+from src.core.store import Store
 
 T = load_template()
 CASES = generate(T, n_per_level=2, seed=11)

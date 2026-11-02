@@ -10,9 +10,9 @@ over options is ignored). "pairs" asks one yes/no question per (input column, ou
 """
 from __future__ import annotations
 
-from .context import input_state, kind_question, kind_state, mapping_question, samples
+from .core.prompts import input_state, kind_question, kind_state, mapping_question, samples
 from .decisions.types import Choice, Question
-from .metrics import T0, pair_p
+from .core.scoring import T0, pair_p
 
 def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> dict:
     desc = {s["id"]: s["desc"] for s in t["sources"] + t["decoys"]}

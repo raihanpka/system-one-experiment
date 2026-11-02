@@ -8,11 +8,11 @@ from datetime import datetime
 from pathlib import Path
 
 from . import permute, run_mapping, run_transform
-from .check_template import load_template
+from .core.template import load_template
 from .export_csv import write_cases, write_template
 from .gen_gt import generate
 from .report import DEFAULT, SAMPLES, make_report
-from .store import Store
+from .core.store import Store
 
 ROOT = Path(__file__).resolve().parents[1]
 

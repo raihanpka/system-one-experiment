@@ -1,6 +1,6 @@
 import csv
 
-from src.check_template import load_template
+from src.core.template import load_template
 from src.export_csv import write_cases, write_template
 from src.gen_gt import generate
 

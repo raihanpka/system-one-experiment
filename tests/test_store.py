@@ -1,6 +1,6 @@
 import json
 
-from src.store import Store
+from src.core.store import Store
 
 
 def test_roundtrip_resume_rounding_and_readable_layout(tmp_path):

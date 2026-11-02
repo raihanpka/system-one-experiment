@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import random
 
-from .context import KIND_DESC, KIND_LABEL, kind_question, kind_state, samples
+from .core.prompts import kind_question, kind_state, samples
+from .core.template import KIND_DESC, KIND_LABEL
 from .decisions.types import Choice, Question
 from .run_transform import pick_question, prepare
 

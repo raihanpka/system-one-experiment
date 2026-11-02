@@ -5,8 +5,8 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from .check_template import load_template
-from .dsl import render
+from .core.template import load_template
+from .core.dsl import render
 
 ROOT = Path(__file__).resolve().parents[1]
 

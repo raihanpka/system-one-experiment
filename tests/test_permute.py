@@ -1,8 +1,8 @@
-from src.check_template import load_template
+from src.core.template import load_template
 from src.decisions.types import Answer, Response
 from src.gen_gt import generate
 from src.permute import run
-from src.store import Store
+from src.core.store import Store
 from tests.test_run_transform import Oracle
 
 T = load_template()

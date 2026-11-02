@@ -8,8 +8,8 @@ from __future__ import annotations
 import random
 from datetime import date, timedelta
 
-from .check_template import load_template, rule_sources
-from .dsl import safe_evaluate
+from .core.template import load_template, rule_sources
+from .core.dsl import safe_evaluate
 
 ROWS = (15, 30)                                            # rows per input file
 SAMPLE_K = 5

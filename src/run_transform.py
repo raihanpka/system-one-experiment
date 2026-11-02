@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import math
 
-from .check_template import rule_sources
-from .context import kind_state, samples
+from .core.template import rule_sources
+from .core.prompts import kind_state, samples
 from .decisions.types import Choice, Question
-from .dsl import render, safe_evaluate
+from .core.dsl import render, safe_evaluate
 
 
 def _same(a, b):

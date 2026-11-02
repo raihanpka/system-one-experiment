@@ -11,7 +11,8 @@ import pandas as pd  # noqa: E402
 import seaborn as sns  # noqa: E402
 from matplotlib import font_manager  # noqa: E402
 
-from .metrics import T0, TS, kind_metrics, lexical_mapping, mapping_metrics, pair_p, transform_metrics  # noqa: E402
+from .core.scoring import T0, TS, pair_p
+from .metrics import kind_metrics, lexical_mapping, mapping_metrics, transform_metrics  # noqa: E402
 
 FONT = "Times New Roman"
 
