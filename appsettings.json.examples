@@ -1,0 +1,49 @@
+{
+  "Backend": {
+    "Type": "openrouter",
+    "Type_Options": ["openrouter", "local"]
+  },
+  "OpenRouter": {
+    "Model": "~liquid/d1-ultra-latest",
+    "Model_Options": ["~liquid/d1-ultra-latest (follows the newest version)", "liquid/d1-ultra-20261015 (pinned, reproducible)"],
+    "BaseUrl": "https://openrouter.ai/api/alpha/decisions",
+    "ApiKeyEnv": "OPENROUTER_API_KEY",
+    "ApiKeyEnv_Note": "name of the env var that holds the key (set it in .env). The key itself never goes in this file."
+  },
+  "Local": {
+    "Quant": "Q8_0",
+    "Quant_Options": ["F16 (reference)", "Q8_0 (recommended)", "Q4_K_M (smaller, faster, noisier)"],
+    "Ngl": 999,
+    "Ngl_Note": "GPU layers: 999 = all on Metal, 0 = CPU only",
+    "FlashAttn": "default",
+    "FlashAttn_Options": ["default", "auto", "on", "off"],
+    "Threads": 8,
+    "Threads_Note": "optional CPU threads for the scorer; remove the key to use the default"
+  },
+  "Device": {
+    "Mode": "auto",
+    "Mode_Options": ["auto (Metal on Apple Silicon, else CPU)", "metal", "cpu"]
+  },
+  "Run": {
+    "KeepD": 0.0,
+    "KeepD_Note": "score a column needs to be chosen for a field; 0.0 = probability 0.5",
+    "TargetPrecision": 1.0,
+    "TargetPrecision_Note": "precision a field must reach to be filled automatically, in (0, 1]; 1.0 = 100 percent",
+    "PromptVersion": "v1",
+    "PromptVersion_Note": "part of the calibration key; change it when the prompt changes",
+    "Mode": "options",
+    "Mode_Options": ["options (one question per input column, fast)", "pairs (one yes/no per column and field, slow, calibrated)", "both"],
+    "Seed": 1234,
+    "Seed_Note": "seed used when neither --seed nor --split is given",
+    "Conds": ["name", "samples"],
+    "Conds_Options": ["name", "samples", "desc", "both", "table"]
+  },
+  "Splits": {
+    "Dev": [11],
+    "Dev_Note": "tuning: prompts, contexts, cutoffs. Can be looked at many times.",
+    "Calibration": [12, 13],
+    "Calibration_Note": "fit calibration on one seed, check it on the other.",
+    "Test": [21, 22],
+    "Test_Note": "final evaluation, looked at once, needs --final. Already used; do not reuse."
+  }
+}
