@@ -131,6 +131,8 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
 
     if not a.report_only:
         if decider_factory is None:
+            if cfg["backend"]["type"] != "local_gguf":
+                ap.error(f"backend {cfg['backend']['type']!r} has settings but no adapter yet; set [backend] type = \"local_gguf\" to run")
             from .decisions.jev import JevDecider
             decider_factory = lambda: JevDecider(**model_options(cfg))        # noqa: E731
         with decider_factory() as d:

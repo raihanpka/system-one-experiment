@@ -14,6 +14,13 @@ flash_attn = "default"  # default | auto | on | off
 [backend]
 type = "local_gguf"    # the only backend for now; the scorer is the Jev GGUF runtime in vendor/
 
+# hosted option: OpenRouter Decisions API. Sends the state text to OpenRouter. Use synthetic data only until
+# the data retention terms are checked. Returns probabilities, not logits (see NOTES). Key: env var below, never here.
+[backend.openrouter]
+model = "liquid/d1-ultra"
+base_url = "https://openrouter.ai/api/alpha/decisions"
+api_key_env = "OPENROUTER_API_KEY"
+
 [device]
 mode = "auto"           # auto (Metal on Apple Silicon, else CPU) | metal | cpu
 
