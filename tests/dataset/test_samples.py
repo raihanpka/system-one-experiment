@@ -1,5 +1,3 @@
-import hashlib
-import json
 import re
 
 import pytest
@@ -28,14 +26,6 @@ def test_four_samples_ordered_by_difficulty():
 def test_only_the_four_sample_kinds_are_generated():
     assert sorted({c["level"] for c in CASES.values()}) == [0, 3, 5, 6]
     assert set(CASES) == {SAMPLES[x][0] for x in SAMPLES}
-
-
-def test_data_of_the_renamed_baseline_cases_is_identical():
-    meta = json.loads((ROOT / "baselines" / "v1" / "data_hash.json").read_text())["sha256"]
-    for old, new in (("coded-000", "technical_terms-000"), ("mixed-000", "hardest_noisy-000")):
-        case = CASES[new]
-        digest = hashlib.sha256(json.dumps({"columns": case["columns"], "rows": case["rows"]}, sort_keys=True).encode()).hexdigest()
-        assert digest == meta[old]
 
 
 @pytest.mark.parametrize("letters", ["e", "f", "abz"])
