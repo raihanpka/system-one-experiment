@@ -15,7 +15,7 @@
 
 Maps messy input columns onto a fixed output template with a decision model. Each output field gets a probability per input column. Confident fields are filled, the rest go to a review list with three candidates.
 
-- **Decision Model**: Jev-Style-2B-Decision-v3 (Q8_0) through llama.cpp, local, or a hosted backend (planned).
+- **Decision Model**: Jev-Style-2B-Decision-v3 (Q8_0) through llama.cpp, local only.
 - **Calibrated Output**: Platt scaling fitted on calibration data, stored per setup.
 - **Review First**: Fields below the precision target stay empty and go to a person.
 
@@ -30,7 +30,7 @@ make sample    # run samples a, b, c, d
 make help      # all commands
 ```
 
-Settings live in `config.toml`. Pick the backend with `[backend] type`, and the device with `[device] mode` (`auto` uses Metal, CUDA, or CPU). API keys go in environment variables, never in the file.
+Settings live in `config.toml` and are checked when the run starts. `[backend] type` is `local_gguf` (the only one). `[device] mode` is `auto` (Metal on Apple Silicon, else CPU), `metal`, or `cpu`.
 
 ---
 
@@ -58,6 +58,22 @@ results/<samples>_<timestamp>/
 ```
 
 ---
+
+### Layout
+
+```text
+src/columnmap/
+  core/        config, device, calibration (Platt, temperature), scoring, store, paths
+  decisions/   question types and the Decider protocol; JevDecider is the local adapter
+  honest/      stage without ground truth: candidate expressions ranked by the model
+  mapping/     column to field scoring (options and pairs modes), reject rules
+  convert/     converts files from decisions; metrics against ground truth (eval only)
+  dataset/     synthetic samples and expected files (ground truth, eval only)
+  report/      summary, figures, tables
+  calibrate.py fits Platt parameters per setup; the key holds model, quant, mode, context, prompt, cutoff, and policy version
+```
+
+To change the model, add an adapter in `decisions/` that implements `decide`, then choose it in `main.py`. Calibration keys refuse fits made for another model, quantization, or policy version.
 
 ### Tech Stack
 
