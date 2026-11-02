@@ -8,7 +8,7 @@ from pathlib import Path
 from .convert.honest import convert_fields
 from .convert.metrics import field_correct
 from .core.calibration import Calibration, apply_platt, fit_platt, make_key, reliability_bins
-from .core.scoring import T0, ece, pair_p
+from .core.scoring import T0, ece, logit, pair_p
 from .core.selective import precision_curve
 from .core.store import Store
 from .core.template import load_template
@@ -16,10 +16,6 @@ from .dataset.generate import generate
 
 SECTIONS = {"options": "mapping", "pairs": "mapping_pairs"}
 
-
-def _logit(p: float) -> float:
-    p = min(max(p, 1e-6), 1 - 1e-6)
-    return math.log(p / (1 - p))
 
 
 # the score of every (input column, output field) pair and whether the column is a true source
@@ -43,7 +39,7 @@ def field_xy(hrows, cases) -> tuple[list[float], list[bool]]:
         ok = field_correct(case, conv)
         for f in names:
             if rec["fields"][f]["best"] is not None:
-                xs.append(_logit(rec["fields"][f]["conf"]))
+                xs.append(logit(rec["fields"][f]["conf"]))
                 ys.append(ok[f])
     return xs, ys
 

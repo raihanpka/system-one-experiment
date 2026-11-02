@@ -48,3 +48,9 @@ def accept_score(cut: float):
 
 def accept_lift(cut: float):
     return lambda d1, lift: lift >= cut
+
+
+# log-odds of a probability, clipped away from 0 and 1
+def logit(p: float) -> float:
+    p = min(max(p, 1e-6), 1 - 1e-6)
+    return math.log(p / (1 - p))

@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-import math
 
 from ..core.calibration import apply_platt
-from ..core.scoring import rate
+from ..core.scoring import logit, rate
 
-
-def _logit(p: float) -> float:
-    p = min(max(p, 1e-6), 1 - 1e-6)
-    return math.log(p / (1 - p))
 
 
 # per field: filled automatically or not, the calibrated confidence, and why not
@@ -23,7 +18,7 @@ def field_decisions(fields: dict, entry: dict | None, tau: float | None) -> dict
         elif entry is None:
             out[f] = {"auto": True, "conf_cal": r["conf"], "reason": ""}
         else:
-            c = apply_platt(_logit(r["conf"]), entry["a"], entry["b"])
+            c = apply_platt(logit(r["conf"]), entry["a"], entry["b"])
             ok = tau is not None and c >= tau
             out[f] = {"auto": ok, "conf_cal": c, "reason": "" if ok else "low confidence"}
     return out
