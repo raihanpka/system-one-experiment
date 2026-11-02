@@ -70,6 +70,7 @@ class OpenRouterDecider:
         self._key, self._model, self._url = api_key, model, base_url
         self._transport = transport or _post
         self._timeout = timeout
+        self.run_meta = {"model": model, "backend": "openrouter", "quant": "api"}
 
     def decide(self, text: str, questions: Sequence[Question]) -> Response:
         if not questions:

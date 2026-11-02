@@ -42,6 +42,8 @@ class JevDecider:
     # ponytail: one subprocess, one model load (~20 s); inject `backend` in tests, close() or use `with` to free it
     def __init__(self, quant: str = "Q8_0", backend=None, **opts):
         self._b = backend if backend is not None else _load_backend(quant, **opts)
+        # what a run records about this backend; calibration keys read model and quant from here
+        self.run_meta = {"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", "quant": quant, **opts}
 
     def decide(self, text: str, questions: Sequence[Question]) -> Response:
         if not questions:

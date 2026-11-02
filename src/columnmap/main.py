@@ -138,7 +138,8 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
                 ap.error(str(e))
         with decider_factory() as d:
             run_models(d, sel, conds, modes, store, t, keep=keep)
-        store.data["meta"].update({**backend_meta(cfg), "samples": letters,
+            identity = getattr(d, "run_meta", None) or backend_meta(cfg)
+        store.data["meta"].update({**identity, "samples": letters,
                                    "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "keep_d": keep, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
