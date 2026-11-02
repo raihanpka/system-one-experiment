@@ -27,7 +27,6 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --conds name          show the model only the column names (no sample values)
   columnmap --mode pairs          slower, calibrated probabilities
   columnmap --mode both           run both modes and compare them
-  columnmap --conds name,samples,table    also show the model the whole table
   columnmap --fit-calibration results/A results/B    fit calibration.json from dev or calibration runs A and B
   columnmap --calibrate-from results/X    fit the rejection cutoffs on run X (a fair test on another case)
   columnmap --seed 5              build the samples from another seed (not written to data/)
@@ -49,8 +48,8 @@ def main(argv=None, decider_factory=None) -> int:
                     + ", ".join(f"{k} {v[1]}" for k, v in SAMPLES.items()))
     ap.add_argument("--all", action="store_true", help="all four samples")
     ap.add_argument("--conds", default=None,
-                    help="what the model sees: name = column name; samples = name + 5 values; table = name + the whole table "
-                         "(desc, both add column descriptions). Default: the contexts already in the run folder, else name,samples")
+                    help="what the model sees: name = column name; samples = name + 5 values. "
+                         "Default: the contexts already in the run folder, else name,samples")
     ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs", "both"),
                     help="options: one question per input column, fast; pairs: one yes/no per column and field, slow, calibrated; "
                          "both: run and compare the two")

@@ -35,5 +35,5 @@ def test_every_record_carries_seconds_tokens_and_questions(tmp_path):
 
 def test_a_long_run_is_announced_before_it_starts(tmp_path):
     log = []
-    run_models(Tokens(), [CASE] * 60, ["name", "samples", "table"], ["options", "pairs"], Store(tmp_path / "r.json"), T, log=log.append)
+    run_models(Tokens(), [CASE] * 60, ["name", "samples"], ["options", "pairs"], Store(tmp_path / "r.json"), T, log=log.append)
     assert log[0].startswith("warning: this run is estimated at") and "minutes" in log[0]

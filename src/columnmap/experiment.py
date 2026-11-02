@@ -20,7 +20,7 @@ def run_models(decider: Decider, cases, conds, modes, store, template, keep: flo
     decider, t0 = Counting(decider), time.time()
     for cond in conds:
         for m in modes:
-            n = run_mapping.run(decider, cases, cond, store, template, mode=m)
+            n = run_mapping.run(decider, cases, cond, store, mode=m)
             log(f"[{cond}] mapping ({m}): {n} new, {len(cases) - n} resumed ({time.time() - t0:.0f}s)")
         n = run_honest.run(decider, cases, cond, store, mode=modes[0], keep=keep)
         log(f"[{cond}] honest: {n} new, {len(cases) - n} resumed ({time.time() - t0:.0f}s)")

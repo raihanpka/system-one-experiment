@@ -1,17 +1,12 @@
-# prompt text per context: name only, plus description, plus sample values, both, or the whole table
+# prompt text per context: name only, or name plus sample values (descriptions, whole table, and the other contexts were rejected)
 
 from __future__ import annotations
 
-import csv
-import io
+from ..decisions.types import Question
 
-from ..decisions.types import Choice, Question
-
-CONDS = ("name", "desc", "samples", "both", "table", "outdesc")
+CONDS = ("name", "samples")
 SAMPLE_K = 5
-CONTEXT_LABEL = {"name": "name only", "samples": "name + values", "desc": "name + description",
-                 "both": "name + description + values", "table": "name + whole table",
-                 "outdesc": "name + output field descriptions"}
+CONTEXT_LABEL = {"name": "name only", "samples": "name + values"}
 
 
 # What the model sees about each input column, in words (file names keep the short key)
@@ -25,59 +20,24 @@ def samples(rows, name, k=SAMPLE_K):
     return [rows[i * (n - 1) // (k - 1)][name] for i in range(k)] if n >= k else [r[name] for r in rows]
 
 
-def _desc(cond):
-    return cond in ("desc", "both")
-
-
-def _samples(cond):
-    return cond in ("samples", "both")
-
-
-def _col_text(name, cond, desc, samples):
+def _col_text(name, cond, samples):
     s = f"{name}"
-    if _desc(cond) and desc:
-        s += f"\n  Description: {desc}"
-    if _samples(cond) and samples:
+    if cond == "samples" and samples:
         s += "\n  Sample values: " + ", ".join(map(str, samples))
     return s
 
 
-def input_state(col: dict, cond: str, desc: str | None = None, samples=()) -> str:
+def input_state(col: dict, cond: str, samples=()) -> str:
     lines = [f"Input column: {col['name']}"]
-    if _desc(cond) and desc:
-        lines.append(f"Description: {desc}")
-    if _samples(cond) and samples:
+    if cond == "samples" and samples:
         lines.append("Sample values: " + ", ".join(map(str, samples)))
     return "\n".join(lines)
 
 
-# output field descriptions come from the template; input descriptions are never shown in outdesc
-def _label(name, desc, cond):
-    return f"'{name}'" + (f" (meaning: {desc})" if (_desc(cond) or cond == "outdesc") and desc else "")
+# output side: the field name only; the model picks the input columns that feed it
+def mapping_question(name: str) -> Question:
+    return Question("predicate", f"This input column provides the data for the output field '{name}'.", name=name)
 
 
-def mapping_question(name: str, desc: str | None, cond: str) -> Question:
-    return Question("predicate", f"This input column provides the data for the output field {_label(name, desc, cond)}.", name=name)
-
-
-def kind_state(cols: list[tuple[str, str | None, list]], cond: str) -> str:
-    return "Input columns:\n" + "\n".join("- " + _col_text(n, cond, d, s) for n, d, s in cols)
-
-
-# the table is the same text for every column, so the scorer computes it once per file and reuses it
-def table_state(case: dict) -> str:
-    names = [c["name"] for c in case["columns"]]
-    buf = io.StringIO()
-    w = csv.writer(buf, lineterminator="\n")
-    w.writerow(names)
-    w.writerows([[r[n] for n in names] for r in case["rows"]])
-    return "Input table (CSV):\n" + buf.getvalue().rstrip("\n")
-
-
-def table_options_question(col: str, outs: list[str]) -> Question:
-    return Question("choice", f"Which output fields does the input column '{col}' provide data for?", name="field",
-                    choices=tuple(Choice(o) for o in outs))
-
-
-def table_pair_question(col: str, out: str) -> Question:
-    return Question("predicate", f"The input column '{col}' provides the data for the output field '{out}'.", name=out)
+def kind_state(cols: list[tuple[str, list]], cond: str) -> str:
+    return "Input columns:\n" + "\n".join("- " + _col_text(n, cond, s) for n, s in cols)

@@ -36,7 +36,7 @@
     "Seed": 1234,
     "Seed_Note": "seed used when neither --seed nor --split is given",
     "Conds": ["name", "samples"],
-    "Conds_Options": ["name", "samples", "desc", "both", "table"]
+    "Conds_Options": ["name", "samples"]
   },
   "Splits": {
     "Dev": [11],

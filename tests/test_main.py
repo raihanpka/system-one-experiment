@@ -78,9 +78,9 @@ def test_report_only_without_any_run_is_an_error(tmp_path):
         main(["--root", str(tmp_path / "empty"), "--data", str(tmp_path), "--report-only"])
 
 
-def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
+def test_two_modes_and_cutoffs_fitted_on_another_run(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    args = ["--root", str(root), "--data", str(data), "--conds", "name,table", "--mode", "both"]
+    args = ["--root", str(root), "--data", str(data), "--conds", "name,samples", "--mode", "both"]
     main(["--samples", "c", *args], decider_factory=Generic)
     time.sleep(1.1)
     first = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()][0]
@@ -89,16 +89,16 @@ def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
     assert second != first and second.name.startswith("hardest_noisy_")
 
     store = json.loads((second / "result.json").read_text())
-    assert set(store["mapping"]) == {"name", "table"} and set(store["mapping_pairs"]) == {"name", "table"}
-    assert set(store["honest"]) == {"name", "table"}                                      # the honest stage follows every context
+    assert set(store["mapping"]) == {"name", "samples"} and set(store["mapping_pairs"]) == {"name", "samples"}
+    assert set(store["honest"]) == {"name", "samples"}                                      # the honest stage follows every context
     assert store["meta"]["mode"] == "options,pairs"
 
     md = (second / "report" / "summary.md").read_text()
     assert "## Options Mode Versus Pairs Mode" in md and "fitted on other run" in md
-    assert "name + whole table, options mode" in md                                      # readable context labels in the headline
+    assert "name + values, options mode" in md                                      # readable context labels in the headline
     assert (second / "d_hardest_noisy" / "converted_hardest_noisy_name.csv").exists()
     main(["--report-only", "--out", str(second), "--data", str(data)])                          # contexts are read from the run itself
-    assert "name + whole table, options mode" in (second / "report" / "summary.md").read_text()
+    assert "name + values, options mode" in (second / "report" / "summary.md").read_text()
     first_md = (first / "report" / "summary.md").read_text()
     assert "fitted on this run, optimistic" in first_md and "fitted on other run" not in first_md
 

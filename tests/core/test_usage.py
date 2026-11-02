@@ -20,6 +20,6 @@ def test_estimate_grows_with_pairs_mode_and_contexts():
     cases = [{"columns": [0] * 26, "outputs": [0] * 31}]
     one = estimate_minutes(cases, ["name"], ["options"])
     pairs = estimate_minutes(cases, ["name"], ["options", "pairs"])
-    three = estimate_minutes(cases, ["name", "samples", "table"], ["options", "pairs"])
+    three = estimate_minutes(cases, ["name", "samples"], ["options", "pairs"])
     assert 0 < one < pairs < three
     assert 0.2 < one < 2                                     # about 10 to 40 s for one file in options mode

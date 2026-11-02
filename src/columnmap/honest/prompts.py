@@ -29,7 +29,7 @@ def option_text(ast: dict, rows: list[dict]) -> str:
 
 
 def pool_state(names: list[str], rows: list[dict]) -> str:
-    return kind_state([(n, None, samples(rows, n)) for n in names], "samples")
+    return kind_state([(n, samples(rows, n)) for n in names], "samples")
 
 
 def pick_question(field: str, options: list[str]) -> Question:

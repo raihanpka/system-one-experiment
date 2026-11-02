@@ -26,19 +26,10 @@ class Fake:
         return Response("fake", ans, {})
 
 
-def test_conditions_change_state_text():
-    col = {"name": "PolicyNo", "src": "policy_number", "decoy": None}
-    texts = {c: input_state(col, c, desc="Unique id of the policy", samples=["POL-1", "POL-2", "POL-3"]) for c in CONDS}
-    assert "PolicyNo" in texts["name"] and "Description" not in texts["name"] and "POL-1" not in texts["name"]
-    assert "Description: Unique id" in texts["desc"] and "POL-1" not in texts["desc"]
-    assert "POL-1" in texts["samples"] and "Description" not in texts["samples"]
-    assert "Description" in texts["both"] and "POL-1" in texts["both"]
-
-
 def test_matrix_shape_and_resume(tmp_path):
     store = Store(tmp_path / "r.json")
     d = Fake()
-    run(d, CASES[:3], "name", store, T, mode="pairs")
+    run(d, CASES[:3], "name", store, mode="pairs")
     rows = store.rows("mapping_pairs", "name")
     assert len(rows) == 3
     c, r = CASES[0], rows[0]
@@ -49,9 +40,9 @@ def test_matrix_shape_and_resume(tmp_path):
     assert cell == {"p": 0.25, "d": -1.1}
     assert "kind" not in r                                                     # no stage that is told the true sources
     n = len(d.calls)
-    run(d, CASES[:3], "name", Store(tmp_path / "r.json"), T, mode="pairs")                  # new process: resume, nothing new
+    run(d, CASES[:3], "name", Store(tmp_path / "r.json"), mode="pairs")                  # new process: resume, nothing new
     assert len(d.calls) == n and len(Store(tmp_path / "r.json").rows("mapping_pairs", "name")) == 3
-    run(d, CASES[:4], "name", Store(tmp_path / "r.json"), T, mode="pairs")
+    run(d, CASES[:4], "name", Store(tmp_path / "r.json"), mode="pairs")
     assert len(Store(tmp_path / "r.json").rows("mapping_pairs", "name")) == 4 and len(d.calls) > n
 
 
@@ -59,7 +50,7 @@ def test_options_mode_asks_one_question_per_column_and_reads_raw_scores(tmp_path
     d = Fake()
     store = Store(tmp_path / "o.json")
     case = CASES[0]
-    run(d, [case], "name", store, T)                                            # default mode = options
+    run(d, [case], "name", store)                                            # default mode = options
     r = store.rows("mapping", "name")[0]
     assert r["mode"] == "options"
     map_calls = [qs for _, qs in d.calls if qs[0].name == "field"]
@@ -71,48 +62,17 @@ def test_options_mode_asks_one_question_per_column_and_reads_raw_scores(tmp_path
     assert all(set(v) == {o["name"] for o in case["outputs"]} for v in r["matrix"].values())
 
 
-def test_table_context_gives_the_whole_table_once_and_asks_per_column(tmp_path):
-    d = Fake()
-    store = Store(tmp_path / "t.json")
-    case = CASES[0]
-    run(d, [case], "table", store, T)
-    asks = [(s, qs) for s, qs in d.calls if qs[0].name == "field"]
-    assert len(asks) == len(case["columns"])
-    states = {s for s, _ in asks}
-    assert len(states) == 1                                                   # same text for every column, so it is computed once
-    lines = states.pop().splitlines()
-    assert lines[0] == "Input table (CSV):" and len(lines) == 2 + len(case["rows"])
-    assert lines[1] == ",".join(k["name"] for k in case["columns"])
-    assert all(k["name"] in qs[0].instructions for k, (_, qs) in zip(case["columns"], asks))
-    r = store.rows("mapping", "table")[0]
-    assert r["cond"] == "table" and "seconds" in r
-
-
-def test_table_context_in_pairs_mode_asks_one_statement_per_field(tmp_path):
-    d = Fake()
-    store = Store(tmp_path / "p.json")
-    case = CASES[0]
-    run(d, [case], "table", store, T, mode="pairs")
-    asks = [(s, qs) for s, qs in d.calls if qs[0].type == "predicate"]
-    assert len(asks) == len(case["columns"]) and all(len(qs) == len(case["outputs"]) for _, qs in asks)
-    assert len({s for s, _ in asks}) == 1
-    assert store.rows("mapping_pairs", "table") and not store.rows("mapping", "table")   # pairs results live in their own section
-
-
 def test_the_two_modes_do_not_overwrite_each_other(tmp_path):
     d = Fake()
     store = Store(tmp_path / "m.json")
-    run(d, CASES[:1], "name", store, T, mode="options")
-    run(d, CASES[:1], "name", store, T, mode="pairs")
+    run(d, CASES[:1], "name", store, mode="options")
+    run(d, CASES[:1], "name", store, mode="pairs")
     assert len(store.rows("mapping", "name")) == 1 and len(store.rows("mapping_pairs", "name")) == 1
     assert store.rows("mapping", "name")[0]["mode"] == "options" and store.rows("mapping_pairs", "name")[0]["mode"] == "pairs"
 
 
-def test_outdesc_context_gives_output_descriptions_but_no_input_descriptions():
-    from columnmap.core.prompts import input_state, mapping_question
-    col = {"name": "PRTY_NM_1"}
-    state = input_state(col, "outdesc", "secret source concept", [1, 2])
-    assert "secret source concept" not in state and "Description" not in state            # input side stays name only
-    q = mapping_question("insured_full_name", "Full name of the insured", "outdesc")
-    assert "Full name of the insured" in q.instructions                                    # output side gets its description
-    assert "outdesc" not in mapping_question("f", "x", "name").instructions
+def test_conditions_change_state_text():
+    col = {"name": "PolicyNo", "src": "policy_number", "decoy": None}
+    texts = {c: input_state(col, c, samples=["POL-1", "POL-2", "POL-3"]) for c in CONDS}
+    assert texts["name"] == "Input column: PolicyNo" and "POL-1" not in texts["name"]
+    assert "POL-1" in texts["samples"] and "Description" not in texts["samples"]
