@@ -1,8 +1,5 @@
-"""One readable JSON file per run: results/<run>/result.json (resumable, rewritten after every case).
+# One readable JSON file per run: results/<run>/result.json (resumable, rewritten after every case)
 
-Layout: {"meta": {...}, "mapping": {cond: [case, ...]}, "transform": {...}, "permute": {...}}.
-Structure is indented; the innermost objects (one input column of a matrix, one output of a section) stay on one line.
-"""
 from __future__ import annotations
 
 import json

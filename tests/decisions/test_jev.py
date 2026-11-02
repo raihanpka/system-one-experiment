@@ -12,8 +12,8 @@ FIX = Path(__file__).parents[1] / "fixtures"
 MODEL = "Jev-Style-2B-Decision-v3"
 
 
+# Mimics JevStyleDecisionGGUF.score_many: dict questions -> result dicts
 class FakeBackend:
-    """Mimics JevStyleDecisionGGUF.score_many: dict questions -> result dicts."""
 
     def __init__(self):
         self.calls = []

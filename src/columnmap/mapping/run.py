@@ -1,13 +1,5 @@
-"""Mapping runner (backend-agnostic); `python src` drives it.
+# mapping step: a score for every (input column, output field) pair, plus the transformation kind
 
-Per case: for every input column (decoys included) a score for every output field -> matrix[input][output]
-= {"p": probability, "d": s_true - s_false} (d lets any temperature be re-applied offline); per available
-output one choice question for the transformation kind given its true source columns.
-
-Modes: "options" (default, about 7x faster) asks ONE choice question per input column with all output fields as
-options and reads each option's raw yes/no score (independent, so one column can feed several fields; the softmax
-over options is ignored). "pairs" asks one yes/no question per (input column, output field): slower, calibrated.
-"""
 from __future__ import annotations
 
 from ..decisions.base import Decider

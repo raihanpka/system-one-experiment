@@ -1,4 +1,5 @@
-"""Shared figure style: seaborn theme with Times New Roman; SVG output keeps text as text."""
+# Shared figure style: seaborn theme with Times New Roman; SVG output keeps text as text
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,8 +14,8 @@ from matplotlib import font_manager  # noqa: E402
 FONT = "Times New Roman"
 
 
+# Seaborn theme with Times New Roman. Returns False if the font is not installed (falls back to a serif)
 def setup_style() -> bool:
-    """Seaborn theme with Times New Roman. Returns False if the font is not installed (falls back to a serif)."""
     try:
         font_manager.findfont(FONT, fallback_to_default=False)
         ok = True

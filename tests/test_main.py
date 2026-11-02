@@ -8,8 +8,8 @@ from columnmap.decisions.types import Answer, Response
 from columnmap.main import main
 
 
+# No model: first option for choices, p=0.3 for yes/no
 class Generic:
-    """No model: first option for choices, p=0.3 for yes/no."""
 
     def __enter__(self):
         return self

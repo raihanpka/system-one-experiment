@@ -1,6 +1,5 @@
 #!/bin/sh
-# Build jev-score-v2 against the Homebrew llama.cpp, the single source of llama.cpp for this project.
-# Rebuilds only when the brew versions change. After `brew upgrade llama.cpp`, run `make setup` again.
+# build jev-score-v2 against Homebrew llama.cpp (the only llama.cpp used); rebuilds when brew versions change, so rerun after `brew upgrade llama.cpp`
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SRC="$ROOT/vendor/jev-v3-2b-gguf"

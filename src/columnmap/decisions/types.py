@@ -1,9 +1,5 @@
-"""Decisions contract shaped like OpenAI's POST /v1/decisions.
+# Decisions contract shaped like OpenAI's POST /v1/decisions
 
-Shape taken from LocalAI (OpenAI-compatible route), LangChain and TypeSafe docs; the official OpenAI page
-was unreachable (see NOTES.md), so treat field names as unverified until T1's doc check is repeated.
-Internal Answer keeps probabilities as {option: p}; the wire form is a list of objects.
-"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

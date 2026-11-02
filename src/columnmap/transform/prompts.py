@@ -1,4 +1,5 @@
-"""Prompt text for the transformation ranking question."""
+# Prompt text for the transformation ranking question
+
 from __future__ import annotations
 
 from ..core.dsl import render
@@ -7,8 +8,8 @@ from ..core.template import rule_sources
 from ..decisions.types import Choice, Question
 
 
+# State text, label and candidate texts for one derived output
 def prepare(case: dict, cond: str, t: dict, o: dict):
-    """State text, label and candidate texts for one derived output."""
     desc = {s["id"]: s["desc"] for s in t["sources"]}
     odesc = {x["name"]: x["description"] for x in t["outputs"]}
     name_of = {c["src"]: c["name"] for c in case["columns"] if c["src"]}

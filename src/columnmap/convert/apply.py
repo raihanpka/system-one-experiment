@@ -1,10 +1,5 @@
-"""Apply Jev's decisions to an input file: the converted (template-shaped) rows plus a log of each decision.
+# Apply Jev's decisions to an input file: the converted (template-shaped) rows plus a log of each decision
 
-Per output field: take the input column with the highest probability; below THRESHOLD the field stays empty.
-If Jev named the transformation `passthrough` the column is copied; otherwise the expression Jev picked among
-the candidates is executed on the rows. The candidates come from the ground truth, so this measures whether
-Jev's choices produce the right file, not whether it can invent a formula.
-"""
 from __future__ import annotations
 
 from ..core.dsl import render, safe_evaluate
@@ -13,8 +8,8 @@ from ..core.scoring import T0, pair_p
 THRESHOLD = 0.5
 
 
+# Returns (header, rows, decisions); rows hold python values, None = empty
 def convert_case(map_row: dict, tr_row: dict | None, case: dict, threshold: float = THRESHOLD):
-    """Returns (header, rows, decisions); rows hold python values, None = empty."""
     cols = [k["name"] for k in case["columns"]]
     name_of = {k["src"]: k["name"] for k in case["columns"] if k["src"]}
     by_id = [{s: row[n] for s, n in name_of.items()} for row in case["rows"]]

@@ -1,4 +1,5 @@
-"""Markdown table helpers shared by the slices."""
+# Markdown table helpers shared by the slices
+
 from __future__ import annotations
 
 from collections import defaultdict

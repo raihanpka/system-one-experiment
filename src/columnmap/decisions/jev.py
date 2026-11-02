@@ -1,13 +1,12 @@
-"""JevDecider: Decider backed by the local Jev-Style-2B-Decision-v3 GGUF runtime (vendor/)."""
+# JevDecider: Decider backed by the local Jev-Style-2B-Decision-v3 GGUF runtime (vendor/)
+
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from typing import Sequence
 
 from ..core.paths import VENDOR
 from .types import Answer, Question, Response
-
 
 
 def _load_backend(quant: str, ngl: int = 999, flash_attn: str = "default", threads: int | None = None):

@@ -1,10 +1,5 @@
-"""CSV files of the template and of the seven named samples: data/ is the single source of truth.
-Run: uv run python -m columnmap.dataset.export   (deterministic; `python src` refreshes the samples it uses)
+# CSV files of the template and of the seven named samples: data/ is the single source of truth
 
-A sample folder holds three files named after the kind of input, e.g. data/samples/c_coded/:
-input_coded.csv (the messy file), expected_coded.csv (the converted file, ready to upload) and
-ground_truth_coded.csv (which input columns feed each output field, and how).
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,7 +9,6 @@ from ..core.dsl import render
 from ..core.paths import CONFIG, DATA
 from ..core.template import load_template
 from .samples import SAMPLES, word
-
 
 
 def write_template(t: dict, out) -> None:
@@ -43,8 +37,8 @@ def sample_folder(letter: str) -> str:
     return f"{letter}_{word(SAMPLES[letter][0])}"
 
 
+# data/: the template and one folder per sample (input, expected output, ground truth). Deterministic
 def write_samples(t: dict, cases: dict, letters: str, data_dir) -> None:
-    """data/: the template and one folder per sample (input, expected output, ground truth). Deterministic."""
     data_dir = Path(data_dir)
     write_template(t, data_dir)
     for x in letters:

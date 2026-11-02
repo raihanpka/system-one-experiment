@@ -1,10 +1,5 @@
-"""Mapping metrics: for each available output, input columns are ranked by P(true).
+# Mapping metrics: for each available output, input columns are ranked by P(true)
 
-top1 = best column is a true source; exact = the best |sources| columns are exactly the sources;
-top3 = a true source is in the top 3. Unavailable outputs should be rejected (best P below 0.5); decoy
-columns should never reach P >= 0.5. Pairwise precision/recall/F1/ECE/Brier use all (column, field) pairs
-at threshold 0.5. Temperature is re-applied offline: P = sigmoid((s_true - s_false) / T).
-"""
 from __future__ import annotations
 
 import re
@@ -61,8 +56,8 @@ def sweep(rows, cases, temps=TS) -> list[dict]:
     return out
 
 
+# Probability and truth of every (input column, output field) pair
 def pair_scores(rows, cases, T: float = T0):
-    """Probability and truth of every (input column, output field) pair."""
     ps, ys = [], []
     for r in rows:
         c = cases[r["case_id"]]
@@ -77,8 +72,8 @@ def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
+# Model-free baseline: string similarity between input column name and output field name
 def lexical_mapping(cases) -> dict:
-    """Model-free baseline: string similarity between input column name and output field name."""
     top1 = exact = top3 = n = 0
     for c in cases:
         cols = [k["name"] for k in c["columns"]]

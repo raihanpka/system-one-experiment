@@ -1,6 +1,5 @@
 #!/bin/sh
-# Reproduce the Jev v3 GGUF runtime under vendor/. Idempotent. Run from the repo root.
-# Needs: uv and Homebrew. Python comes from uv; llama.cpp comes from brew.
+# set up the Jev v3 runtime under vendor/ (idempotent, run from the repo root); needs uv and Homebrew
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"

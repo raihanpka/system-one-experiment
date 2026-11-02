@@ -14,8 +14,8 @@ def _same(a, b) -> bool:
     return a == b
 
 
+# Converted file against the expected file: cells right where a value is expected, cells wrongly filled
 def cell_match(case: dict, rows: list[list]) -> dict:
-    """Converted file against the expected file: cells right where a value is expected, cells wrongly filled."""
     expected_cells = correct = wrong_fill = 0
     for j, o in enumerate(case["outputs"]):
         for i, row in enumerate(rows):

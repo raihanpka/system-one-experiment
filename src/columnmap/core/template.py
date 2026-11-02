@@ -1,4 +1,5 @@
-"""Validate data/template.json. Run: uv run python -m columnmap.core.template"""
+# Validate data/template.json. Run: uv run python -m columnmap.core.template
+
 from __future__ import annotations
 
 import json
@@ -26,8 +27,8 @@ def load_template(path=TEMPLATE) -> dict:
     return json.loads(Path(path).read_text())
 
 
+# Distinct source ids a rule reads, in first-use order
 def rule_sources(rule) -> list[str]:
-    """Distinct source ids a rule reads, in first-use order."""
     if "src" in rule:
         return [rule["src"]]
     seen: list[str] = []

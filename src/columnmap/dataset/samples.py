@@ -1,5 +1,5 @@
-"""The named samples of the experiment: letter -> (case id, how the input columns are named)."""
-# one word per drift level; it is part of every case id and file name, e.g. "coded-000"
+# named samples: letter -> (case id, naming of the input columns); the word in a case id (e.g. "coded-000") names the drift level
+
 LEVEL_WORDS = ["identical", "style", "abbreviation", "synonym", "indonesian", "coded", "mixed"]
 LEVEL_NAMES = ["identical", "style only", "abbreviation", "synonym", "Indonesian", "system code", "mixed + decoys"]
 

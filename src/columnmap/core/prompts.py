@@ -1,4 +1,5 @@
-"""Prompt text per context condition: name only | +description | +sample values | both."""
+# Prompt text per context condition: name only | +description | +sample values | both
+
 from __future__ import annotations
 
 from ..decisions.types import Choice, Question
@@ -10,13 +11,13 @@ CONTEXT_LABEL = {"name": "name only", "samples": "name + values", "desc": "name 
                  "both": "name + description + values"}
 
 
+# What the model sees about each input column, in words (file names keep the short key)
 def context_label(cond: str) -> str:
-    """What the model sees about each input column, in words (file names keep the short key)."""
     return CONTEXT_LABEL.get(cond, cond)
 
 
+# k values of one column from evenly spaced rows (so the odd cell is sometimes visible, not always)
 def samples(rows, name, k=SAMPLE_K):
-    """k values of one column from evenly spaced rows (so the odd cell is sometimes visible, not always)."""
     n = len(rows)
     return [rows[i * (n - 1) // (k - 1)][name] for i in range(k)] if n >= k else [r[name] for r in rows]
 def _desc(cond):

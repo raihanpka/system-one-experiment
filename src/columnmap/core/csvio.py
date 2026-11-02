@@ -4,8 +4,8 @@ import csv
 from pathlib import Path
 
 
+# UTF-8 CSV that Excel opens directly; None is written as an empty cell
 def write_csv(path, header, rows) -> Path:
-    """UTF-8 CSV that Excel opens directly; None is written as an empty cell."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:

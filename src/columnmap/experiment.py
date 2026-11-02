@@ -1,4 +1,5 @@
-"""Run the model over the samples and record everything in the store. No file layout, no argument parsing."""
+# Run the model over the samples and record everything in the store. No file layout, no argument parsing
+
 from __future__ import annotations
 
 import time
@@ -9,9 +10,8 @@ from .stability import run as run_stability
 from .transform import run as run_transform
 
 
+# For each context: mapping (+ kind), transformation ranking, optionally option-order stability
 def run_models(decider: Decider, cases, conds, mode, with_stability, store, template, log=print) -> None:
-    """For each context: mapping (+ kind), transformation ranking, optionally option-order stability.
-    Cases already in the store are skipped, so an interrupted run can be continued."""
     t0 = time.time()
     steps = [("mapping", lambda *a: run_mapping.run(*a, mode=mode)), ("transform", run_transform.run)]
     if with_stability:

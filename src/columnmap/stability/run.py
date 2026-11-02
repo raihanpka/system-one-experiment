@@ -1,9 +1,5 @@
-"""Option-order stability: re-ask each choice question with shuffled option order.
+# Option-order stability: re-ask each choice question with shuffled option order
 
-Per derived output: `k` orders of the candidate expressions (first = as generated); per available output
-the transformation-kind question with `k` orders of its labels. Records picked text, picked slot and
-whether the pick was the true one, so order sensitivity and position bias can be measured.
-"""
 from __future__ import annotations
 
 import random

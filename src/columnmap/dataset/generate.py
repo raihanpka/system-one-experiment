@@ -1,8 +1,5 @@
-"""Synthetic ground truth. Cases are rebuilt in memory from the seed (no big file on disk); `python -m columnmap.dataset.export` writes CSV views.
+# synthetic samples: input files with named drift, many rows, anomalies and ground truth, rebuilt from a seed
 
-Drift levels: 0 identical, 1 style only (camel, UPPER, kebab...), 2 abbreviation, 3 synonym,
-4 Indonesian, 5 far/absurd phrase, 6 mixed levels + decoy columns. Each case = one input "file".
-"""
 from __future__ import annotations
 
 import random
@@ -53,8 +50,8 @@ def _replace(node, path, new):
     return {**node, "args": args}
 
 
+# Single-edit variants of a rule: op swap, arg reversal, other same-type source, other literal, rotated map
 def mutations(rule: dict, types: dict, present: list[str]):
-    """Single-edit variants of a rule: op swap, arg reversal, other same-type source, other literal, rotated map."""
     for path, n in _paths(rule):
         if n.get("op") in ARITH:
             for o in ARITH:
@@ -76,8 +73,8 @@ def mutations(rule: dict, types: dict, present: list[str]):
             yield _replace(rule, path, {**n, "map": dict(zip(n["map"], v[::-1]))})
 
 
+# 1-2 odd cells per file: a zero/negative/huge number, an empty or N/A text, a sentinel date
 def _anomalies(rng, cols, rows):
-    """1-2 odd cells per file: a zero/negative/huge number, an empty or N/A text, a sentinel date."""
     out, used = [], set()
     for _ in range(rng.randint(1, 2)):
         c, r = rng.choice(cols), rng.randrange(len(rows))

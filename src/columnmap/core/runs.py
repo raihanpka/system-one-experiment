@@ -1,4 +1,5 @@
-"""Run folders: results/<samples>_<YYYYmmdd-HHMMSS>/ e.g. identical-synonym_20261102-153012; results/latest points at the newest."""
+# Run folders: results/<samples>_<YYYYmmdd-HHMMSS>/ e.g. identical-synonym_20261102-153012; results/latest points at the newest
+
 from __future__ import annotations
 
 import os

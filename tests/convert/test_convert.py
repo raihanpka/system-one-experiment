@@ -12,8 +12,8 @@ T = load_template()
 CASES = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=4)}
 
 
+# Mapping row where true pairs get p_true and all others 0.05; kinds are right; transform picks are right
 def oracle_rows(case, wrong_kind=False, p_true=0.9):
-    """Mapping row where true pairs get p_true and all others 0.05; kinds are right; transform picks are right."""
     d = lambda p: {"p": p, "d": math.log(p / (1 - p)) * T0}                    # noqa: E731
     matrix = {k["name"]: {o["name"]: d(p_true if k["name"] in o["sources"] else 0.05) for o in case["outputs"]}
               for k in case["columns"]}

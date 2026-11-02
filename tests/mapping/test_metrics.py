@@ -18,8 +18,8 @@ def logit_raw(p):
     return {"false": 0.0, "true": math.log(p / (1 - p)) * T0}      # so that sigmoid(raw/T0) == p
 
 
+# p=0.9 for a true source, 0.05 otherwise; reads input name and output name from the prompt
 class Oracle:
-    """p=0.9 for a true source, 0.05 otherwise; reads input name and output name from the prompt."""
 
     def __init__(self, case):
         self.src = {o["name"]: set(o["sources"]) for o in case["outputs"]}

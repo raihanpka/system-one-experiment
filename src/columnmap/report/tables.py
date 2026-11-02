@@ -1,4 +1,5 @@
-"""Report tables: the preface plus each slice's own tables."""
+# Report tables: the preface plus each slice's own tables
+
 from __future__ import annotations
 
 from ..convert.tables import convert_tables

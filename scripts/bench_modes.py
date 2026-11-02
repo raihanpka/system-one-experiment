@@ -1,5 +1,5 @@
-"""Compare the two mapping modes on the model: wall time and per-column top-1 (about 5 minutes).
-Run: make bench"""
+# Compare the two mapping modes on the model: wall time and per-column top-1 (about 5 minutes)
+
 import sys, time
 
 from columnmap.core.paths import VENDOR

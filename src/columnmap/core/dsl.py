@@ -1,7 +1,5 @@
-"""Tiny transformation AST: evaluate and render. No eval(): only the ops below exist.
+# Tiny transformation AST: evaluate and render. No eval(): only the ops below exist
 
-Nodes: {"src": id} | {"lit": value} | {"op": name, "args": [...], ("sep"|"map": ...)}.
-"""
 from __future__ import annotations
 
 import json
@@ -40,8 +38,8 @@ def evaluate(node: dict, row: dict):
     raise ValueError(f"unknown op {op!r}")
 
 
+# Readable one-line form; `name_of(src_id)` gives the column name to show
 def render(node: dict, name_of) -> str:
-    """Readable one-line form; `name_of(src_id)` gives the column name to show."""
     if "src" in node:
         return name_of(node["src"])
     if "lit" in node:
@@ -62,8 +60,8 @@ def render(node: dict, name_of) -> str:
     return f"{op}(" + ", ".join(render(a, name_of) for a in args) + ")"
 
 
+# evaluate(), but a value the rule cannot handle (0 divisor, unknown code, bad date) gives None
 def safe_evaluate(node: dict, row: dict):
-    """evaluate(), but a value the rule cannot handle (0 divisor, unknown code, bad date) gives None."""
     try:
         return evaluate(node, row)
     except (ZeroDivisionError, KeyError, ValueError, TypeError):

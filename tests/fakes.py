@@ -1,4 +1,5 @@
-"""Fake deciders shared by the tests; they stand in for the model."""
+# Fake deciders shared by the tests; they stand in for the model
+
 from __future__ import annotations
 
 from columnmap.core.dsl import render
@@ -11,8 +12,8 @@ def truth_texts(case):
     return {o["name"]: render(o["rule"], name_of.get) for o in case["outputs"] if o["available"] and o["kind"] != "pass"}
 
 
+# Picks the true expression / true kind for choice, scores 0.9/0.1 for predicates
 class TransformOracle:
-    """Picks the true expression / true kind for choice, scores 0.9/0.1 for predicates."""
 
     def __init__(self, case, right=True):
         self.truth, self.right = truth_texts(case), right

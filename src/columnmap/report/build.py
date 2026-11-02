@@ -1,15 +1,5 @@
-"""Write everything a run produces: per-sample files, figures and summary.md.
+# Write everything a run produces: per-sample files, figures and summary.md
 
-Inputs, expected files and ground truth live once, in data/samples/ (not copied into runs).
-
-results/<samples>_<timestamp>/
-  result.json                       all raw Jev results of this run (see core/store.py)
-  <letter>_<word>/                  one folder per tested sample, e.g. c_coded/
-    converted_<word>_<context>.csv  the template filled from Jev's decisions
-    decisions_<word>_<context>.csv  per output field: input column chosen, probability, kind, expression
-    probabilities_<word>_<context>.csv  probability of every (input column, output field) pair
-  report/summary.md, report/figures/*.svg
-"""
 from __future__ import annotations
 
 from pathlib import Path

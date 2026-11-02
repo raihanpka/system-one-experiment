@@ -1,4 +1,5 @@
-"""Mapping figures (SVG): accuracy, outcome breakdown, drift regression, heatmap, calibration, kind accuracy."""
+# Mapping figures (SVG): accuracy, outcome breakdown, drift regression, heatmap, calibration, kind accuracy
+
 from __future__ import annotations
 
 import pandas as pd
@@ -12,8 +13,8 @@ from ..dataset.samples import LEVEL_NAMES
 from .metrics import OUTCOMES, kind_metrics, lexical_mapping, mapping_metrics, outcomes, pair_scores
 
 
+# Top-1 mapping accuracy per sample: Jev conditions vs a name-similarity baseline
 def fig_accuracy(rows_by_cond, cases, labels, path):
-    """Top-1 mapping accuracy per sample: Jev conditions vs a name-similarity baseline."""
     recs = []
     ids = list(labels)
     for cid in ids:
@@ -30,8 +31,8 @@ def fig_accuracy(rows_by_cond, cases, labels, path):
     return save(fig, path)
 
 
+# Input columns: true sources in output order first, decoys and unused last
 def _order(case):
-    """Input columns: true sources in output order first, decoys and unused last."""
     out, seen = [], set()
     for o in case["outputs"]:
         for n in o["sources"]:
@@ -42,8 +43,8 @@ def _order(case):
     return out + rest
 
 
+# P(input column feeds output field) for one file. Black dots mark the true pairs
 def fig_heatmap(row, case, label, cond, path):
-    """P(input column feeds output field) for one file. Black dots mark the true pairs."""
     cols = _order(case)
     outs = [o["name"] for o in case["outputs"]]
     data = pd.DataFrame([[pair_p(row["matrix"][c][o], T0) for o in outs] for c in cols], index=cols,
@@ -62,8 +63,8 @@ def fig_heatmap(row, case, label, cond, path):
     return save(fig, path)
 
 
+# Left: ECE against temperature. Right: reliability at the calibrated temperature
 def fig_calibration(rows_by_cond, cases, path):
-    """Left: ECE against temperature. Right: reliability at the calibrated temperature."""
     fig, (a, b) = plt.subplots(1, 2, figsize=(9, 3.6))
     recs, rel = [], []
     for cond, rows in rows_by_cond.items():
@@ -89,8 +90,8 @@ def fig_calibration(rows_by_cond, cases, path):
     return save(fig, path)
 
 
+# Stacked bars: what happened to every output field of a file, one panel per context
 def fig_outcomes(rows_by_cond, cases, labels, path):
-    """Stacked bars: what happened to every output field of a file, one panel per context."""
     conds = [c for c, r in rows_by_cond.items() if r]
     fig, axes = plt.subplots(1, len(conds), figsize=(4.4 * len(conds) + 2.2, 3.8), sharey=True, squeeze=False)
     colors = ["#2a9d8f", "#e76f51", "#a8c686", "#e9c46a"]
@@ -110,8 +111,8 @@ def fig_outcomes(rows_by_cond, cases, labels, path):
     return save(fig, path)
 
 
+# Top-1 against name drift, one point per file, with a fitted line per method (slope = points lost per level)
 def fig_drift(rows_by_cond, cases, path):
-    """Top-1 against name drift, one point per file, with a fitted line per method (slope = points lost per level)."""
     import numpy as np
     recs = []
     for cond, rows in rows_by_cond.items():
@@ -136,8 +137,8 @@ def fig_drift(rows_by_cond, cases, path):
     return save(fig, path)
 
 
+# Naming the transformation kind, given the true source columns
 def fig_kind(kind_by_cond, cases, labels, path):
-    """Naming the transformation kind, given the true source columns."""
     recs = []
     for cond, rows in kind_by_cond.items():
         for cid in labels:

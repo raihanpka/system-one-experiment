@@ -1,4 +1,5 @@
-"""Transformation figure (SVG): picking the right expression among candidates."""
+# Transformation figure (SVG): picking the right expression among candidates
+
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
@@ -10,8 +11,8 @@ from ..core.viz import save
 from .metrics import transform_metrics
 
 
+# Left: choosing the right expression among 4 candidates. Right: naming the transformation kind
 def fig_transform(transform_by_cond, labels, path):
-    """Left: choosing the right expression among 4 candidates. Right: naming the transformation kind."""
     t_recs = []
     for cond, rows in transform_by_cond.items():
         for cid in labels:

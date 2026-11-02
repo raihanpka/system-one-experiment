@@ -1,8 +1,5 @@
-"""Transformation ranking: Jev picks the right expression among candidates (1 truth + distractors).
+# Transformation ranking: Jev picks the right expression among candidates (1 truth + distractors)
 
-Per derived, available output: one `choice` question over the rendered candidates and one `predicate`
-per candidate. The winner is executed on the sample rows and compared with the expected values.
-"""
 from __future__ import annotations
 
 import math
