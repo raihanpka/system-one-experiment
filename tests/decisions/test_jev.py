@@ -89,3 +89,37 @@ def test_real_model_card_example_and_budget():
             d.decide("word " * 40000, [Question("predicate", "Is this long?")])
         s = d.decide("urgent outage now", [Question("score", "Urgency?", levels=(Level("low"), Level("high")))]).answers[0]
         assert 0 <= s.score <= 1
+
+
+def test_config_built_options_reach_the_decider_for_each_question_type():
+    from columnmap.core.config import load_config, model_options
+    cfg = load_config('''
+[model]
+quant = "Q8_0"
+ngl = 999
+flash_attn = "default"
+
+[run]
+mode = "options"
+target_precision = 1.0
+prompt_version = "v1"
+keep_d = 0.0
+seed = 1234
+
+[splits]
+dev = [11]
+calibration = [12, 13]
+test = [21, 22]
+
+[device]
+mode = "cpu"
+''')
+    opts = model_options(cfg)
+    assert opts["ngl"] == 0
+    fb = FakeBackend()
+    qs = [Question("predicate", "is the field a date?"),
+          Question("choice", "which unit?", choices=(Choice("EUR"), Choice("USD"))),
+          Question("score", "how urgent?", levels=(Level("low"), Level("mid"), Level("high")))]
+    r = JevDecider(backend=fb, **opts).decide("column text", qs)
+    assert [a.type for a in r.answers] == ["predicate", "choice", "score"]
+    assert len(fb.calls) == 1
