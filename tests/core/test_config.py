@@ -88,3 +88,11 @@ def test_dotenv_loads_values_without_overriding_the_shell(tmp_path):
 
 def test_dotenv_missing_file_is_a_no_op(tmp_path):
     assert load_dotenv(tmp_path / "nope.env", {}) == {}
+
+
+def test_example_settings_file_lists_every_option_and_stays_valid():
+    from columnmap.core.paths import ROOT
+    example = json.loads((ROOT / "appsettings.example.json").read_text(encoding="utf-8"))
+    cfg = parse(example, env={})
+    assert set(cfg) >= {"backend", "open_router", "local", "device", "run", "splits"}
+    assert cfg["local"]["threads"] == 8 and cfg["run"]["conds"] == ["name", "samples"]

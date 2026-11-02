@@ -30,7 +30,7 @@ make sample    # run samples a, b, c, d
 make help      # all commands
 ```
 
-Settings live in `appsettings.json` (defaults) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both. `Backend:Type` is `openrouter` (hosted, default) or `local` (Jev GGUF on this machine). The OpenRouter key goes in `.env` (copy `.env.example`); `.env` is loaded automatically at start.
+Settings live in `appsettings.json` (defaults; every option is listed in `appsettings.example.json`) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both. `Backend:Type` is `openrouter` (hosted, default) or `local` (Jev GGUF on this machine). The OpenRouter key goes in `.env` (copy `.env.example`); `.env` is loaded automatically at start.
 
 ---
 
