@@ -107,12 +107,6 @@ def validate(cfg: dict) -> dict:
     return cfg
 
 
-# the same checks for a dict already in memory (tests, scripts); env overrides apply on top
-def parse(data: dict, env=None) -> dict:
-    env = {} if env is None else env
-    return validate(merge(normalize(data), env_overrides(env)))
-
-
 def load_settings(defaults=SETTINGS, local=SETTINGS_LOCAL, env=None) -> dict:
     if env is None:
         load_dotenv()

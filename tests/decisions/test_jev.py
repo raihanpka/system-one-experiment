@@ -93,7 +93,8 @@ def test_real_model_card_example_and_budget():
 
 
 def test_settings_built_options_reach_the_decider_for_each_question_type():
-    from columnmap.core.settings import model_options, parse
+    from columnmap.core.settings import model_options
+    from tests.settings_helpers import parse
     cfg = parse({"Backend": {"Type": "local"}, "Local": {"Quant": "Q8_0", "Ngl": 999, "FlashAttn": "default"},
                  "Device": {"Mode": "cpu"},
                  "Run": {"Mode": "options", "TargetPrecision": 1.0, "PromptVersion": "v1", "KeepD": 0.0, "Seed": 1234},

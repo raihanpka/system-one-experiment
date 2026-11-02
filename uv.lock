@@ -294,7 +294,6 @@ name = "columnmap"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "linkml" },
     { name = "numpy" },
     { name = "seaborn" },
     { name = "tokenizers" },
@@ -302,19 +301,22 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "linkml" },
     { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "linkml", specifier = ">=1.12.1" },
     { name = "numpy", specifier = "==2.5.3" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "tokenizers", specifier = "==0.23.2" },
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.2.0" }]
+dev = [
+    { name = "linkml", specifier = ">=1.12.1" },
+    { name = "pytest", specifier = ">=9.2.0" },
+]
 
 [[package]]
 name = "contourpy"

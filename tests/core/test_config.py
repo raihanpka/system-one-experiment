@@ -3,7 +3,8 @@ import json
 import pytest
 
 from columnmap.core.paths import SETTINGS
-from columnmap.core.settings import load_dotenv, load_settings, model_options, openrouter_settings, parse
+from columnmap.core.settings import load_dotenv, load_settings, model_options, openrouter_settings
+from tests.settings_helpers import parse
 
 BASE = {
     "Backend": {"Type": "openrouter"},

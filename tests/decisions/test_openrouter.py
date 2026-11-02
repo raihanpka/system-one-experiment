@@ -67,7 +67,7 @@ def test_http_error_is_raised_with_status_and_no_key_in_the_message():
 
 
 def test_factory_picks_openrouter_when_the_setting_says_so(monkeypatch):
-    from columnmap.core.settings import parse
+    from tests.settings_helpers import parse
     from columnmap.decisions.factory import make_decider
     cfg = parse({"Backend": {"Type": "openrouter"}, "OpenRouter": {"Model": "m", "BaseUrl": "u", "ApiKeyEnv": "OPENROUTER_API_KEY"},
                  "Local": {"Quant": "Q8_0", "Ngl": 999}, "Run": {"Mode": "options", "TargetPrecision": 1.0, "Seed": 1},
