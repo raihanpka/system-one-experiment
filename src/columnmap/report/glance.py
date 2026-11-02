@@ -11,7 +11,7 @@ from ..core.tables import pct
 from ..mapping.metrics import mapping_metrics
 from ..mapping.reject import field_scores, reject_metrics
 
-MODES = (("mapping", "options"), ("mapping_pairs", "pairs"), ("mapping_twostage", "twostage"))
+MODES = (("mapping", "options"), ("mapping_pairs", "pairs"))
 
 
 def _honest(store, cases, cond, mode, only) -> str:

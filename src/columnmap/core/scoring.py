@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 
-MASKED_D = -20.0                       # score of a field that was not shortlisted in two-stage mode
 T0 = 0.8278650620942867                     # calibrated global temperature of Jev v3
 TS = (0.5, 0.7, T0, 1.0, 1.5, 2.0, 3.0)     # temperatures swept offline
 
