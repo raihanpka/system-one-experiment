@@ -1,0 +1,32 @@
+output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3
+policy_number,invalid value,0.6071,ContractRef,0.6071,,,,
+insured_full_name,low confidence,0.8961,GivenName,0.9728,,,,
+insured_birth_date,low confidence,0.8425,BornOn,0.8573,,,,
+insured_birth_year,no column passes,0.0,BornOn,0.0678,Sex,0.0023,LevyRate,0.0015
+insured_gender,low confidence,0.9103,Sex,0.985,,,,
+insured_city,low confidence,0.8578,Town,0.904,,,,
+insured_province,no column passes,0.0,Town,0.0132,LevyRate,0.0015,ContractRef,0.0015
+postal_code,no column passes,0.0,Town,0.0042,EffectiveDate,0.0027,LevyRate,0.0023
+insured_address,no column passes,0.0,Town,0.0349,CaseRef,0.0018,ContractRef,0.0018
+coverage_start_date,low confidence,0.8303,EffectiveDate,0.8115,,,,
+coverage_end_date,low confidence,0.8673,ExpiryDate,0.927,,,,
+coverage_days,no column passes,0.0,EffectiveDate,0.0363,LevyRate,0.0205,ExpiryDate,0.0164
+sum_insured_amount,low confidence,0.8658,CoverLimit,0.9237,,,,
+currency_code,low confidence,0.8311,MoneyUnit,0.8149,,,,
+gross_premium,no column passes,0.0,LevyRate,0.2298,BaseCharge,0.0444,MoneyUnit,0.0056
+net_premium_after_discount,no column passes,0.0,LevyRate,0.07,BaseCharge,0.0064,ContractRef,0.004
+claim_number,low confidence,0.8094,CaseRef,0.7176,,,,
+claim_incident_date,low confidence,0.8456,LossDate,0.8679,,,,
+claim_age_days,no column passes,0.0,LossDate,0.0372,EffectiveDate,0.0121,PostingDate,0.0108
+claimed_amount,no column passes,0.0,Excess,0.0462,SettledSum,0.0153,CoverLimit,0.0107
+deductible_amount,low confidence,0.7838,Excess,0.5847,,,,
+net_claim_payable,no column passes,0.0,Excess,0.0857,SettledSum,0.0299,LevyRate,0.0051
+claim_paid_amount,low confidence,0.8037,SettledSum,0.6891,,,,
+claim_paid_ratio,no column passes,0.0,Excess,0.0222,SettledSum,0.0208,LevyRate,0.0061
+claim_status,low confidence,0.8812,CaseState,0.9532,,,,
+agent_id,no column passes,0.0,ContractRef,0.0192,LevyRate,0.0025,CaseRef,0.0025
+account_number,no column passes,0.0,ContractRef,0.0354,CaseRef,0.0093,LevyRate,0.0025
+transaction_date,low confidence,0.8414,PostingDate,0.8535,,,,
+transaction_amount,no column passes,0.0,BaseCharge,0.0824,LevyRate,0.0514,ServiceCharge,0.0385
+transaction_fee_amount,low confidence,0.8123,ServiceCharge,0.7314,,,,
+total_charge,low confidence,0.7997,BaseCharge,0.6686,,,,

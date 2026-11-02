@@ -1,0 +1,32 @@
+output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3
+policy_number,no column passes,0.0,LDG_OWNR_KEY,0.096,CHG_AMT_RAW,0.0032,MVT_AMT_MAIN,0.003
+insured_full_name,no column passes,0.0,LDG_OWNR_KEY,0.0336,PRTY_CAT_B,0.0017,PRTY_DT_A,0.0015
+insured_birth_date,low confidence,0.8441,PRTY_DT_A,0.9163,,,,
+insured_birth_year,no column passes,0.0,PRTY_DT_A,0.0402,PRTY_CAT_B,0.0017,LDG_OWNR_KEY,0.0016
+insured_gender,low confidence,0.9518,PRTY_CAT_B,0.9814,,,,
+insured_city,no column passes,0.0,LDG_OWNR_KEY,0.0083,MVT_AMT_MAIN,0.0018,EVT_AMT_SELF,0.0013
+insured_province,no column passes,0.0,LDG_OWNR_KEY,0.004,MVT_AMT_MAIN,0.0015,LMT_VAL_MAX,0.0012
+postal_code,no column passes,0.0,LDG_OWNR_KEY,0.0034,MVT_AMT_MAIN,0.0024,LMT_VAL_MAX,0.0019
+insured_address,no column passes,0.0,LDG_OWNR_KEY,0.0113,LMT_VAL_MAX,0.0012,MVT_AMT_MAIN,0.0011
+coverage_start_date,low confidence,0.6733,PERIOD_FROM_X,0.7718,,,,
+coverage_end_date,low confidence,0.81,PERIOD_TO_X,0.8911,,,,
+coverage_days,no column passes,0.0,PERIOD_TO_X,0.0342,PERIOD_FROM_X,0.0101,LMT_VAL_MAX,0.0055
+sum_insured_amount,low confidence,0.5893,LMT_VAL_MAX,0.6853,,,,
+currency_code,low confidence,0.9061,VAL_UNIT_CD,0.9567,,,,
+gross_premium,no column passes,0.0,CHG_RBT_PCT,0.0284,MVT_AMT_MAIN,0.0222,CHG_AMT_RAW,0.0052
+net_premium_after_discount,no column passes,0.0,CHG_RBT_PCT,0.2495,MVT_AMT_MAIN,0.0145,CHG_AMT_RAW,0.0041
+claim_number,low confidence,0.9379,EVT_CASE_KEY,0.9744,,,,
+claim_incident_date,low confidence,0.8423,EVT_DT_LOSS,0.915,,,,
+claim_age_days,no column passes,0.0,MVT_DT_POST,0.0374,EVT_DT_LOSS,0.0334,PERIOD_FROM_X,0.0075
+claimed_amount,no column passes,0.0,EVT_AMT_SELF,0.3685,MVT_AMT_MAIN,0.0759,LMT_VAL_MAX,0.0584
+deductible_amount,no column passes,0.0,EVT_AMT_SELF,0.0139,MVT_AMT_MAIN,0.0062,LMT_VAL_MAX,0.0055
+net_claim_payable,no column passes,0.0,EVT_AMT_SELF,0.0416,MVT_AMT_MAIN,0.0209,LMT_VAL_MAX,0.0083
+claim_paid_amount,no column passes,0.0,EVT_AMT_SELF,0.1054,MVT_AMT_MAIN,0.0557,CHG_AMT_RAW,0.0101
+claim_paid_ratio,no column passes,0.0,CHG_RBT_PCT,0.1822,EVT_AMT_SELF,0.0086,MVT_AMT_MAIN,0.0055
+claim_status,no column passes,0.0,EVT_AMT_SELF,0.0023,LDG_OWNR_KEY,0.0021,MVT_DT_POST,0.0019
+agent_id,low confidence,0.8952,SLS_CHNL_KEY,0.9501,,,,
+account_number,no column passes,0.0,LDG_OWNR_KEY,0.2458,SLS_CHNL_KEY,0.0073,MVT_AMT_MAIN,0.0027
+transaction_date,low confidence,0.5479,MVT_DT_POST,0.6394,,,,
+transaction_amount,no column passes,0.0,MVT_AMT_MAIN,0.22,CHG_AMT_RAW,0.1247,EVT_AMT_SELF,0.0725
+transaction_fee_amount,no column passes,0.0,CHG_RBT_PCT,0.086,MVT_AMT_MAIN,0.0174,CHG_AMT_RAW,0.0052
+total_charge,low confidence,0.5622,CHG_AMT_RAW,0.6555,,,,

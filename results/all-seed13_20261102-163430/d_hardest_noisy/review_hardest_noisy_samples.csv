@@ -1,0 +1,32 @@
+output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3
+policy_number,no column passes,0.0,record-hash,0.2294,ledger-ref,0.0122,levy-rate,0.0029
+insured_full_name,low confidence,0.7958,"concat(Holder First Name, "" "", nama-belakang)",0.9319,"concat(Holder First Name, """", nama-belakang)",0.6771,"concat(nama-belakang, "" "", Holder First Name)",0.5123
+insured_birth_date,no column passes,0.0,record-hash,0.004,adjuster-name,0.0011,nama-belakang,0.0007
+insured_birth_year,no column passes,0.0,record-hash,0.0073,levy-rate,0.001,adjuster-name,0.0008
+insured_gender,no column passes,0.0,Holder First Name,0.008,adjuster-name,0.0042,record-hash,0.004
+insured_city,low confidence,0.936,insured_city,0.9734,,,,
+insured_province,no column passes,0.0,insured_city,0.0103,record-hash,0.0069,kode-pos,0.0026
+postal_code,low confidence,0.8953,kode-pos,0.9502,,,,
+insured_address,no column passes,0.0,kode-pos,0.016,record-hash,0.0099,insured_city,0.006
+coverage_start_date,low confidence,0.9573,tgl-mulai-polis,0.984,,,,
+coverage_end_date,no column passes,0.0,record-hash,0.0061,premium-receipt-date,0.0059,adjuster-name,0.0023
+coverage_days,no column passes,0.0,record-hash,0.0088,tgl-mulai-polis,0.0036,levy-rate,0.0035
+sum_insured_amount,low confidence,0.8901,cover-limit,0.947,,,,
+currency_code,low confidence,0.929,currency_code,0.9697,,,,
+gross_premium,no column passes,0.0,levy-rate,0.0994,premium-receipt-date,0.0109,record-hash,0.0069
+net_premium_after_discount,no column passes,0.0,levy-rate,0.0775,premium-receipt-date,0.008,record-hash,0.0045
+claim_number,low confidence,0.9924,claimNumber,0.9981,,,,
+claim_incident_date,low confidence,0.9088,Claim Incident Date,0.9583,,,,
+claim_age_days,no column passes,0.0,Claim Incident Date,0.0234,internal-remark,0.0076,record-hash,0.0058
+claimed_amount,low confidence,0.6142,requested-payout,0.7119,,,,
+deductible_amount,no column passes,0.0,requested-payout,0.0037,record-hash,0.0026,levy-rate,0.0024
+net_claim_payable,no column passes,0.0,requested-payout,0.0422,record-hash,0.003,adjuster-name,0.003
+claim_paid_amount,no column passes,0.0,requested-payout,0.061,adjuster-name,0.0073,record-hash,0.0038
+claim_paid_ratio,no column passes,0.0,levy-rate,0.0167,record-hash,0.0112,requested-payout,0.0072
+claim_status,low confidence,0.6882,"concat(CLAIM_STATUS_CODE, "" "", internal-remark)",0.8833,"concat(CLAIM_STATUS_CODE, "", "", internal-remark)",0.8427,CLAIM_STATUS_CODE,0.836
+agent_id,low confidence,0.5176,adjuster-name,0.6046,,,,
+account_number,low confidence,0.6372,ledger-ref,0.7357,,,,
+transaction_date,low confidence,0.5181,tgl-transaksi,0.8781,premium-receipt-date,0.4753,,
+transaction_amount,low confidence,0.8533,transaction_amount,0.9227,,,,
+transaction_fee_amount,low confidence,0.8159,fee-amt,0.8956,,,,
+total_charge,no column passes,0.0,levy-rate,0.1641,fee-amt,0.0324,transaction_amount,0.0265

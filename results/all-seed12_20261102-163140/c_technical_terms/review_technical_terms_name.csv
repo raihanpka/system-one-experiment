@@ -1,0 +1,32 @@
+output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3
+policy_number,no column passes,0.0,EVT_CASE_KEY,0.015,PRTY_CAT_B,0.0141,EVT_PHS_CD,0.0084
+insured_full_name,filled,0.8397,PRTY_NM_1,0.8397,,,,
+insured_birth_date,no column passes,0.0,PRTY_CAT_B,0.0082,EVT_PHS_CD,0.0027,EVT_CASE_KEY,0.0018
+insured_birth_year,no column passes,0.0,PRTY_CAT_B,0.0244,EVT_PHS_CD,0.01,EVT_CASE_KEY,0.0022
+insured_gender,no column passes,0.0,PRTY_CAT_B,0.0889,EVT_PHS_CD,0.0107,PRTY_NM_1,0.004
+insured_city,filled,0.7808,OBJ_INFO_ADDR_C,0.7808,,,,
+insured_province,no column passes,0.0,EVT_PHS_CD,0.0488,OBJ_INFO_ADDR_P,0.045,PRTY_CAT_B,0.0312
+postal_code,no column passes,0.0,OBJ_INFO_ADDR_P,0.045,PRTY_CAT_B,0.0093,EVT_PHS_CD,0.0074
+insured_address,filled,0.5704,OBJ_INFO_ADDR_P,0.5704,,,,
+coverage_start_date,filled,0.5676,PERIOD_FROM_X,0.5676,,,,
+coverage_end_date,filled,0.7892,PERIOD_TO_X,0.7892,,,,
+coverage_days,no column passes,0.0,PERIOD_FROM_X,0.031,PERIOD_TO_X,0.0275,EVT_PHS_CD,0.0184
+sum_insured_amount,filled,0.5191,LMT_VAL_MAX,0.5191,,,,
+currency_code,no column passes,0.0,VAL_UNIT_CD,0.4922,EVT_PHS_CD,0.0249,PRTY_CAT_B,0.0104
+gross_premium,no column passes,0.0,MVT_AMT_MAIN,0.0569,MVT_AMT_SVC,0.0156,CHG_LVY_PCT,0.0129
+net_premium_after_discount,no column passes,0.0,CHG_LVY_PCT,0.0268,MVT_AMT_MAIN,0.0189,PRTY_CAT_B,0.016
+claim_number,no column passes,0.0,EVT_CASE_KEY,0.4763,EVT_PHS_CD,0.0318,PRTY_CAT_B,0.015
+claim_incident_date,filled,0.8587,EVT_DT_LOSS,0.8587,,,,
+claim_age_days,no column passes,0.0,EVT_DT_LOSS,0.039,EVT_PHS_CD,0.0281,PERIOD_FROM_X,0.0228
+claimed_amount,no column passes,0.0,EVT_AMT_SELF,0.2409,LMT_VAL_MAX,0.0755,MVT_AMT_MAIN,0.0569
+deductible_amount,no column passes,0.0,EVT_AMT_SELF,0.0243,LMT_VAL_MAX,0.0113,VAL_UNIT_CD,0.009
+net_claim_payable,no column passes,0.0,EVT_AMT_SELF,0.0506,LMT_VAL_MAX,0.036,MVT_AMT_SVC,0.0138
+claim_paid_amount,no column passes,0.0,EVT_AMT_SELF,0.0831,MVT_AMT_MAIN,0.0348,MVT_AMT_SVC,0.0287
+claim_paid_ratio,no column passes,0.0,CHG_LVY_PCT,0.056,EVT_AMT_SELF,0.019,PRTY_CAT_B,0.015
+claim_status,no column passes,0.0,EVT_PHS_CD,0.0519,EVT_CASE_KEY,0.033,PRTY_CAT_B,0.0169
+agent_id,filled,0.5888,SLS_CHNL_KEY,0.5888,,,,
+account_number,no column passes,0.0,SLS_CHNL_KEY,0.056,PRTY_CAT_B,0.0093,EVT_CASE_KEY,0.0092
+transaction_date,filled,0.6411,MVT_DT_POST,0.6411,,,,
+transaction_amount,no column passes,0.0,MVT_AMT_MAIN,0.3701,CHG_AMT_RAW,0.2878,MVT_AMT_SVC,0.2858
+transaction_fee_amount,no column passes,0.0,CHG_LVY_PCT,0.4655,MVT_AMT_SVC,0.0985,CHG_AMT_RAW,0.0347
+total_charge,no column passes,0.0,CHG_AMT_RAW,0.3691,MVT_AMT_SVC,0.1346,CHG_LVY_PCT,0.1181

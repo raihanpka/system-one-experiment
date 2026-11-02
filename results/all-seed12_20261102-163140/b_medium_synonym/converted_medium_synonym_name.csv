@@ -1,0 +1,20 @@
+policy_number,insured_full_name,insured_birth_date,insured_birth_year,insured_gender,insured_city,insured_province,postal_code,insured_address,coverage_start_date,coverage_end_date,coverage_days,sum_insured_amount,currency_code,gross_premium,net_premium_after_discount,claim_number,claim_incident_date,claim_age_days,claimed_amount,deductible_amount,net_claim_payable,claim_paid_amount,claim_paid_ratio,claim_status,agent_id,account_number,transaction_date,transaction_amount,transaction_fee_amount,total_charge
+,Andi Utomo,1974-05-09,,F,,Kalimantan Barat A,,,,2026-02-04,,1422225000,SGD,,,CLM-8930534,2025-06-03,,,315000,,,,,AGT87013,,,18783915,3537,19903911
+,Nurul Rahman,1976-11-16,,M,,Jawa Timur P,,,,2025-10-29,,1560758000,USD,,,CLM-1443370,2025-03-14,,,511000,,,,,AGT64532,,,14573154,29971,11850981
+,Lestari Putri,1987-02-06,,M,,Bali P,,,,2025-12-13,,982598000,SGD,,,CLM-8173062,2025-01-01,,,679000,,,,,AGT24010,,,36156723,42986,14282796
+,Nurul Tanjung,1969-08-06,,M,,Kalimantan Barat R,,,,2025-09-05,,1072407000,SGD,,,CLM-0104093,2025-02-04,,,637000,,,,,AGT43731,,,40857429,35412,16079235
+,Wulan Gunawan,1952-07-31,,F,,Sumatera Utara A,,,,2026-12-05,,515107000,IDR,,,CLM-4710283,2025-02-03,,,623000,,,,,AGT95717,,,17764814,1918,19629326
+,Lestari Setiawan,1983-08-12,,M,,Sumatera Selatan R,,,,2026-01-20,,1735076000,IDR,,,CLM-7395649,2025-04-06,,,141000,,,,,AGT76577,,,3777823,1189,7493503
+,Maya Halim,2000-06-02,,M,,Sumatera Selatan A,,,,2026-10-04,,1432887000,USD,,,CLM-9654462,2025-01-20,,,229000,,,,,AGT18707,,,38702409,1477,14873745
+,Joko Setiawan,1979-11-16,,M,,Sumatera Selatan P,,,,2026-06-23,,557942000,IDR,,,CLM-9050922,2025-04-20,,,286000,,,,,AGT08703,,,24143658,24703,8482489
+,Fitri Siregar,1953-09-02,,M,,Kalimantan Barat A,,,,2026-04-15,,1503221000,IDR,,,CLM-1541849,2025-01-30,,,896000,,,,,AGT99773,,,9581374,4717,17571602
+,Rizky Simanjuntak,1965-08-15,,M,,Jawa Barat A,,,,2026-04-09,,1152870000,SGD,,,CLM-4403958,2025-03-26,,,452000,,,,,AGT13449,,,7328393,11202,13010008
+,Dewi Hakim,1985-06-14,,F,,Kalimantan Barat P,,,,2026-11-28,,1444603000,IDR,,,CLM-8795216,2025-05-02,,,752000,,,,,AGT74966,,,41720475,16906,3942296
+,Hendra Tanjung,1982-05-15,,M,,DI Yogyakarta P,,,,2025-12-11,,1091618000,IDR,,,CLM-9848861,2025-05-15,,,647000,,,,,AGT72202,,,6200735,42218,9860809
+,Maya Santoso,1987-12-24,,F,,Jawa Timur A,,,,2025-08-24,,197161000,IDR,,,CLM-6116418,2025-02-25,,,710000,,,,,AGT70977,,,11058722,1977,11424436
+,Agus Saputra,1992-09-17,,F,,Sulawesi Selatan A,,,,2026-09-13,,50097000,USD,,,CLM-7502819,2025-06-22,,,274000,,,,,AGT00651,,,22087555,12691,15114777
+,Nurul Siregar,1951-07-27,,M,,Sumatera Utara R,,,,2026-11-27,,331493000,USD,,,CLM-4016962,2025-01-29,,,843000,,,,,AGT55434,,,39012801,9779,7835019
+,Rina Putri,1985-04-04,,F,,Kalimantan Barat A,,,,2025-10-11,,758129000,SGD,,,CLM-3084876,2025-02-08,,,745000,,,,,AGT11257,,,11915932,29273,1317661
+,Lestari Purnomo,2002-11-09,,M,,Sumatera Selatan P,,,,2025-11-06,,457103000,IDR,,,CLM-5972310,2025-05-10,,,690000,,,,,AGT33941,,,39014176,2611,13993526
+,Dewi Setiawan,1968-03-25,,M,,Kalimantan Timur R,,,,2025-12-10,,1007528000,IDR,,,CLM-1842095,2025-02-20,,,567000,,,,,AGT52395,,,46294228,43252,3951119
+,Budi Halim,2000-04-07,,M,,Jawa Timur P,,,,2025-07-22,,63128000,SGD,,,CLM-3381672,2025-06-15,,,736000,,,,,AGT71630,,,11165514,26903,12713624

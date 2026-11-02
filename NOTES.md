@@ -137,3 +137,11 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 3. So field ECE 0.10 to 0.13 at n about 60 is what perfect calibration looks like. The earlier "failure" is mostly noise, not miscalibration. Pair level (n=2263) is near its floor and fine.
 4. Decision needed: keep 0.03 and collect about 2000 field points, or replace the field check with a test that does not depend on ECE at this n (for example, precision at the cutoff with a confidence bound).
 
+
+## 15. Reset and Refit on Hosted Runs
+
+1. `calibration.json` was reset (`f735a03`). Results folders were regenerated and are now tracked in git (`results/`).
+2. Hosted calibration runs: seed 12 (`all-seed12_20261102-163140`) and seed 13 (`all-seed13_20261102-163430`), name and samples, options mode.
+3. Fit on seed 12 only. Held-out check on seed 13: pair ECE 0.006 calibrated; field ECE 0.072 (name, 57 points) and 0.099 (name+values, 62 points). Target for field ECE is no longer used (see section 14).
+4. Cutoff at 100 percent precision: none. Nothing is filled automatically with TargetPrecision 1.0.
+5. Deterministic check added (`core/validate.py`): a field whose converted cells fail the template type (date ISO, number finite, string not blank) is never filled automatically.

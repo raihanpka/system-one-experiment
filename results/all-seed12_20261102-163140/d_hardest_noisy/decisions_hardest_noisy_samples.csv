@@ -1,0 +1,32 @@
+output,chosen_input,confidence,calibrated_confidence,auto_filled,method,expression,p_expr,truth_available,truth_input,field_correct
+policy_number,ContractRef|PolicyVersion,0.7689,0.7689,True,expression,"concat(ContractRef, "" "", PolicyVersion)",0.9663,True,ContractRef,False
+insured_full_name,NamaBelakang|NamaDepan,0.9057,0.9057,True,expression,"concat(NamaDepan, "" "", NamaBelakang)",0.9379,True,NamaDepan|NamaBelakang,True
+insured_birth_date,Dob,0.93,0.93,True,copy,Dob,,True,Dob,True
+insured_birth_year,,0.0,0.0,False,unmapped,,,True,Dob,False
+insured_gender,,0.0,0.0,False,unmapped,,,False,,True
+insured_city,Cty,0.9666,0.9666,True,copy,Cty,,True,Cty,True
+insured_province,insured_province,0.9785,0.9785,True,copy,insured_province,,True,insured_province,True
+postal_code,postal-code,0.9604,0.9604,True,copy,postal-code,,True,postal-code,True
+insured_address,,0.0,0.0,False,unmapped,,,True,Cty|insured_province|postal-code,False
+coverage_start_date,PERIOD_FROM_X,0.6689,0.6689,True,copy,PERIOD_FROM_X,,True,PERIOD_FROM_X,True
+coverage_end_date,PERIOD_TO_X,0.9015,0.9015,True,copy,PERIOD_TO_X,,True,PERIOD_TO_X,True
+coverage_days,,0.0,0.0,False,unmapped,,,True,PERIOD_FROM_X|PERIOD_TO_X,False
+sum_insured_amount,sum_insured_amount,0.9869,0.9869,True,copy,sum_insured_amount,,True,sum_insured_amount,True
+currency_code,CURRENCY_CODE,0.9798,0.9798,True,copy,CURRENCY_CODE,,True,CURRENCY_CODE,True
+gross_premium,basePremium,0.7561,0.7561,True,copy,basePremium,,False,,False
+net_premium_after_discount,DiscPct,0.9327,0.9327,True,copy,DiscPct,,True,basePremium|DiscPct,False
+claim_number,NomorKlaim,0.9946,0.9946,True,copy,NomorKlaim,,True,NomorKlaim,True
+claim_incident_date,claim_incident_date,0.9391,0.9391,True,copy,claim_incident_date,,True,claim_incident_date,True
+claim_age_days,,0.0,0.0,False,unmapped,,,True,PERIOD_FROM_X|claim_incident_date,False
+claimed_amount,,0.0,0.0,False,unmapped,,,True,EVT_AMT_REQ,False
+deductible_amount,,0.0,0.0,False,unmapped,,,False,,True
+net_claim_payable,,0.0,0.0,False,unmapped,,,False,,True
+claim_paid_amount,claim_paid_amount,0.8591,0.8591,True,copy,claim_paid_amount,,True,claim_paid_amount,True
+claim_paid_ratio,,0.0,0.0,False,unmapped,,,True,claim_paid_amount|basePremium,False
+claim_status,CLAIM_STATUS_CODE|InternalRemark,0.7673,0.7673,True,expression,"concat(CLAIM_STATUS_CODE, ""-"", InternalRemark)",0.935,True,CLAIM_STATUS_CODE,False
+agent_id,BrokerId,0.9867,0.9867,True,copy,BrokerId,,True,BrokerId,True
+account_number,AcctNo,0.9156,0.9156,True,copy,AcctNo,,True,AcctNo,True
+transaction_date,transaction_date|PremiumReceiptDate,0.6949,0.6949,True,copy,transaction_date,0.836,True,transaction_date,True
+transaction_amount,transactionAmount,0.9293,0.9293,True,copy,transactionAmount,,True,transactionAmount,True
+transaction_fee_amount,,0.0,0.0,False,unmapped,,,False,,True
+total_charge,,0.0,0.0,False,unmapped,,,False,,True

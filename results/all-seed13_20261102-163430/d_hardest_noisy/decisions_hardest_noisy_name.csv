@@ -1,0 +1,32 @@
+output,chosen_input,confidence,calibrated_confidence,auto_filled,method,expression,p_expr,truth_available,truth_input,field_correct
+policy_number,,0.0,0.0,False,unmapped,,,False,,True
+insured_full_name,nama-belakang|Holder First Name,0.8958,0.8548,False,expression,"concat(Holder First Name, "" "", nama-belakang)",0.9552,True,Holder First Name|nama-belakang,True
+insured_birth_date,,0.0,0.0,False,unmapped,,,False,,True
+insured_birth_year,,0.0,0.0,False,unmapped,,,False,,True
+insured_gender,,0.0,0.0,False,unmapped,,,False,,True
+insured_city,insured_city,0.9342,0.8707,False,copy,insured_city,,True,insured_city,True
+insured_province,,0.0,0.0,False,unmapped,,,False,,True
+postal_code,kode-pos,0.9418,0.8746,False,copy,kode-pos,,True,kode-pos,True
+insured_address,,0.0,0.0,False,unmapped,,,False,,True
+coverage_start_date,tgl-mulai-polis,0.9664,0.8906,False,copy,tgl-mulai-polis,,True,tgl-mulai-polis,True
+coverage_end_date,,0.0,0.0,False,unmapped,,,False,,True
+coverage_days,,0.0,0.0,False,unmapped,,,False,,True
+sum_insured_amount,cover-limit,0.8222,0.833,False,copy,cover-limit,,True,cover-limit,True
+currency_code,currency_code,0.8751,0.8479,False,copy,currency_code,,True,currency_code,True
+gross_premium,,0.0,0.0,False,unmapped,,,False,,True
+net_premium_after_discount,,0.0,0.0,False,unmapped,,,False,,True
+claim_number,claimNumber,0.9596,0.8855,False,copy,claimNumber,,True,claimNumber,True
+claim_incident_date,Claim Incident Date,0.9131,0.8614,False,copy,Claim Incident Date,,True,Claim Incident Date,True
+claim_age_days,,0.0,0.0,False,unmapped,,,True,tgl-mulai-polis|Claim Incident Date,False
+claimed_amount,requested-payout,0.667,0.7994,False,copy,requested-payout,,True,requested-payout,True
+deductible_amount,,0.0,0.0,False,unmapped,,,False,,True
+net_claim_payable,,0.0,0.0,False,unmapped,,,False,,True
+claim_paid_amount,,0.0,0.0,False,unmapped,,,False,,True
+claim_paid_ratio,,0.0,0.0,False,unmapped,,,False,,True
+claim_status,CLAIM_STATUS_CODE,0.9787,0.9022,False,copy,CLAIM_STATUS_CODE,,True,CLAIM_STATUS_CODE,False
+agent_id,,0.0,0.0,False,unmapped,,,False,,True
+account_number,,0.0,0.0,False,unmapped,,,True,ledger-ref,False
+transaction_date,tgl-transaksi,0.9662,0.8904,False,copy,tgl-transaksi,,True,tgl-transaksi,True
+transaction_amount,transaction_amount,0.8511,0.8407,False,copy,transaction_amount,,True,transaction_amount,True
+transaction_fee_amount,fee-amt,0.8728,0.8472,False,copy,fee-amt,,True,fee-amt,True
+total_charge,,0.0,0.0,False,unmapped,,,True,transaction_amount|fee-amt,False

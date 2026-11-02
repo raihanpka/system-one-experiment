@@ -1,0 +1,32 @@
+output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3
+policy_number,no column passes,0.0,Case Ref,0.0313,Ledger Ref,0.0123,Levy Rate,0.0054
+insured_full_name,filled,0.9365,"concat(Given Name, "" "", Surname)",0.9781,"concat(Surname, "" "", Given Name)",0.3229,"concat(Given Name, """", Surname)",0.1929
+insured_birth_date,filled,0.9,Born On,0.9,,,,
+insured_birth_year,no column passes,0.0,Born On,0.0567,Levy Rate,0.0022,Sex,0.0019
+insured_gender,filled,0.9902,Sex,0.9902,,,,
+insured_city,no column passes,0.0,Case State,0.0413,State Region,0.0265,Levy Rate,0.0028
+insured_province,filled,0.6696,"concat(State Region, "" "", Case State)",0.9287,"concat(Case State, "" "", State Region)",0.9064,"concat(Case State, """", State Region)",0.8292
+postal_code,no column passes,0.0,Case State,0.0035,Levy Rate,0.003,State Region,0.0027
+insured_address,no column passes,0.0,State Region,0.0173,Case State,0.0165,Surname,0.0023
+coverage_start_date,no column passes,0.0,Expiry Date,0.0134,Levy Rate,0.0054,Loss Date,0.0026
+coverage_end_date,filled,0.9132,Expiry Date,0.9132,,,,
+coverage_days,no column passes,0.0,Expiry Date,0.0192,Levy Rate,0.0192,Loss Date,0.0093
+sum_insured_amount,filled,0.9158,Cover Limit,0.9158,,,,
+currency_code,filled,0.8561,Money Unit,0.8561,,,,
+gross_premium,no column passes,0.0,Levy Rate,0.3322,Base Charge,0.1276,Money Unit,0.0059
+net_premium_after_discount,no column passes,0.0,Levy Rate,0.0452,Base Charge,0.0272,Service Charge,0.0021
+claim_number,filled,0.7557,Case Ref,0.7557,,,,
+claim_incident_date,filled,0.8353,Loss Date,0.8353,,,,
+claim_age_days,no column passes,0.0,Loss Date,0.0313,Expiry Date,0.0073,Case State,0.0035
+claimed_amount,no column passes,0.0,Requested Payout,0.4547,Cover Limit,0.0152,Excess,0.0123
+deductible_amount,filled,0.8594,Excess,0.8594,,,,
+net_claim_payable,no column passes,0.0,Requested Payout,0.0658,Excess,0.0157,Levy Rate,0.0038
+claim_paid_amount,no column passes,0.0,Requested Payout,0.1787,Movement Value,0.0105,Excess,0.0081
+claim_paid_ratio,no column passes,0.0,Requested Payout,0.0232,Excess,0.0109,Levy Rate,0.0033
+claim_status,no column passes,0.0,Case State,0.0165,Requested Payout,0.0061,Case Ref,0.0038
+agent_id,filled,0.8655,Broker Id,0.8655,,,,
+account_number,no column passes,0.0,Ledger Ref,0.4689,Broker Id,0.0395,Case Ref,0.0354
+transaction_date,no column passes,0.0,Ledger Ref,0.06,Loss Date,0.0181,Movement Value,0.0142
+transaction_amount,filled,0.7951,Movement Value,0.7951,,,,
+transaction_fee_amount,filled,0.728,Service Charge,0.728,,,,
+total_charge,filled,0.5975,Base Charge,0.5975,,,,
