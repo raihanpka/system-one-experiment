@@ -5,6 +5,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from ..core.prompts import context_label as ctx
 from ..core.scoring import T0, TS, pair_p
 from ..core.viz import save
 from ..dataset.samples import LEVEL_NAMES
@@ -21,7 +22,7 @@ def fig_accuracy(rows_by_cond, cases, labels, path):
         for cond, rows in rows_by_cond.items():
             rs = [r for r in rows if r["case_id"] == cid]
             if rs:
-                recs.append({"sample": labels[cid], "method": f"Jev, {cond}", "top1": 100 * mapping_metrics(rs, cases)["top1"]})
+                recs.append({"sample": labels[cid], "method": f"Jev, {ctx(cond)}", "top1": 100 * mapping_metrics(rs, cases)["top1"]})
     fig, ax = plt.subplots(figsize=(7, 3.6))
     sns.barplot(pd.DataFrame(recs), x="sample", y="top1", hue="method", ax=ax)
     ax.set(ylim=(0, 105), xlabel="", ylabel="Top-1 accuracy (%)", title="Which input column feeds each output field")
@@ -55,7 +56,7 @@ def fig_heatmap(row, case, label, cond, path):
             if c in o["sources"]:
                 ax.plot(j + 0.5, i + 0.5, "o", color="black", markersize=3.5)
     ax.tick_params(axis="both", labelsize=6)
-    ax.set_title(f"{label}, {cond}: probability per input column and output field (dot = true pair)")
+    ax.set_title(f"{label}, {ctx(cond)}: probability per input column and output field (dot = true pair)")
     ax.set(xlabel="output field (template)", ylabel="input column (file)")
     plt.setp(ax.get_xticklabels(), rotation=90)
     return save(fig, path)
@@ -69,12 +70,12 @@ def fig_calibration(rows_by_cond, cases, path):
         if not rows:
             continue
         for T in TS:
-            recs.append({"T": T, "ECE": mapping_metrics(rows, cases, T)["ece"], "condition": cond})
+            recs.append({"T": T, "ECE": mapping_metrics(rows, cases, T)["ece"], "condition": ctx(cond)})
         ps, ys = pair_scores(rows, cases, T0)
         d = pd.DataFrame({"p": ps, "y": ys})
         d["bin"] = (d.p * 10).clip(upper=9.999).astype(int)
         g = d.groupby("bin").agg(conf=("p", "mean"), acc=("y", "mean"), n=("y", "size")).reset_index()
-        g["condition"] = cond
+        g["condition"] = ctx(cond)
         rel.append(g)
     if recs:
         sns.lineplot(pd.DataFrame(recs), x="T", y="ECE", hue="condition", marker="o", ax=a)
@@ -102,7 +103,7 @@ def fig_outcomes(rows_by_cond, cases, labels, path):
         df = pd.DataFrame(recs).T[OUTCOMES]
         df = df.div(df.sum(axis=1), axis=0) * 100
         df.plot(kind="bar", stacked=True, ax=ax, color=colors, width=0.7, legend=False)
-        ax.set(title=f"context: {cond}", xlabel="", ylabel="share of output fields (%)")
+        ax.set(title=f"Jev sees: {ctx(cond)}", xlabel="", ylabel="share of output fields (%)")
         ax.tick_params(axis="x", rotation=0, labelsize=8)
     h, lab = axes[0][0].get_legend_handles_labels()
     fig.legend(h, lab, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False)
@@ -115,7 +116,7 @@ def fig_drift(rows_by_cond, cases, path):
     recs = []
     for cond, rows in rows_by_cond.items():
         for r in rows:
-            recs.append({"level": r["level"], "top1": 100 * mapping_metrics([r], cases)["top1"], "method": f"Jev, {cond}"})
+            recs.append({"level": r["level"], "top1": 100 * mapping_metrics([r], cases)["top1"], "method": f"Jev, {ctx(cond)}"})
     ids = {r["case_id"] for rows in rows_by_cond.values() for r in rows}
     for cid in ids:
         recs.append({"level": cases[cid]["level"], "top1": 100 * lexical_mapping([cases[cid]])["top1"], "method": "Name similarity (no model)"})
@@ -142,7 +143,7 @@ def fig_kind(kind_by_cond, cases, labels, path):
         for cid in labels:
             rs = [r for r in rows if r["case_id"] == cid]
             if rs:
-                recs.append({"sample": labels[cid], "context": cond, "acc": 100 * kind_metrics(rs, cases)["acc"]})
+                recs.append({"sample": labels[cid], "context": ctx(cond), "acc": 100 * kind_metrics(rs, cases)["acc"]})
     fig, ax = plt.subplots(figsize=(6, 3.4))
     sns.barplot(pd.DataFrame(recs), x="sample", y="acc", hue="context", ax=ax)
     ax.axhline(20, color="gray", linestyle="--", linewidth=1)

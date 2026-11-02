@@ -6,6 +6,13 @@ from .template import KIND_DESC
 
 CONDS = ("name", "desc", "samples", "both")
 SAMPLE_K = 5
+CONTEXT_LABEL = {"name": "name only", "samples": "name + values", "desc": "name + description",
+                 "both": "name + description + values"}
+
+
+def context_label(cond: str) -> str:
+    """What the model sees about each input column, in words (file names keep the short key)."""
+    return CONTEXT_LABEL.get(cond, cond)
 
 
 def samples(rows, name, k=SAMPLE_K):

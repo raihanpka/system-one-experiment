@@ -61,8 +61,9 @@ def make_report(store, cases, letters, conds, run_dir) -> list[Path]:
                               [[c, *[f"{pair_p(r['matrix'][c][o], T0):.4f}" for o in outs]] for c in r["matrix"]])]
     legend = "\n".join(f"| {x} | data/samples/{sample_folder(x)}/ | {sample_folder(x)}/ | {SAMPLES[x][1]} |" for x in letters)
     names = [p.name for p in paths if p.suffix == ".svg" and not p.name.startswith("heatmap")]
-    md = ["# Results", "", "Model: Jev-Style-2B-Decision-v3 (llama.cpp, local). The model sees the input column name "
-          "(and 5 sample values in context `samples`); output fields are given by name only.", "",
+    md = ["# Results", "", "Model: Jev-Style-2B-Decision-v3 (llama.cpp, local). Output fields are always given by name only. "
+          "For each input column the model sees: **name only** = the header text; **name + values** = the header and "
+          "5 values taken from the rows (file keys: `name`, `samples`).", "",
           "| sample | input, expected, ground truth | Jev outputs (this run) | input naming |", "|---|---|---|---|", legend, "",
           "Per sample and context: the converted file, the decisions and the probability matrix. "
           "Raw model output for everything: `result.json`.", "",
