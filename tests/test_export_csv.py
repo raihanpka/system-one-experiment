@@ -34,13 +34,15 @@ def test_each_case_is_input_expected_output_and_mapping(tmp_path):
     assert exp[0] == [o["name"] for o in T["outputs"]] and len(exp) == 1 + len(c["rows"])
     for j, o in enumerate(c["outputs"]):
         col = [r[j] for r in exp[1:]]
-        assert col == ([str(v) for v in o["expected"]] if o["available"] else [""] * len(c["rows"]))
+        assert col == (["" if v is None else str(v) for v in o["expected"]] if o["available"] else [""] * len(c["rows"]))
 
     m = rows(d / "mapping.csv")
     assert m[0] == ["output", "kind", "available", "input_columns", "expression"]
     gross = next(r for r in m[1:] if r[0] == "gross_premium")
     if gross[2] == "True":
         assert "*" in gross[4] and all(n in gross[4] for n in gross[3].split("|"))
+    anom = [r for r in m[1:] if r[1] == "anomaly"]
+    assert len(anom) == len(c["anomalies"]) and all("@row" in r[3] for r in anom)
     decoys = [r for r in m[1:] if r[1] == "decoy"]
     assert len(decoys) == sum(bool(k["decoy"]) for k in c["columns"]) > 0
 

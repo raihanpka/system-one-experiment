@@ -14,7 +14,7 @@ import tomllib
 from pathlib import Path
 
 from .check_template import load_template
-from .context import CONDS, KIND_DESC, KIND_LABEL, kind_question, kind_state
+from .context import CONDS, KIND_DESC, KIND_LABEL, kind_question, kind_state, samples
 from .decisions.types import Choice, Question
 from .run_mapping import ROOT, _done, load_cases
 from .run_transform import pick_question, prepare
@@ -51,7 +51,7 @@ def run_case(decider, case: dict, cond: str, t: dict, k: int = 3, seed: int = 0)
             transform[o["name"]] = {"orders": orders, "picks": picks, "pos": pos, "correct": [p == truth for p in picks]}
         labels = list(KIND_DESC)
         want = KIND_LABEL[o["kind"]]
-        cols = [(n, desc[col[n]["src"]], [r[n] for r in case["rows"][:3]]) for n in o["sources"]]
+        cols = [(n, desc[col[n]["src"]], samples(case["rows"], n)) for n in o["sources"]]
         state = kind_state(cols, cond)
         orders = _orders(len(labels), k, rng)
         picks, pos = [], []

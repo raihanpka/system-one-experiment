@@ -60,3 +60,11 @@ def render(node: dict, name_of) -> str:
     if op == "lookup":
         return f"lookup({render(args[0], name_of)}, {json.dumps(node['map'], ensure_ascii=False)})"
     return f"{op}(" + ", ".join(render(a, name_of) for a in args) + ")"
+
+
+def safe_evaluate(node: dict, row: dict):
+    """evaluate(), but a value the rule cannot handle (0 divisor, unknown code, bad date) gives None."""
+    try:
+        return evaluate(node, row)
+    except (ZeroDivisionError, KeyError, ValueError, TypeError):
+        return None

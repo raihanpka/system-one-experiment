@@ -68,7 +68,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
     - [ ] Ada kasus 1→2 kolom, kolom jebakan, dan kandidat ekspresi dengan pengecoh
   - Verifikasi: test: dua kali generate menghasilkan file identik; ekspresi menghasilkan nilai yang benar.
   - Dependencies: T3
-  - Files: `src/gen_gt.py`, `tests/test_gen_gt.py`, `data/gt.jsonl`
+  - Files: `src/gen_gt.py`, `tests/test_gen_gt.py`, `src/export_csv.py`
   - Scope: M
 
 ### Checkpoint: Fondasi (tercapai: 350 kasus, deterministik)
@@ -97,7 +97,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `src/dsl.py`, `src/run_transform.py`, `tests/test_dsl.py`
   - Scope: M
 
-- [ ] **T7: Ablasi konteks dan uji urutan opsi**
+- [x] **T7: Ablasi konteks dan uji urutan opsi** (selesai; `src/context.py`, `src/permute.py`; baris per file 15-30 dengan anomali, sampel 5 nilai merata)
   - Deskripsi: Empat kondisi konteks (nama saja; +deskripsi; +sampel nilai; +keduanya). Untuk pertanyaan `choice`, jalankan beberapa permutasi urutan opsi dan ukur seberapa sering jawaban berubah.
   - Acceptance:
     - [ ] Satu perintah menjalankan semua kondisi

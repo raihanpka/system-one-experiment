@@ -11,7 +11,7 @@ import tomllib
 from pathlib import Path
 
 from .check_template import load_template
-from .context import CONDS, KIND_LABEL, input_state, kind_question, kind_state, mapping_question
+from .context import CONDS, input_state, kind_question, kind_state, mapping_question, samples
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,7 +23,7 @@ def _done(path: Path) -> set[str]:
 def run_case(decider, case: dict, cond: str, t: dict) -> dict:
     desc = {s["id"]: s["desc"] for s in t["sources"] + t["decoys"]}
     odesc = {o["name"]: o["description"] for o in t["outputs"]}
-    sample = {c["name"]: [r[c["name"]] for r in case["rows"][:3]] for c in case["columns"]}
+    sample = {c["name"]: samples(case["rows"], c["name"]) for c in case["columns"]}
     qs = [mapping_question(o["name"], odesc[o["name"]], cond) for o in case["outputs"]]
     matrix = {}
     for c in case["columns"]:

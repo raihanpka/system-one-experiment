@@ -3,7 +3,7 @@ import json
 import pytest
 
 from src.check_template import load_template
-from src.dsl import evaluate
+from src.dsl import safe_evaluate
 from src.gen_gt import generate
 
 T = load_template()
@@ -25,7 +25,7 @@ def test_ground_truth_expressions_execute_to_expected_values():
                 assert o["expected"] is None and o["sources"] == []
                 continue
             assert o["sources"] == [col_of[s] for s in o["source_ids"]]
-            got = [evaluate(o["rule"], {s: row[col_of[s]] for s in col_of}) for row in c["rows"]]
+            got = [safe_evaluate(o["rule"], {s: row[col_of[s]] for s in col_of}) for row in c["rows"]]
             assert got == pytest.approx(o["expected"]) if o["kind"] in ("arith",) else got == o["expected"]
 
 
@@ -67,10 +67,22 @@ def test_candidates_have_one_truth_and_distinct_distractors():
             for cand in cands:
                 if cand == o["rule"]:
                     continue
-                try:
-                    vals = [evaluate(cand, {s: row[col_of[s]] for s in col_of}) for row in c["rows"]]
-                except Exception:       # a distractor may be invalid; it must still not equal the truth
-                    continue
-                assert vals != truth
+                vals = [safe_evaluate(cand, {s: row[col_of[s]] for s in col_of}) for row in c["rows"]]
+                assert vals != truth and any(v is not None for v in vals)
             seen += 1
     assert seen > 0
+
+
+def test_rows_are_many_and_diverse_with_one_or_two_anomalies():
+    for c in CASES:
+        assert 15 <= len(c["rows"]) <= 30
+        assert 1 <= len(c["anomalies"]) <= 2
+        for a in c["anomalies"]:
+            assert c["rows"][a["row"]][a["column"]] == a["value"]
+    big = [c for c in CASES if c["level"] == 0][0]
+    cities = {r["insured_city"] for r in big["rows"] if "insured_city" in r}
+    assert len(cities) >= 3 or "insured_city" not in big["rows"][0]
+    kinds = {a["kind"] for c in generate(T, n_per_level=12, seed=7) for a in c["anomalies"]}
+    assert {"zero", "empty", "na"} <= kinds
+    zeros = [a for c in CASES for a in c["anomalies"] if a["kind"] == "zero"]
+    assert all(a["value"] == 0 for a in zeros)

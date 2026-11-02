@@ -9,9 +9,10 @@ import random
 from datetime import date, timedelta
 
 from .check_template import load_template, rule_sources
-from .dsl import evaluate
+from .dsl import safe_evaluate
 
-N_ROWS = 5
+ROWS = (15, 30)                                            # rows per input file
+SAMPLE_K = 5
 STYLES = ("snake", "camel", "pascal", "upper", "kebab", "space", "title")
 ARITH = ("add", "sub", "mul", "div")
 
@@ -33,7 +34,8 @@ def sample(rng: random.Random, gen: list):
         lo, hi = date.fromisoformat(gen[1]), date.fromisoformat(gen[2])
         return (lo + timedelta(days=rng.randrange((hi - lo).days + 1))).isoformat()
     if k == "money":
-        return gen[1] + rng.randrange((gen[2] - gen[1]) // 1000 + 1) * 1000
+        step = gen[3] if len(gen) > 3 else 1000
+        return gen[1] + rng.randrange((gen[2] - gen[1]) // step + 1) * step
     return round(rng.uniform(gen[1], gen[2]), gen[3])          # rate
 
 
@@ -74,6 +76,25 @@ def mutations(rule: dict, types: dict, present: list[str]):
             yield _replace(rule, path, {**n, "map": dict(zip(n["map"], v[::-1]))})
 
 
+def _anomalies(rng, cols, rows):
+    """1-2 odd cells per file: a zero/negative/huge number, an empty or N/A text, a sentinel date."""
+    out, used = [], set()
+    for _ in range(rng.randint(1, 2)):
+        c, r = rng.choice(cols), rng.randrange(len(rows))
+        if (c["name"], r) in used:
+            continue
+        used.add((c["name"], r))
+        v = rows[r][c["name"]]
+        kind, new = {
+            "number": lambda: rng.choice([("zero", 0), ("negative", -abs(v) if v else -1), ("huge", v * 1000 + 1)]),
+            "string": lambda: rng.choice([("empty", ""), ("na", "N/A")]),
+            "date": lambda: ("sentinel", "1900-01-01"),
+        }[c["type"]]()
+        rows[r][c["name"]] = new
+        out.append({"column": c["name"], "row": r, "kind": kind, "value": new})
+    return out
+
+
 def _case(t: dict, level: int, i: int, seed: int) -> dict:
     rng = random.Random(f"{seed}:{level}:{i}")
     srcs = {s["id"]: s for s in t["sources"]}
@@ -88,14 +109,15 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
         how = "snake" if lv == 0 else (rng.choice(STYLES[1:]) if lv == 1 else case_style)
         if lv == 5:
             how = "snake" if case_style == "snake" else "upper"   # legacy codes: OBJ_INFO_ADDR or obj_info_addr, never camelCase
-        cols.append({"name": style(base, how), "src": sid, "level": lv, "decoy": None, "gen": srcs[sid]["gen"]})
+        cols.append({"name": style(base, how), "src": sid, "level": lv, "decoy": None, "gen": srcs[sid]["gen"], "type": srcs[sid]["type"]})
     if level == 6:
         for d in rng.sample(t["decoys"], rng.randint(3, len(t["decoys"]))):
-            cols.append({"name": style(d["id"], case_style), "src": None, "level": 6, "decoy": d["id"], "gen": d["gen"]})
+            cols.append({"name": style(d["id"], case_style), "src": None, "level": 6, "decoy": d["id"], "gen": d["gen"], "type": d["type"]})
     rng.shuffle(cols)
     assert len({c["name"] for c in cols}) == len(cols), "column name collision"
 
-    rows = [{c["name"]: sample(rng, c["gen"]) for c in cols} for _ in range(N_ROWS)]
+    rows = [{c["name"]: sample(rng, c["gen"]) for c in cols} for _ in range(rng.randint(*ROWS))]
+    anomalies = _anomalies(rng, cols, rows)
     name_of = {c["src"]: c["name"] for c in cols if c["src"]}
     by_id = [{s: row[n] for s, n in name_of.items()} for row in rows]
 
@@ -106,25 +128,24 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
         out = {"name": o["name"], "kind": o["kind"], "rule": o["rule"], "source_ids": ids, "available": avail,
                "sources": [name_of[s] for s in ids] if avail else [], "expected": None, "candidates": []}
         if avail:
-            out["expected"] = [evaluate(o["rule"], r) for r in by_id]
+            out["expected"] = [safe_evaluate(o["rule"], r) for r in by_id]
             if o["kind"] != "pass":
                 bad, seen = [], []
                 for m in mutations(o["rule"], types, list(name_of)):
                     if m == o["rule"] or m in seen:
                         continue
                     seen.append(m)
-                    try:
-                        if [evaluate(m, r) for r in by_id] != out["expected"]:
-                            bad.append(m)
-                    except Exception:                                   # invalid distractor: skip
-                        pass
+                    vals = [safe_evaluate(m, r) for r in by_id]
+                    if vals != out["expected"] and any(v is not None for v in vals):
+                        bad.append(m)
                 cands = [o["rule"]] + rng.sample(bad, min(3, len(bad)))
                 rng.shuffle(cands)
                 out["candidates"] = cands
         outputs.append(out)
     for c in cols:
-        del c["gen"]
-    return {"case_id": f"L{level}-{i:03d}", "level": level, "columns": cols, "rows": rows, "outputs": outputs}
+        del c["gen"], c["type"]
+    return {"case_id": f"L{level}-{i:03d}", "level": level, "columns": cols, "rows": rows, "anomalies": anomalies,
+            "outputs": outputs}
 
 
 def generate(t: dict, n_per_level: int = 50, seed: int = 1234) -> list[dict]:

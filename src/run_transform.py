@@ -13,22 +13,19 @@ import tomllib
 from pathlib import Path
 
 from .check_template import load_template, rule_sources
-from .context import CONDS, kind_state
+from .context import CONDS, kind_state, samples
 from .decisions.types import Choice, Question
-from .dsl import evaluate, render
+from .dsl import render, safe_evaluate
 from .run_mapping import ROOT, _done, load_cases
 
 
 def _same(a, b):
-    return len(a) == len(b) and all(math.isclose(x, y, rel_tol=1e-9) if isinstance(x, float) or isinstance(y, float) else x == y
-                                    for x, y in zip(a, b))
+    return len(a) == len(b) and all(
+        math.isclose(x, y, rel_tol=1e-9) if isinstance(x, float) and isinstance(y, float) else x == y for x, y in zip(a, b))
 
 
 def _ok(rule, by_id, expected):
-    try:
-        return _same([evaluate(rule, r) for r in by_id], expected)
-    except Exception:
-        return False
+    return _same([safe_evaluate(rule, r) for r in by_id], expected)
 
 
 def prepare(case: dict, cond: str, t: dict, o: dict):
@@ -40,7 +37,7 @@ def prepare(case: dict, cond: str, t: dict, o: dict):
     texts = [render(c, name_of.get) for c in cands]
     texts = [x if texts.count(x) == 1 else f"{x}  (#{i})" for i, x in enumerate(texts)]
     ids = list(dict.fromkeys(s for c in cands for s in rule_sources(c)))
-    state = kind_state([(name_of[s], desc[s], [r[name_of[s]] for r in case["rows"][:3]]) for s in ids], cond)
+    state = kind_state([(name_of[s], desc[s], samples(case["rows"], name_of[s])) for s in ids], cond)
     label = f"'{o['name']}'" + (f" (meaning: {odesc[o['name']]})" if cond in ("desc", "both") else "")
     return state, label, texts
 

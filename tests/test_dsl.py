@@ -1,6 +1,6 @@
 import pytest
 
-from src.dsl import evaluate, render
+from src.dsl import evaluate, render, safe_evaluate
 
 S = lambda x: {"src": x}  # noqa: E731
 L = lambda x: {"lit": x}  # noqa: E731
@@ -45,3 +45,11 @@ def test_render_uses_names():
     assert render({"op": "days_between", "args": [S("s"), S("e")]}, {"s": "S", "e": "E"}.get) == "days_between(S, E)"
     assert render({"op": "lookup", "map": {"A": "x"}, "args": [S("k")]}, {"k": "K"}.get) == 'lookup(K, {"A": "x"})'
     assert render(S("a"), {"a": "Prem"}.get) == "Prem"
+
+
+def test_safe_evaluate_returns_none_instead_of_raising():
+    row = {"a": 1, "z": 0, "k": "X", "d": "0000-00-00"}
+    assert safe_evaluate({"op": "div", "args": [S("a"), S("z")]}, row) is None
+    assert safe_evaluate({"op": "lookup", "map": {"A": "x"}, "args": [S("k")]}, row) is None
+    assert safe_evaluate({"op": "year", "args": [S("d")]}, row) is None
+    assert safe_evaluate({"op": "add", "args": [S("a"), S("a")]}, row) == 2

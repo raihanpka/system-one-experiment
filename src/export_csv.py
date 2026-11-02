@@ -35,11 +35,13 @@ def write_cases(cases, out) -> None:
         names = [k["name"] for k in c["columns"]]
         _write(d / "input.csv", names, [[r[n] for n in names] for r in c["rows"]])
         _write(d / "expected_output.csv", [o["name"] for o in c["outputs"]],
-               [["" if not o["available"] else o["expected"][i] for o in c["outputs"]] for i in range(len(c["rows"]))])
+               [["" if not o["available"] or o["expected"][i] is None else o["expected"][i] for o in c["outputs"]]
+                for i in range(len(c["rows"]))])
         name_of = {k["src"]: k["name"] for k in c["columns"] if k["src"]}
         rows = [[o["name"], o["kind"], o["available"], "|".join(o["sources"]),
                  render(o["rule"], name_of.get) if o["available"] else ""] for o in c["outputs"]]
         rows += [["", "decoy", False, k["name"], ""] for k in c["columns"] if k["decoy"]]
+        rows += [["", "anomaly", False, f"{a['column']}@row{a['row'] + 1}", f"{a['kind']}: {a['value']!r}"] for a in c["anomalies"]]
         _write(d / "mapping.csv", ["output", "kind", "available", "input_columns", "expression"], rows)
 
 
