@@ -23,7 +23,7 @@ def test_fit_writes_pair_and_field_entries_keyed_by_the_setup(tmp_path, capsys):
     path = tmp_path / "calibration.json"
     main(["--fit-calibration", *map(str, runs), "--calibration", str(path), "--root", str(root), "--data", str(data)])
     keys = json.loads(path.read_text())["entries"]
-    assert any(k.endswith("|options|name|v1|pair") for k in keys)
+    assert any(k.endswith("|options|name|v1/keep0.0|pair") for k in keys)
     out = capsys.readouterr().out
     assert "|field" in out                                           # the field level is fitted, or reported as skipped when one class only
     entry = next(v for k, v in keys.items() if k.endswith("|pair"))
@@ -83,7 +83,7 @@ def test_a_calibrated_cutoff_keeps_low_confidence_fields_out_of_the_converted_fi
     dev = [p for p in _runs(root) if "-seed11_" in p.name][0]
     meta = json.loads((dev / "result.json").read_text())["meta"]
     path = tmp_path / "calibration.json"
-    key = "|".join((meta["model"], meta["quant"], "options", "name", "v1", "field"))
+    key = "|".join((meta["model"], meta["quant"], "options", "name", "v1/keep0.0", "field"))
     path.write_text(json.dumps({"version": 1, "entries": {key: {"a": 1.0, "b": 0.0, "n": 200, "positives": 150, "seeds": [12],
                                                                 "curve": [[0.9999, 1.0, 100]]}}}))        # only a near-certain field would pass
     main(["--report-only", "--out", str(dev), "--calibration", str(path), "--root", str(root), "--data", str(data)])

@@ -57,6 +57,7 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from config.toml, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
     ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
+    ap.add_argument("--keep", type=float, help="score a column needs to be chosen for a field (default: run.keep_d in config.toml; 0.0 is probability 0.5)")
     ap.add_argument("--fit-calibration", nargs="+", metavar="RUN", help="fit calibration parameters from these dev or calibration runs, write calibration.json, and stop")
     ap.add_argument("--calibration", default=str(ROOT / "calibration.json"), help="calibration file (default calibration.json in the project)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
@@ -68,7 +69,7 @@ def main(argv=None, decider_factory=None) -> int:
     if a.fit_calibration:
         calibration = Calibration(_abs(a.calibration))
         try:
-            lines = fit_calibration([_abs(p) for p in a.fit_calibration], calibration, cfg["run"]["prompt_version"])
+            lines = fit_calibration([_abs(p) for p in a.fit_calibration], calibration)
         except ValueError as e:
             ap.error(str(e))
         calibration.save()
@@ -113,6 +114,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     other = Store(_abs(a.calibrate_from) / "result.json") if a.calibrate_from else None
     if other is not None and other.data["meta"].get("seed", cfg["run"]["seed"]) != seed:
         ap.error("--calibrate-from needs a run built from the same seed, otherwise its answers do not belong to these files")
+    keep = store.data["meta"].get("keep_d") if (a.report_only or a.out) and store.data["meta"].get("keep_d") is not None else (a.keep if a.keep is not None else cfg["run"]["keep_d"])
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, seed)}
     sel = [cases[SAMPLES[x][0]] for x in letters]
@@ -125,13 +127,12 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
             from .decisions.jev import JevDecider
             decider_factory = lambda: JevDecider(**cfg["model"])              # noqa: E731
         with decider_factory() as d:
-            run_models(d, sel, conds, modes, store, t)
+            run_models(d, sel, conds, modes, store, t, keep=keep)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
-                                   "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
+                                   "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "keep_d": keep, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 
-    paths = make_report(store, cases, letters, conds, run, other, Calibration(_abs(a.calibration)), cfg["run"]["prompt_version"],
-                        cfg["run"]["target_precision"])
+    paths = make_report(store, cases, letters, conds, run, other, Calibration(_abs(a.calibration)), cfg["run"]["target_precision"])
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")
     print(f"raw model output: {run / 'result.json'}")

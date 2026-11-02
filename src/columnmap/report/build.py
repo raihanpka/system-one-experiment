@@ -27,8 +27,7 @@ DECISION_COLUMNS = ["output", "chosen_input", "confidence", "calibrated_confiden
                     "truth_available", "truth_input", "field_correct"]
 
 
-def make_report(store, cases, letters, conds, run_dir, other=None, calibration: Calibration | None = None, prompt: str = "v1",
-                target_precision: float = 0.99) -> list[Path]:
+def make_report(store, cases, letters, conds, run_dir, other=None, calibration: Calibration | None = None, target_precision: float = 0.99) -> list[Path]:
     run = Path(run_dir)
     out, figs, paths = run / "report", run / "report" / "figures", []
     labels = {SAMPLES[x][0]: f"{x}: {SAMPLES[x][1]}" for x in letters}
@@ -52,7 +51,7 @@ def make_report(store, cases, letters, conds, run_dir, other=None, calibration: 
             hrecs = honest[cond]
             if hrecs and calibration is not None and "quant" in meta:
                 mode = next(iter(hrecs.values())).get("mode", "options")
-                entry = calibration.get(setup_key(meta, mode, cond, prompt, "field"), missing_ok=True)
+                entry = calibration.get(setup_key(meta, mode, cond, "field"), missing_ok=True)
                 tau = choose_tau(entry["curve"], target_precision) if entry and entry.get("curve") else None
             for r in rows:
                 case, x = cases[r["case_id"]], letter[r["case_id"]]
@@ -84,7 +83,7 @@ def make_report(store, cases, letters, conds, run_dir, other=None, calibration: 
         if curves:
             paths.append(fig_precision_coverage(curves, target_precision, figs / "precision_coverage.svg"))
     auto_md = _auto_section(auto_rows, cutoffs, target_precision)
-    calib_md = _calibration_section(store, cases, rows_by_cond, ids, calibration, prompt, figs, paths) if rows_by_cond else []
+    calib_md = _calibration_section(store, cases, rows_by_cond, ids, calibration, figs, paths) if rows_by_cond else []
     legend = "\n".join(f"| {x} | data/samples/{sample_folder(x)}/ | {sample_folder(x)}/ | {SAMPLES[x][1]} |" for x in letters)
     names = [p.name for p in paths if p.suffix == ".svg" and not p.name.startswith(("heatmap", "reliability"))]
     md = ["# Results", "", "Model: Jev-Style-2B-Decision-v3 (llama.cpp, local). Output fields are always given by name only. "
@@ -104,13 +103,13 @@ def make_report(store, cases, letters, conds, run_dir, other=None, calibration: 
 
 
 # uncalibrated against calibrated reliability; says plainly when no calibration was fitted for this setup
-def _calibration_section(store, cases, rows_by_cond, ids, calibration, prompt, figs, paths) -> list[str]:
+def _calibration_section(store, cases, rows_by_cond, ids, calibration, figs, paths) -> list[str]:
     meta = store.data["meta"]
     mode = "options" if store.rows("mapping", next(iter(rows_by_cond)), ids) else "pairs"
     evals = []
     if calibration is not None and "quant" in meta:
         for cond in rows_by_cond:
-            evals += evaluate(store, meta, cases, calibration, mode, cond, prompt, ids)
+            evals += evaluate(store, meta, cases, calibration, mode, cond, ids)
     head = ["## Calibration", ""]
     if not evals:
         return head + ["No calibration fitted for this setup: probabilities are uncalibrated. Fit one with `--fit-calibration` on dev or "

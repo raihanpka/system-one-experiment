@@ -13,7 +13,7 @@ WARN_MINUTES = 15
 
 
 # for each context: mapping in every mode, then the honest stage on the scores of the first mode
-def run_models(decider: Decider, cases, conds, modes, store, template, log=print) -> None:
+def run_models(decider: Decider, cases, conds, modes, store, template, keep: float = 0.0, log=print) -> None:
     est = estimate_minutes(cases, conds, modes)
     if est > WARN_MINUTES:
         log(f"warning: this run is estimated at {est:.0f} minutes; consider fewer samples, contexts or modes")
@@ -22,5 +22,5 @@ def run_models(decider: Decider, cases, conds, modes, store, template, log=print
         for m in modes:
             n = run_mapping.run(decider, cases, cond, store, template, mode=m)
             log(f"[{cond}] mapping ({m}): {n} new, {len(cases) - n} resumed ({time.time() - t0:.0f}s)")
-        n = run_honest.run(decider, cases, cond, store, mode=modes[0])
+        n = run_honest.run(decider, cases, cond, store, mode=modes[0], keep=keep)
         log(f"[{cond}] honest: {n} new, {len(cases) - n} resumed ({time.time() - t0:.0f}s)")

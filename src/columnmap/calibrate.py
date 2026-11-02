@@ -55,12 +55,13 @@ def load_run(run_dir) -> tuple[Store, dict, dict]:
     return store, meta, cases
 
 
-def setup_key(meta: dict, mode: str, cond: str, prompt: str, level: str) -> str:
-    return make_key(meta["model"], meta["quant"], mode, cond, prompt, level)
+# the key holds everything that changes what a score means: model, quantization, mode, context, prompt version and column cutoff
+def setup_key(meta: dict, mode: str, cond: str, level: str) -> str:
+    return make_key(meta["model"], meta["quant"], mode, cond, f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}", level)
 
 
 # every run named here must be a dev or calibration run: a test run is never used for fitting
-def fit(run_dirs, calibration: Calibration, prompt: str) -> list[str]:
+def fit(run_dirs, calibration: Calibration) -> list[str]:
     data: dict[str, tuple[list, list, set]] = {}
     for run in run_dirs:
         store, meta, cases = load_run(run)
@@ -69,13 +70,13 @@ def fit(run_dirs, calibration: Calibration, prompt: str) -> list[str]:
         for mode, section in SECTIONS.items():
             for cond in store.data.get(section, {}):
                 xs, ys = pair_xy(store.rows(section, cond), cases)
-                key = setup_key(meta, mode, cond, prompt, "pair")
+                key = setup_key(meta, mode, cond, "pair")
                 bucket = data.setdefault(key, ([], [], set()))
                 bucket[0].extend(xs), bucket[1].extend(ys), bucket[2].add(meta["seed"])
         for cond in store.data.get("honest", {}):
             rows = store.rows("honest", cond)
             xs, ys = field_xy(rows, cases)
-            key = setup_key(meta, rows[0].get("mode", "options"), cond, prompt, "field")
+            key = setup_key(meta, rows[0].get("mode", "options"), cond, "field")
             bucket = data.setdefault(key, ([], [], set()))
             bucket[0].extend(xs), bucket[1].extend(ys), bucket[2].add(meta["seed"])
     log = []
@@ -91,12 +92,12 @@ def fit(run_dirs, calibration: Calibration, prompt: str) -> list[str]:
 
 
 # uncalibrated and calibrated reliability of one context, per level; None when no entry matches the setup
-def evaluate(store, meta: dict, cases: dict, calibration: Calibration, mode: str, cond: str, prompt: str, only=None) -> list[dict]:
+def evaluate(store, meta: dict, cases: dict, calibration: Calibration, mode: str, cond: str, only=None) -> list[dict]:
     out = []
     section = SECTIONS[mode]
     for level, xy in (("pair", lambda: pair_xy(store.rows(section, cond, only), cases)),
                       ("field", lambda: field_xy(store.rows("honest", cond, only), cases))):
-        entry = calibration.get(setup_key(meta, mode, cond, prompt, level), missing_ok=True)
+        entry = calibration.get(setup_key(meta, mode, cond, level), missing_ok=True)
         xs, ys = xy()
         if entry is None or not xs:
             continue

@@ -69,20 +69,20 @@ def run_fields(decider: Decider, fields: list[str], rows: list[dict], matrix: di
 
 
 # one record per case and context, built from the stored mapping scores
-def run_case(decider: Decider, case: dict, cond: str, map_row: dict, mode: str = "options") -> dict:
+def run_case(decider: Decider, case: dict, cond: str, map_row: dict, mode: str = "options", keep: float = 0.0) -> dict:
     fields = [o["name"] for o in case["outputs"]]
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode,
-            "fields": run_fields(decider, fields, case["rows"], map_row["matrix"])}
+            "fields": run_fields(decider, fields, case["rows"], map_row["matrix"], keep)}
 
 
-def run(decider: Decider, cases, cond: str, store, mode: str = "options") -> int:
+def run(decider: Decider, cases, cond: str, store, mode: str = "options", keep: float = 0.0) -> int:
     section = {"options": "mapping", "pairs": "mapping_pairs"}[mode]
     maps = {r["case_id"]: r for r in store.rows(section, cond)}
     n = 0
     for c in cases:
         if c["case_id"] in maps and not store.has("honest", cond, c["case_id"]):
             t0, before = time.time(), mark(decider)
-            rec = run_case(decider, c, cond, maps[c["case_id"]], mode)
+            rec = run_case(decider, c, cond, maps[c["case_id"]], mode, keep)
             rec["seconds"] = round(time.time() - t0, 1)
             rec.update(since(decider, before))
             store.add("honest", cond, rec)

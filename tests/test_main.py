@@ -144,3 +144,18 @@ def test_calibrate_from_a_run_with_another_seed_is_refused(tmp_path):
     other = _runs(root)[0]
     with pytest.raises(SystemExit):
         main([*base, "--calibrate-from", str(other)], decider_factory=Generic)
+
+
+def test_keep_option_decides_how_many_columns_are_chosen_and_is_recorded(tmp_path):
+    root, data = tmp_path / "r", tmp_path / "d"
+    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    main([*base, "--keep", "50"], decider_factory=Generic)
+    time.sleep(1.1)
+    main([*base, "--keep", "-50"], decider_factory=Generic)
+    strict, loose = _runs(root)
+
+    def answered(run):
+        d = json.loads((run / "result.json").read_text())
+        return sum(f["best"] is not None for f in d["honest"]["name"][0]["fields"].values()), d["meta"]["keep_d"]
+
+    assert answered(strict) == (0, 50.0) and answered(loose)[0] > 0 and answered(loose)[1] == -50.0
