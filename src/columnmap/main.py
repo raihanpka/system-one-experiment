@@ -57,7 +57,6 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from config.toml, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
     ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
-    ap.add_argument("--orders", type=int, help="ask each column this many times with the options in different orders and average the scores (default: run.orders in config.toml)")
     ap.add_argument("--keep", type=float, help="score a column needs to be chosen for a field (default: run.keep_d in config.toml; 0.0 is probability 0.5)")
     ap.add_argument("--fit-calibration", nargs="+", metavar="RUN", help="fit calibration parameters from these dev or calibration runs, write calibration.json, and stop")
     ap.add_argument("--calibration", default=str(ROOT / "calibration.json"), help="calibration file (default calibration.json in the project)")
@@ -116,8 +115,6 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     if other is not None and other.data["meta"].get("seed", cfg["run"]["seed"]) != seed:
         ap.error("--calibrate-from needs a run built from the same seed, otherwise its answers do not belong to these files")
     keep = store.data["meta"].get("keep_d") if (a.report_only or a.out) and store.data["meta"].get("keep_d") is not None else (a.keep if a.keep is not None else cfg["run"]["keep_d"])
-    existing = (a.report_only or a.out) and store.data["meta"].get("orders")
-    orders = store.data["meta"]["orders"] if existing else (a.orders if a.orders is not None else cfg["run"]["orders"])
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, seed)}
     sel = [cases[SAMPLES[x][0]] for x in letters]
@@ -130,9 +127,9 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
             from .decisions.jev import JevDecider
             decider_factory = lambda: JevDecider(**cfg["model"])              # noqa: E731
         with decider_factory() as d:
-            run_models(d, sel, conds, modes, store, t, keep=keep, orders=orders)
+            run_models(d, sel, conds, modes, store, t, keep=keep)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
-                                   "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "keep_d": keep, "orders": orders, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
+                                   "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "keep_d": keep, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 

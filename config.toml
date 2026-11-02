@@ -7,7 +7,6 @@ flash_attn = "default"  # default | auto | on | off
 # threads = 8           # CPU threads of the scorer process (optional)
 
 [run]
-orders = 1               # option orders asked per column in options mode (scores are averaged)
 keep_d = 0.0             # a column is chosen for a field when its score is at least this (0.0 is probability 0.5)
 target_precision = 0.99   # fields are filled automatically only above the cutoff that reaches this precision
 prompt_version = "v1"   # part of the calibration key: change it whenever a prompt changes
