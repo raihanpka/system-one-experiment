@@ -60,7 +60,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `data/template.json`, `src/check_template.py`
   - Scope: S
 
-- [ ] **T4: Generator ground truth**
+- [x] **T4: Generator ground truth** (selesai; `data/gt.jsonl` dibangkitkan ulang dengan `uv run python -m src.gen_gt`, tidak di-commit; evaluator `src/dsl.py` sudah dikerjakan di sini)
   - Deskripsi: Bangkitkan nama kolom input per tingkat drift 0-6 (0 identik, 1 casing/underscore, 2 singkatan, 3 sinonim, 4 campur ID/EN, 5 absurd, 6 kolom jebakan tanpa padanan), nilai sampel, dan label (input→output, jenis transformasi, ekspresi). Termasuk kasus satu input ke dua output. Untuk tiap output non-passthrough, bangkitkan juga daftar ekspresi kandidat (satu benar, beberapa pengecoh) secara deterministik untuk T6.
   - Acceptance:
     - [ ] `data/gt.jsonl` mencakup tujuh tingkat drift, seed tetap, hasil sama di dua kali run
@@ -71,7 +71,7 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
   - Files: `src/gen_gt.py`, `tests/test_gen_gt.py`, `data/gt.jsonl`
   - Scope: M
 
-### Checkpoint: Fondasi
+### Checkpoint: Fondasi (tercapai: 350 kasus, deterministik)
 - [ ] Dataset ter-generate dan deterministik
 - [ ] Review dengan pengguna
 

@@ -1,0 +1,148 @@
+"""Synthetic ground truth. Run: uv run python -m src.gen_gt --n 50 --seed 1234
+
+Drift levels: 0 identical, 1 style only (camel, UPPER, kebab...), 2 abbreviation, 3 synonym,
+4 Indonesian, 5 far/absurd phrase, 6 mixed levels + decoy columns. Each case = one input "file".
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import random
+from datetime import date, timedelta
+from pathlib import Path
+
+from .check_template import load_template, rule_sources
+from .dsl import evaluate
+
+N_ROWS = 5
+STYLES = ("snake", "camel", "pascal", "upper", "kebab", "space", "title")
+ARITH = ("add", "sub", "mul", "div")
+
+
+def style(name: str, how: str) -> str:
+    w = name.split("_")
+    return {"snake": "_".join(w), "camel": w[0] + "".join(x.capitalize() for x in w[1:]),
+            "pascal": "".join(x.capitalize() for x in w), "upper": "_".join(w).upper(),
+            "kebab": "-".join(w), "space": " ".join(w), "title": " ".join(x.capitalize() for x in w)}[how]
+
+
+def sample(rng: random.Random, gen: list):
+    k = gen[0]
+    if k == "id":
+        return gen[1] + str(rng.randrange(10 ** gen[2])).zfill(gen[2])
+    if k == "pick":
+        return rng.choice(gen[1])
+    if k == "date":
+        lo, hi = date.fromisoformat(gen[1]), date.fromisoformat(gen[2])
+        return (lo + timedelta(days=rng.randrange((hi - lo).days + 1))).isoformat()
+    if k == "money":
+        return gen[1] + rng.randrange((gen[2] - gen[1]) // 1000 + 1) * 1000
+    return round(rng.uniform(gen[1], gen[2]), gen[3])          # rate
+
+
+def _paths(node, path=()):
+    yield path, node
+    for i, a in enumerate(node.get("args", ())):
+        yield from _paths(a, path + (i,))
+
+
+def _replace(node, path, new):
+    if not path:
+        return new
+    args = list(node["args"])
+    args[path[0]] = _replace(args[path[0]], path[1:], new)
+    return {**node, "args": args}
+
+
+def mutations(rule: dict, types: dict, present: list[str]):
+    """Single-edit variants of a rule: op swap, arg reversal, other same-type source, other literal, rotated map."""
+    for path, n in _paths(rule):
+        if n.get("op") in ARITH:
+            for o in ARITH:
+                if o != n["op"]:
+                    yield _replace(rule, path, {**n, "op": o})
+        if len(n.get("args", ())) == 2 and n.get("op") in ("sub", "div", "days_between", "concat"):
+            yield _replace(rule, path, {**n, "args": n["args"][::-1]})
+        if "src" in n:
+            for s in present:
+                if s != n["src"] and types[s] == types[n["src"]]:
+                    yield _replace(rule, path, {"src": s})
+        if "lit" in n:
+            yield _replace(rule, path, {"lit": n["lit"] + 1})
+        if n.get("op") in ("year", "lookup"):
+            yield _replace(rule, path, n["args"][0])                      # drop the transform
+        if n.get("op") == "lookup":
+            v = list(n["map"].values())
+            yield _replace(rule, path, {**n, "map": dict(zip(n["map"], v[1:] + v[:1]))})
+            yield _replace(rule, path, {**n, "map": dict(zip(n["map"], v[::-1]))})
+
+
+def _case(t: dict, level: int, i: int, seed: int) -> dict:
+    rng = random.Random(f"{seed}:{level}:{i}")
+    srcs = {s["id"]: s for s in t["sources"]}
+    types = {k: v["type"] for k, v in srcs.items()}
+    present = sorted(rng.sample(list(srcs), rng.randint(16, len(srcs))), key=list(srcs).index)
+    case_style = "snake" if level == 0 else rng.choice(STYLES)
+
+    cols = []
+    for sid in present:
+        lv = rng.randint(0, 5) if level == 6 else level
+        base = sid if lv < 2 else srcs[sid]["names"][str(lv)]
+        how = "snake" if lv == 0 else (rng.choice(STYLES[1:]) if lv == 1 else case_style)
+        cols.append({"name": style(base, how), "src": sid, "level": lv, "decoy": None, "gen": srcs[sid]["gen"]})
+    if level == 6:
+        for d in rng.sample(t["decoys"], rng.randint(3, len(t["decoys"]))):
+            cols.append({"name": style(d["id"], case_style), "src": None, "level": 6, "decoy": d["id"], "gen": d["gen"]})
+    rng.shuffle(cols)
+    assert len({c["name"] for c in cols}) == len(cols), "column name collision"
+
+    rows = [{c["name"]: sample(rng, c["gen"]) for c in cols} for _ in range(N_ROWS)]
+    name_of = {c["src"]: c["name"] for c in cols if c["src"]}
+    by_id = [{s: row[n] for s, n in name_of.items()} for row in rows]
+
+    outputs = []
+    for o in t["outputs"]:
+        ids = rule_sources(o["rule"])
+        avail = set(ids) <= set(name_of)
+        out = {"name": o["name"], "kind": o["kind"], "rule": o["rule"], "source_ids": ids, "available": avail,
+               "sources": [name_of[s] for s in ids] if avail else [], "expected": None, "candidates": []}
+        if avail:
+            out["expected"] = [evaluate(o["rule"], r) for r in by_id]
+            if o["kind"] != "pass":
+                bad, seen = [], []
+                for m in mutations(o["rule"], types, list(name_of)):
+                    if m == o["rule"] or m in seen:
+                        continue
+                    seen.append(m)
+                    try:
+                        if [evaluate(m, r) for r in by_id] != out["expected"]:
+                            bad.append(m)
+                    except Exception:                                   # invalid distractor: skip
+                        pass
+                cands = [o["rule"]] + rng.sample(bad, min(3, len(bad)))
+                rng.shuffle(cands)
+                out["candidates"] = cands
+        outputs.append(out)
+    for c in cols:
+        del c["gen"]
+    return {"case_id": f"L{level}-{i:03d}", "level": level, "columns": cols, "rows": rows, "outputs": outputs}
+
+
+def generate(t: dict, n_per_level: int = 50, seed: int = 1234) -> list[dict]:
+    return [_case(t, lv, i, seed) for lv in range(7) for i in range(n_per_level)]
+
+
+def write(cases: list[dict], path) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases))
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--n", type=int, default=50)
+    ap.add_argument("--seed", type=int, default=1234)
+    ap.add_argument("--out", default="data/gt.jsonl")
+    a = ap.parse_args()
+    cs = generate(load_template(), a.n, a.seed)
+    write(cs, a.out)
+    print(f"{len(cs)} cases -> {a.out}")
