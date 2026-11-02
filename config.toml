@@ -3,6 +3,6 @@
 quant = "Q8_0"
 seed = 1234
 out_dir = "results"
-conds = ["name", "desc", "samples", "both"]
+conds = ["name", "samples"]   # desc and both (column descriptions) exist in code but are not given to the model: the real template has headers only
 levels = [0, 1, 2, 3, 4, 5, 6]
 n_per_level = 3   # 21 cases; ~0.1 s per question, ~90 s per case per condition on M3 (Q8_0)

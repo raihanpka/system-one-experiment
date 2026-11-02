@@ -82,7 +82,7 @@ def run(decider, cases, cond: str, out, t: dict, k: int = 3) -> int:
 if __name__ == "__main__":
     cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cond", default="both")
+    ap.add_argument("--cond", default="samples")
     ap.add_argument("--levels", default=",".join(map(str, cfg["levels"])))
     ap.add_argument("--n", type=int, default=cfg["n_per_level"])
     ap.add_argument("--k", type=int, default=3)
