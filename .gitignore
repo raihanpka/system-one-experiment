@@ -8,3 +8,4 @@ results/
 tasks/
 .env
 appsettings.local.json
+.claude/
