@@ -148,7 +148,6 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
 - [x] `Makefile` (setup, test, sample, full, pairs, permute, report, data, bench, open, status, stop, clean) dan `README.md` minimalis
 - [x] Mode `options` (sekitar 7 kali lebih cepat) dan opsi model di `config.toml` (`quant`, `ngl`, `flash_attn`, `threads`)
 - [x] `make sample` dijalankan pada model asli; hasil pertama ada di `NOTES.md` (folder `results/` dikosongkan atas permintaan, dibuat ulang oleh `make sample`)
-- [ ] Ukur F16 versus Q8_0 versus Q4_K_M (perlu unduhan) dan pangkas pertanyaan (lihat `NOTES.md`)
 - [x] Struktur: slice vertikal (`mapping`, `transform`, `stability`, `convert`, `report`), `core`, `decisions`, `dataset`, `main` dan `experiment`; tes mengikuti struktur; `make lint`
 - [x] Folder run `<samples>_<timestamp>` dengan `result.json`, file hasil konversi, keputusan, matriks probabilitas, `report/summary.md` dan grafik SVG; input, expected, ground truth hanya di `data/samples/`
 - [x] README dengan blok bash, contoh `uv run`, dan penjelasan tiap opsi
@@ -156,7 +155,6 @@ Rencana dan keputusan desain: `tasks/PLAN.md`. Kode di `src/`, data di `data/`, 
 ## Belum dikerjakan
 
 - [ ] Ambang atau skala per field (dari ground truth) supaya field tanpa sumber dan kolom decoy ditolak; bandingkan dengan `--mode pairs`
-- [ ] Ukur F16 vs Q8_0 vs Q4_K_M dan pangkas pertanyaan (butuh unduhan, lihat `NOTES.md`)
 - [ ] Kondisi konteks tambahan: seluruh baris atau tabel (perubahan prompt saja)
 - [ ] Skala lebih besar (lebih banyak kasus per level) untuk interval kepercayaan; saat ini 1 kasus per sampel
 - [ ] Verifikasi skema OpenAI Decisions terhadap dokumen resmi (halaman gagal dibuka, `ECONNRESET`) dan adapter OpenAI atau Jev hosted bila diperlukan

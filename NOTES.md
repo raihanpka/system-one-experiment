@@ -19,7 +19,6 @@
 3. The load is prefill bound: about 0.1 s per yes/no question of roughly 60 tokens on Q8_0 with all layers on Metal.
 4. `options` mode (one choice question per column, read each option's raw score) is about 7 times faster than `pairs` (one yes/no per column and field). Coded names, name only: 11.7 s vs 83.5 s, top-1 12/26 vs 10/26. Mixed, name + values: 25.3 s vs 159.3 s, 23/26 vs 25/26. Option probabilities are not calibrated; `pairs` is.
 5. Third-party sources (vendor claims, not independent) credit the demo speed to one forward pass without a decode loop, short prompts, state reuse and many questions per request.
-6. Not measured yet: F16 vs Q8_0 vs Q4_K_M speed, shorter prompts, a two-stage prune, MLX.
 
 ## 3. Data
 
