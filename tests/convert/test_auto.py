@@ -62,3 +62,9 @@ def test_selective_metrics_count_precision_coverage_and_wrong_fills():
     with_src = sum(o["available"] for o in CASE["outputs"])
     assert m["with_source"] == with_src and 0 < m["coverage"] <= 1 and 0 <= m["precision"] <= 1
     assert m["auto_total"] == m["auto_correct"] + m["auto_wrong"] and m["review"] == len(OUTS) - m["auto_total"]
+
+
+def test_an_invalid_value_never_fills_even_without_calibration():
+    recs = {"a": {"best": "x", "cols": ["c"], "conf": 0.9}, "b": {"best": "y", "cols": ["d"], "conf": 0.9}}
+    dec = field_decisions(recs, entry=None, tau=None, valid={"a": True, "b": False})
+    assert dec["a"]["auto"] is True and dec["b"]["auto"] is False and dec["b"]["reason"] == "invalid value"

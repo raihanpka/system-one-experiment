@@ -17,6 +17,7 @@ from ..calibrate import evaluate, setup_key
 from ..convert.auto import REVIEW_COLUMNS, coverage_curve, field_decisions, review_rows, selective_metrics
 from ..convert.figures import fig_precision_coverage
 from ..core.selective import choose_tau
+from ..core.validate import field_valid
 from ..core.calibration import Calibration
 from ..core.tables import md_table, pct
 from ..mapping.figures import fig_reliability
@@ -63,8 +64,9 @@ def make_report(store, cases, letters, conds, run_dir, other=None, calibration: 
                 rec = hrecs.get(r["case_id"])
                 if not rec:
                     continue
-                auto = field_decisions(rec["fields"], entry, tau)
                 _, full = convert_fields(rec["fields"], case["rows"], outs)
+                valid = {o["name"]: field_valid([row[j] for row in full], o["type"]) for j, o in enumerate(case["outputs"])}
+                auto = field_decisions(rec["fields"], entry, tau, valid)
                 ok = field_correct(case, full)
                 header, conv = convert_fields(rec["fields"], case["rows"], outs, {f: v["auto"] for f, v in auto.items()})
                 dec = decisions(rec["fields"], case, ok, auto)

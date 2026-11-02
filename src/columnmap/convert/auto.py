@@ -10,11 +10,14 @@ from ..core.scoring import logit, rate
 
 # per field: filled automatically or not, the calibrated confidence, and why not
 # no calibration entry: every answered field is filled (uncalibrated); an entry without a trusted cutoff: nothing is filled
-def field_decisions(fields: dict, entry: dict | None, tau: float | None) -> dict:
+def field_decisions(fields: dict, entry: dict | None, tau: float | None, valid: dict | None = None) -> dict:
+    # valid: field -> bool from the type check of its converted cells; an invalid value never fills automatically
     out = {}
     for f, r in fields.items():
         if r["best"] is None:
             out[f] = {"auto": False, "conf_cal": 0.0, "reason": "no column passes" if not r["cols"] else "no rule fits"}
+        elif valid is not None and not valid.get(f, False):
+            out[f] = {"auto": False, "conf_cal": r["conf"], "reason": "invalid value"}
         elif entry is None:
             out[f] = {"auto": True, "conf_cal": r["conf"], "reason": ""}
         else:
