@@ -106,3 +106,10 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 
 4. Result: field ECE fails the target in both contexts. Points are few (about 52 to 57). Not fixed by more seeds here (F4 removed).
 5. C4 (Platt vs temperature, held-out seed 13): log-loss and ECE are almost equal. Field name: Platt ll 0.534 ECE 0.101, temperature ll 0.535 ECE 0.086. Field samples: Platt ll 0.421 ECE 0.056, temperature ll 0.422 ECE 0.075. Decision: keep Platt (two parameters, already stored). Temperature code stays for the calibration module.
+
+## 11. Policy Version and Config Check (C3, K1, K4, K6, K7, D1, D2)
+
+1. Calibration key now ends with the policy version `p1` (`calibrate.POLICY_VERSION`). Old keys were dropped; `calibration.json` refit on seed 12 (same numbers as section 10).
+2. `config.toml` checked on load (`core/config.py`): backend type, quant, run mode, target precision, splits. `[device] mode` picks GPU layers (cpu = 0).
+3. Tests: 133 pass, `pyflakes` clean.
+4. README describes the layout and the local-only backend.
