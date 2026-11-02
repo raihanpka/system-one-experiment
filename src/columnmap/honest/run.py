@@ -76,7 +76,7 @@ def run_case(decider: Decider, case: dict, cond: str, map_row: dict, mode: str =
 
 
 def run(decider: Decider, cases, cond: str, store, mode: str = "options", keep: float = 0.0) -> int:
-    section = {"options": "mapping", "pairs": "mapping_pairs"}[mode]
+    section = {"options": "mapping", "pairs": "mapping_pairs", "twostage": "mapping_twostage"}[mode]
     maps = {r["case_id"]: r for r in store.rows(section, cond)}
     n = 0
     for c in cases:

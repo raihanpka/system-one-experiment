@@ -8,13 +8,13 @@ from pathlib import Path
 from .convert.honest import convert_fields
 from .convert.metrics import field_correct
 from .core.calibration import Calibration, apply_platt, fit_platt, make_key, reliability_bins
-from .core.scoring import T0, ece, pair_p
+from .core.scoring import MASKED_D, T0, ece, pair_p
 from .core.selective import precision_curve
 from .core.store import Store
 from .core.template import load_template
 from .dataset.generate import generate
 
-SECTIONS = {"options": "mapping", "pairs": "mapping_pairs"}
+SECTIONS = {"options": "mapping", "pairs": "mapping_pairs", "twostage": "mapping_twostage"}
 
 
 def _logit(p: float) -> float:
@@ -28,6 +28,8 @@ def pair_xy(rows, cases) -> tuple[list[float], list[bool]]:
     for r in rows:
         for col, row in r["matrix"].items():
             for o in cases[r["case_id"]]["outputs"]:
+                if row[o["name"]]["d"] <= MASKED_D + 1e-9:                # not shortlisted in two-stage mode: not an answer
+                    continue
                 xs.append(row[o["name"]]["d"])
                 ys.append(col in o["sources"])
     return xs, ys

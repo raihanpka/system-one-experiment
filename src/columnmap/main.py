@@ -50,9 +50,9 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--conds", default=None,
                     help="what the model sees: name = column name; samples = name + 5 values; table = name + the whole table "
                          "(desc, both add column descriptions). Default: the contexts already in the run folder, else name,samples")
-    ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs", "both"),
+    ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs", "twostage", "both"),
                     help="options: one question per input column, fast; pairs: one yes/no per column and field, slow, calibrated; "
-                         "both: run and compare the two")
+                         "twostage: options shortlists 3 fields per column, yes/no checks them; both: run options and pairs")
     ap.add_argument("--seed", type=int, help="seed that builds the samples (default: run.seed in config.toml)")
     ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from config.toml, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
