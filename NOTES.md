@@ -90,3 +90,19 @@
 
 3. Decision: rejected. Top-1 down, no more fields correct, wrong fills up. Not default. Code kept.
 4. Caveat: one file. 86.4 vs 90.9 is one field.
+
+## 10. Calibration Fit and Held-Out Check (F1–F3, C4)
+
+1. Honest + mapping runs: seeds 12 and 13, samples abcd, contexts name and samples, options mode, keep 0.0.
+2. Fit: Platt on seed 12 only (`calibration.json`, keys `...|options|name|v1/keep0.0|field` and `|pair`, same for samples).
+3. Held-out check on seed 13 (field level, 52 points):
+
+| Jev sees | ECE raw | ECE Platt | target |
+|---|---|---|---|
+| name | 0.149 | 0.101 | 0.03 |
+| name + values | 0.093 | 0.056 | 0.03 |
+
+Pair level is fine: ECE 0.008 and 0.011 after Platt.
+
+4. Result: field ECE fails the target in both contexts. Points are few (about 52 to 57). Not fixed by more seeds here (F4 removed).
+5. C4 (Platt vs temperature, held-out seed 13): log-loss and ECE are almost equal. Field name: Platt ll 0.534 ECE 0.101, temperature ll 0.535 ECE 0.086. Field samples: Platt ll 0.421 ECE 0.056, temperature ll 0.422 ECE 0.075. Decision: keep Platt (two parameters, already stored). Temperature code stays for the calibration module.
