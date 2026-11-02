@@ -9,6 +9,7 @@ from .convert.honest import convert_fields
 from .convert.metrics import field_correct
 from .core.calibration import Calibration, apply_platt, fit_platt, make_key, reliability_bins
 from .core.scoring import T0, ece, pair_p
+from .core.selective import precision_curve
 from .core.store import Store
 from .core.template import load_template
 from .dataset.generate import generate
@@ -83,7 +84,8 @@ def fit(run_dirs, calibration: Calibration, prompt: str) -> list[str]:
         if fitted is None:
             log.append(f"skipped {key}: only one class in {len(xs)} points")
             continue
-        calibration.set(key, *fitted, n=len(xs), positives=int(sum(ys)), seeds=sorted(seeds))
+        curve = precision_curve([apply_platt(x, *fitted) for x in xs], ys) if key.endswith("|field") else None
+        calibration.set(key, *fitted, n=len(xs), positives=int(sum(ys)), seeds=sorted(seeds), curve=curve)
         log.append(f"{key}: a={fitted[0]:.2f} b={fitted[1]:.2f} on {len(xs)} points ({int(sum(ys))} positive), seeds {sorted(seeds)}")
     return log
 

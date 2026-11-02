@@ -131,6 +131,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 
-    paths = make_report(store, cases, letters, conds, run, other, Calibration(_abs(a.calibration)), cfg["run"]["prompt_version"])
+    paths = make_report(store, cases, letters, conds, run, other, Calibration(_abs(a.calibration)), cfg["run"]["prompt_version"],
+                        cfg["run"]["target_precision"])
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")
     print(f"raw model output: {run / 'result.json'}")

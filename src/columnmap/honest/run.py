@@ -21,23 +21,28 @@ def chosen_columns(matrix: dict, field: str, keep: float = 0.0, max_cols: int = 
 
 
 def _empty() -> dict:
-    return {"cols": [], "p_cols": [], "cands": [], "shortlist": [], "best_idx": None, "best": None, "best_text": None,
-            "p_expr": None, "method": "unmapped", "conf": 0.0}
+    return {"cols": [], "p_cols": [], "cands": [], "shortlist": [], "shortlist_p": [], "top_cols": [], "best_idx": None, "best": None,
+            "best_text": None, "p_expr": None, "method": "unmapped", "conf": 0.0}
+
+
+# the three best columns for the field whatever the cutoff, with their probabilities, for the review list
+def _top(matrix: dict, field: str) -> list[list]:
+    best = sorted(((m[field]["d"], c) for c, m in matrix.items()), reverse=True)[:3]
+    return [[c, pair_p({"d": d}, T0)] for d, c in best]
 
 
 def _field(decider, field: str, rows: list[dict], matrix: dict, keep: float, max_cols: int) -> dict:
     chosen = chosen_columns(matrix, field, keep, max_cols)
     if not chosen:
-        return _empty()
+        return {**_empty(), "top_cols": _top(matrix, field)}
     names = [c for c, _ in chosen]
     p_cols = [pair_p({"d": d}, T0) for _, d in chosen]
     cands = candidates([(n, [r[n] for r in rows]) for n in names])
-    rec = {"cols": names, "p_cols": p_cols, "cands": [expression_text(c) for c in cands], "shortlist": [], "best_idx": None,
-           "best": None, "best_text": None, "p_expr": None, "method": "unmapped", "conf": 0.0}
+    rec = {**_empty(), "cols": names, "p_cols": p_cols, "cands": [expression_text(c) for c in cands], "top_cols": _top(matrix, field)}
     if not cands:
         return rec                                                    # no rule in the catalog fits these columns: needs a person
     if len(cands) == 1:
-        best, shortlist, p_expr = 0, [0], None                        # nothing to rank, so no model call
+        best, shortlist, ps, p_expr = 0, [0], [], None                # nothing to rank, so no model call
     else:
         state = pool_state(names, rows)
         if len(cands) > SHORTLIST:
@@ -54,7 +59,7 @@ def _field(decider, field: str, rows: list[dict], matrix: dict, keep: float, max
     conf = p_expr if p_expr is not None else 1.0
     for p in p_cols:
         conf *= p
-    rec.update({"shortlist": shortlist, "best_idx": best, "best": ast, "best_text": expression_text(ast), "p_expr": p_expr,
+    rec.update({"shortlist": shortlist, "shortlist_p": ps, "best_idx": best, "best": ast, "best_text": expression_text(ast), "p_expr": p_expr,
                 "method": "copy" if "src" in ast else "expression", "conf": conf})
     return rec
 

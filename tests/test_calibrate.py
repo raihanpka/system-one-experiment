@@ -62,3 +62,34 @@ def test_a_setup_without_calibration_is_reported_as_uncalibrated_not_an_error(tm
     main([*base, "--split", "dev", "--calibration", str(tmp_path / "none.json")], decider_factory=Generic)
     dev = [p for p in _runs(root) if "-seed11_" in p.name][0]
     assert "No calibration fitted" in (dev / "report" / "summary.md").read_text()
+
+
+def test_uncalibrated_report_fills_every_answered_field_and_lists_candidates_for_the_rest(tmp_path):
+    root, data, base, _ = _setup(tmp_path)
+    main([*base, "--split", "dev", "--calibration", str(tmp_path / "none.json")], decider_factory=Generic)
+    dev = [p for p in _runs(root) if "-seed11_" in p.name][0]
+    md = (dev / "report" / "summary.md").read_text()
+    assert "## Auto-Fill or Review" in md and "uncalibrated, so every answered field is filled" in md
+    folder = dev / "a_easy_identical"
+    review = (folder / "review_easy_identical_name.csv").read_text().splitlines()
+    assert review[0] == "output,status,confidence,candidate_1,p_1,candidate_2,p_2,candidate_3,p_3" and len(review) == 32
+    assert "auto_filled" in (folder / "decisions_easy_identical_name.csv").read_text().splitlines()[0]
+    assert (dev / "report" / "figures" / "precision_coverage.svg").exists()
+
+
+def test_a_calibrated_cutoff_keeps_low_confidence_fields_out_of_the_converted_file(tmp_path):
+    root, data, base, _ = _setup(tmp_path)
+    main([*base, "--split", "dev", "--calibration", str(tmp_path / "none.json")], decider_factory=Generic)
+    dev = [p for p in _runs(root) if "-seed11_" in p.name][0]
+    meta = json.loads((dev / "result.json").read_text())["meta"]
+    path = tmp_path / "calibration.json"
+    key = "|".join((meta["model"], meta["quant"], "options", "name", "v1", "field"))
+    path.write_text(json.dumps({"version": 1, "entries": {key: {"a": 1.0, "b": 0.0, "n": 200, "positives": 150, "seeds": [12],
+                                                                "curve": [[0.9999, 1.0, 100]]}}}))        # only a near-certain field would pass
+    main(["--report-only", "--out", str(dev), "--calibration", str(path), "--root", str(root), "--data", str(data)])
+    md = (dev / "report" / "summary.md").read_text()
+    assert "at least 0.999" in md and "target precision 99%" in md
+    converted = (dev / "a_easy_identical" / "converted_easy_identical_name.csv").read_text().splitlines()[1:]
+    assert all(set(line) <= {","} for line in converted)                                                  # nothing filled
+    decisions = (dev / "a_easy_identical" / "decisions_easy_identical_name.csv").read_text()
+    assert "low confidence" not in decisions and "False" in decisions                                       # auto_filled is False

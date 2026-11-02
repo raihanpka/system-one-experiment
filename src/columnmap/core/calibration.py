@@ -56,8 +56,10 @@ class Calibration:
         self.path = Path(path)
         self.entries: dict = json.loads(self.path.read_text())["entries"] if self.path.exists() else {}
 
-    def set(self, key: str, a: float, b: float, n: int, positives: int, seeds: list[int]) -> None:
+    def set(self, key: str, a: float, b: float, n: int, positives: int, seeds: list[int], curve: list | None = None) -> None:
         self.entries[key] = {"a": round(a, 4), "b": round(b, 4), "n": n, "positives": positives, "seeds": sorted(seeds)}
+        if curve:
+            self.entries[key]["curve"] = [[round(t, 4), round(p, 4), int(k)] for t, p, k in curve]      # precision against cutoff
 
     def get(self, key: str, missing_ok: bool = False):
         if key in self.entries:
