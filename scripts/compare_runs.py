@@ -15,7 +15,7 @@ runs = [a for i, a in enumerate(args) if not a.startswith("--") and (i == 0 or a
 rows = []
 for run in runs:
     store, meta, cases = load_run(run)
-    section = "mapping_pairs" if not store.rows("mapping", cond) else "mapping"
+    section = next((sec for sec in ("mapping", "mapping_pairs", "mapping_twostage") if store.rows(sec, cond)), "mapping")
     m = mapping_metrics(store.rows(section, cond), cases)
     good = total = cells = expected = wrong = tokens = secs = 0
     for rec in store.rows("honest", cond):

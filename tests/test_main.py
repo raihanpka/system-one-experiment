@@ -24,7 +24,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
 
     data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
-    assert set(data_json) == {"meta", "mapping", "mapping_pairs", "honest"} and data_json["meta"]["mode"] == "options"
+    assert set(data_json) == {"meta", "mapping", "mapping_pairs", "mapping_twostage", "honest"} and data_json["meta"]["mode"] == "options"
     assert data_json["meta"]["samples"] == "abcd"
     assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["easy_identical-000", "medium_synonym-000", "hard_codes-000", "hardest_noisy-000"]
     assert set(data_json["mapping"]) == {"name", "samples"}
