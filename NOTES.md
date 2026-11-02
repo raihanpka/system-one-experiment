@@ -76,3 +76,17 @@
 3. Criterion: fields correct must rise and wrongly filled cells may rise by at most 10 percent (at most 80 cells).
 4. Result: no point qualifies. Points that fill more fields (lift_top 0.5 to 2.0) reach 49 to 57 fields correct but 481 to 867 wrongly filled cells. The strictest point (lift_top 4.0) fills fewer cells (88) but fields correct drops to 29 to 44.
 5. Decision: keep the fixed rule (keep 0.0). The lift rule stays in code and config (commented out) for later.
+
+## 9. Outdesc Context (R1)
+
+1. Run: dev seed 11, sample d, options mode. Context `outdesc` = output name + template description.
+2. Results (22 fields with source):
+
+| Jev sees | top-1 | fields correct | cells correct % | wrong fills |
+|---|---|---|---|---|
+| name only | 90.9 | 15 | 68.2 | 52 |
+| name + values | 90.9 | 16 | 72.7 | 26 |
+| name + outdesc | 86.4 | 15 | 68.2 | 52 |
+
+3. Decision: rejected. Top-1 down, no more fields correct, wrong fills up. Not default. Code kept.
+4. Caveat: one file. 86.4 vs 90.9 is one field.
