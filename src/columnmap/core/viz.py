@@ -27,9 +27,23 @@ def setup_style() -> bool:
     return ok
 
 
+ISSUES: list[str] = []
+
+
+def legend_outside(ax, **kw):
+    # legend beside the plot, never on top of the data
+    leg = ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False, fontsize=8, **kw)
+    leg.set_gid("legend-outside")
+    return leg
+
+
 def save(fig, path) -> Path:
+    from .figcheck import check_figure
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    for ax in fig.axes:
+        ax.tick_params(labelsize=9, pad=4)
+    ISSUES.extend(f"{path.name}: {m}" for m in check_figure(fig))
+    fig.savefig(path, format="svg", bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
     return path

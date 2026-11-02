@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 from ..core.prompts import context_label as ctx
 from ..core.scoring import T0, TS, pair_p
-from ..core.viz import save
+from ..core.figcheck import title_case as tc
+from ..core.viz import legend_outside, save
 from ..dataset.samples import LEVEL_WORDS, RANK
 from .metrics import OUTCOMES, lexical_mapping, mapping_metrics, outcomes, pair_scores
 
@@ -26,8 +27,8 @@ def fig_accuracy(rows_by_cond, cases, labels, path):
                 recs.append({"sample": labels[cid], "method": f"Jev, {ctx(cond)}", "top1": 100 * mapping_metrics(rs, cases)["top1"]})
     fig, ax = plt.subplots(figsize=(7, 3.6))
     sns.barplot(pd.DataFrame(recs), x="sample", y="top1", hue="method", ax=ax)
-    ax.set(ylim=(0, 105), xlabel="", ylabel="Top-1 accuracy (%)", title="Which input column feeds each output field")
-    ax.legend(title="", loc="lower left", frameon=True)
+    ax.set(ylim=(0, 105), xlabel="", ylabel="Top-1 accuracy (%)", title="Which Input Column Feeds Each Output Field")
+    legend_outside(ax)
     return save(fig, path)
 
 
@@ -50,15 +51,17 @@ def fig_heatmap(row, case, label, cond, path):
     data = pd.DataFrame([[pair_p(row["matrix"][c][o], T0) for o in outs] for c in cols], index=cols,
                         columns=[o + ("" if a else " (n/a)") for o, a in zip(outs, (o["available"] for o in case["outputs"]))])
     fig, ax = plt.subplots(figsize=(11, 0.22 * len(cols) + 2.6))
-    sns.heatmap(data, vmin=0, vmax=1, cmap="viridis", ax=ax, cbar_kws={"label": "probability", "shrink": 0.6},
+    sns.heatmap(data, vmin=0, vmax=1, cmap="viridis", ax=ax, cbar_kws={"label": "Probability", "shrink": 0.6},
                 linewidths=0.2, linecolor="white")
     for i, c in enumerate(cols):
         for j, o in enumerate(case["outputs"]):
             if c in o["sources"]:
                 ax.plot(j + 0.5, i + 0.5, "o", color="black", markersize=3.5)
     ax.tick_params(axis="both", labelsize=6)
-    ax.set_title(f"{label}, {ctx(cond)}: probability per input column and output field (dot = true pair)")
-    ax.set(xlabel="output field (template)", ylabel="input column (file)")
+    ax.set_title(tc(f"{label}, {ctx(cond)}: probability per input column and output field"))
+    ax.set(xlabel="Output field (template)", ylabel="Input column (file)")
+    ax.plot([], [], "o", color="black", markersize=3.5, label="True pair (ground truth)")
+    legend_outside(ax)
     plt.setp(ax.get_xticklabels(), rotation=90)
     return save(fig, path)
 
@@ -81,11 +84,15 @@ def fig_calibration(rows_by_cond, cases, path):
     if recs:
         sns.lineplot(pd.DataFrame(recs), x="T", y="ECE", hue="condition", marker="o", ax=a)
         a.axvline(T0, color="gray", linestyle=":")
-        a.set(title="Calibration error vs temperature", xlabel="temperature T (dotted: calibrated 0.828)")
+        sns.move_legend(a, loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False, fontsize=8)
+        a.get_legend().set_gid("legend-outside")
+        a.set(title="Calibration Error vs Temperature", xlabel="Temperature T (dotted line: calibrated 0.828)", ylabel="ECE")
     if rel:
         sns.lineplot(pd.concat(rel), x="conf", y="acc", hue="condition", marker="o", ax=b)
         b.plot([0, 1], [0, 1], color="gray", linestyle="--")
-        b.set(title="Reliability at T = 0.828", xlabel="mean probability", ylabel="observed share true",
+        sns.move_legend(b, loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False, fontsize=8)
+        b.get_legend().set_gid("legend-outside")
+        b.set(title="Reliability at T = 0.828", xlabel="Mean probability", ylabel="Observed share true",
               xlim=(0, 1), ylim=(0, 1.02))
     return save(fig, path)
 
@@ -104,10 +111,10 @@ def fig_outcomes(rows_by_cond, cases, labels, path):
         df = pd.DataFrame(recs).T[OUTCOMES]
         df = df.div(df.sum(axis=1), axis=0) * 100
         df.plot(kind="bar", stacked=True, ax=ax, color=colors, width=0.7, legend=False)
-        ax.set(title=f"Jev sees: {ctx(cond)}", xlabel="", ylabel="share of output fields (%)")
+        ax.set(title=tc(f"Jev sees: {ctx(cond)}"), xlabel="", ylabel="Share of output fields (%)")
         ax.tick_params(axis="x", rotation=0, labelsize=8)
     h, lab = axes[0][0].get_legend_handles_labels()
-    fig.legend(h, lab, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False)
+    fig.legend(h, lab, loc="center left", bbox_to_anchor=(1.0, 0.5), frameon=False, fontsize=8)
     return save(fig, path)
 
 
@@ -131,10 +138,10 @@ def fig_drift(rows_by_cond, cases, path):
         ax.scatter(g.level, g.top1, color=color, s=34, label=method + slope, zorder=3)
     by_rank = {RANK[k]: w for k, w in LEVEL_WORDS.items()}
     lv = sorted(df.level.unique())
-    ax.set(xticks=lv, xticklabels=[by_rank[i].replace("_", "\n", 1) for i in lv], ylim=(-3, 105), xlabel="sample, easiest to hardest",
-           ylabel="top-1 accuracy (%)", title="Accuracy as input names drift away from the template")
+    ax.set(xticks=lv, xticklabels=[by_rank[i].replace("_", "\n", 1) for i in lv], ylim=(-3, 105), xlabel="Sample (easiest to hardest)",
+           ylabel="Top-1 accuracy (%)", title="Accuracy as Input Names Drift Away From the Template")
     ax.tick_params(axis="x", labelsize=8)
-    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.28), ncol=1)
+    legend_outside(ax)
     return save(fig, path)
 
 
@@ -152,8 +159,8 @@ def fig_reliability(curves: list[dict], path):
                 if bins:
                     ax.plot([b["confidence"] for b in bins], [b["observed"] for b in bins], marker="o", markersize=4,
                             label=f"{ctx(c['cond'])}, {'uncalibrated' if key == 'bins_raw' else 'calibrated'}", **style)
-        ax.set(title={"pair": "Column and field pairs", "field": "Whole fields"}[level], xlabel="predicted probability",
+        ax.set(title={"pair": "Column and Field Pairs", "field": "Whole Fields"}[level], xlabel="Predicted probability",
                xlim=(0, 1), ylim=(0, 1.02))
-        ax.legend(fontsize=7, loc="upper left")
-    axes[0].set_ylabel("observed share correct")
+        legend_outside(ax)
+    axes[0].set_ylabel("Observed share correct")
     return save(fig, path)
