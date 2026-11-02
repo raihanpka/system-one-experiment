@@ -6,7 +6,6 @@ from columnmap.core.candidates import _size, candidates, column_type
 from columnmap.core.dsl import render, safe_evaluate
 from columnmap.core.template import load_template, rule_sources
 from columnmap.dataset.generate import generate
-from columnmap.dataset.samples import SAMPLES
 
 T = load_template()
 

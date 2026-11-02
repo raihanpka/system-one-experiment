@@ -10,7 +10,7 @@ from ..core.prompts import context_label as ctx
 from ..core.scoring import T0, TS, pair_p
 from ..core.viz import save
 from ..dataset.samples import LEVEL_WORDS, RANK
-from .metrics import OUTCOMES, kind_metrics, lexical_mapping, mapping_metrics, outcomes, pair_scores
+from .metrics import OUTCOMES, lexical_mapping, mapping_metrics, outcomes, pair_scores
 
 
 # Top-1 mapping accuracy per sample: Jev conditions vs a name-similarity baseline
@@ -139,16 +139,3 @@ def fig_drift(rows_by_cond, cases, path):
 
 
 # Naming the transformation kind, given the true source columns
-def fig_kind(kind_by_cond, cases, labels, path):
-    recs = []
-    for cond, rows in kind_by_cond.items():
-        for cid in labels:
-            rs = [r for r in rows if r["case_id"] == cid]
-            if rs:
-                recs.append({"sample": labels[cid], "context": ctx(cond), "acc": 100 * kind_metrics(rs, cases)["acc"]})
-    fig, ax = plt.subplots(figsize=(6, 3.4))
-    sns.barplot(pd.DataFrame(recs), x="sample", y="acc", hue="context", ax=ax)
-    ax.axhline(20, color="gray", linestyle="--", linewidth=1)
-    ax.set(title="Transformation kind (dashed: chance)", ylim=(0, 105), xlabel="", ylabel="accuracy (%)")
-    ax.legend(title="", fontsize=8)
-    return save(fig, path)

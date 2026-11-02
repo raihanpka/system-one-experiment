@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import math
 
-from ..core.scoring import FIXED, safe_div
-from .apply import convert_case
+from ..core.scoring import safe_div
 
 
 def _same(a, b) -> bool:
@@ -31,14 +30,13 @@ def cell_match(case: dict, rows: list[list]) -> dict:
             "correct_rate": safe_div(correct, expected_cells)}
 
 
-# converted cells over several files for one acceptance rule
-def file_cells(map_rows, tr_rows, cases, accept=FIXED) -> dict:
-    tr = {r["case_id"]: r for r in tr_rows}
-    total = dict(expected_cells=0, correct=0, wrong_fill=0)
-    for m in map_rows:
-        case = cases[m["case_id"]]
-        s = cell_match(case, convert_case(m, tr.get(m["case_id"]), case, accept)[1])
-        for k in total:
-            total[k] += s[k]
-    total["correct_rate"] = safe_div(total["correct"], total["expected_cells"])
-    return total
+# per field: all cells equal the expected cells (a field without a source is correct when it stays empty)
+def field_correct(case: dict, rows: list[list]) -> dict:
+    out = {}
+    for j, o in enumerate(case["outputs"]):
+        col = [r[j] for r in rows]
+        if not o["available"]:
+            out[o["name"]] = all(v is None for v in col)
+        else:
+            out[o["name"]] = all(v is not None and _same(v, w) if w is not None else v is None for v, w in zip(col, o["expected"]))
+    return out

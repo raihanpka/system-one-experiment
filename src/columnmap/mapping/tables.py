@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from ..core.prompts import context_label as ctx
 from ..core.tables import by_level, md_table, pct
-from .metrics import kind_metrics, lexical_mapping, mapping_metrics, sweep
+from .metrics import lexical_mapping, mapping_metrics, sweep
 
 
 def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[str]:
@@ -44,10 +44,7 @@ def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[st
                                               [[f"{s['T']:.3f}", f"{s['ece']:.3f}", f"{s['brier']:.3f}", pct(s["f1"]), pct(s["precision"]), pct(s["recall"])]
                                                for s in sweep(allmap[cond], cases)]), ""]
 
-    trs = [[ctx(cond), lv, (k := kind_metrics(rs, cases))["n"], pct(k["acc"])]
-           for cond in conds for lv, rs in by_level(allmap[cond]).items()]
-    return out + ["## Transformation kind (given the true source columns)", "",
-                  md_table(["Jev sees", "sample", "n outputs", "accuracy"], trs), ""]
+    return out
 
 
 # both scoring modes on the same files, side by side

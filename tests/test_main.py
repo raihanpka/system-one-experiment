@@ -45,7 +45,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
 
     data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
-    assert set(data_json) == {"meta", "mapping", "mapping_pairs", "transform", "permute"} and data_json["meta"]["mode"] == "options"
+    assert set(data_json) == {"meta", "mapping", "mapping_pairs", "honest"} and data_json["meta"]["mode"] == "options"
     assert data_json["meta"]["samples"] == "abcd"
     assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["easy_identical-000", "medium_synonym-000", "hard_codes-000", "hardest_noisy-000"]
     assert set(data_json["mapping"]) == {"name", "samples"}
@@ -61,13 +61,13 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
 
     rep = run / "report"
     for f in ("summary.md", "figures/accuracy.svg", "figures/outcomes.svg", "figures/drift.svg", "figures/calibration.svg",
-              "figures/kind.svg", "figures/transform.svg", "figures/heatmap_a_easy_identical_name.svg", "figures/heatmap_d_hardest_noisy_samples.svg"):
+              "figures/heatmap_a_easy_identical_name.svg", "figures/heatmap_d_hardest_noisy_samples.svg"):
         assert (rep / f).exists(), f
     svg = (rep / "figures/accuracy.svg").read_text()
     assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
     md = (rep / "summary.md").read_text()
     assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_hard_codes/" in md
-    assert "## Mapping" in md and "## Converted File Against the Expected File" in md
+    assert "## Mapping" in md and "## Converted File Without Ground Truth Help" in md
     assert "## At a Glance" in md and "## Rejecting Fields Without a Source" in md
 
     capsys.readouterr()
@@ -111,13 +111,13 @@ def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
 
     store = json.loads((second / "result.json").read_text())
     assert set(store["mapping"]) == {"name", "table"} and set(store["mapping_pairs"]) == {"name", "table"}
-    assert set(store["transform"]) == {"name"}                                           # the whole-table context reuses the others
+    assert set(store["honest"]) == {"name", "table"}                                      # the honest stage follows every context
     assert store["meta"]["mode"] == "options,pairs"
 
     md = (second / "report" / "summary.md").read_text()
     assert "## Options Mode Versus Pairs Mode" in md and "fitted on other run" in md
     assert "name + whole table, options mode" in md                                      # readable context labels in the headline
-    assert (second / "d_hardest_noisy" / "converted_hardest_noisy_name_calibrated.csv").exists()
+    assert (second / "d_hardest_noisy" / "converted_hardest_noisy_name.csv").exists()
     main(["--report-only", "--out", str(second), "--data", str(data)])                          # contexts are read from the run itself
     assert "name + whole table, options mode" in (second / "report" / "summary.md").read_text()
     first_md = (first / "report" / "summary.md").read_text()

@@ -69,9 +69,6 @@ uv run columnmap --conds name
 # use the slower mode with calibrated probabilities
 uv run columnmap --mode pairs
 
-# also test how stable the answers are when the option order changes
-uv run columnmap --permute
-
 # continue (or extend) an existing run folder
 uv run columnmap --out results/easy_identical-medium_synonym-hard_codes-hardest_noisy_20261102-153012
 
@@ -89,7 +86,6 @@ Options:
 - **`--conds name,samples`**: Sets what the model sees about each input column. `name` is the header text only, and `samples` is the header plus 5 values taken from the rows. `desc` and `both` also add a column description. They are off by default because the real template is a header only.
 - **`--mode options`**: The default. Asks one question per input column with all output fields as options and reads the score of each option. Probabilities are not calibrated.
 - **`--mode pairs`**: Asks one yes/no question per input column and output field. Slower, but calibrated.
-- **`--permute`**: Asks each choice question again with shuffled option order to measure how stable the answers are.
 - **`--report-only`**: Rebuilds the files, figures, and tables from `result.json` without running the model.
 - **`--root DIR`**: The folder that holds all runs. The default is `results`.
 - **`--data DIR`**: The folder with the template and samples. The default is `data`.

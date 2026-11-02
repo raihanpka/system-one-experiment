@@ -6,7 +6,6 @@ import re
 from difflib import SequenceMatcher
 
 from ..core.scoring import T0, TS, ece, pair_p, rate, safe_div as _div
-from ..core.template import KIND_LABEL
 
 OUTCOMES = ["Correct column", "Wrong column", "Left empty (no source)", "False match (no source)"]
 
@@ -88,16 +87,6 @@ def lexical_mapping(cases) -> dict:
             exact += set(rk[:len(src)]) == src
             top3 += bool(set(rk[:3]) & src)
     return {"n_outputs": n, "top1": _div(top1, n), "exact": _div(exact, n), "top3": _div(top3, n)}
-
-
-def kind_metrics(rows, cases) -> dict:
-    ok = n = 0
-    for r in rows:
-        for o in cases[r["case_id"]]["outputs"]:
-            if o["available"]:
-                n += 1
-                ok += r["kind"][o["name"]]["choice"] == KIND_LABEL[o["kind"]]
-    return {"n": n, "acc": _div(ok, n)}
 
 
 def outcomes(rs, cases) -> dict:

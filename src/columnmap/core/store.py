@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-SECTIONS = ("mapping", "mapping_pairs", "transform", "permute")
+SECTIONS = ("mapping", "mapping_pairs", "honest")
 COMPACT_FROM = 5                                   # nesting depth at which objects are written on a single line
 
 

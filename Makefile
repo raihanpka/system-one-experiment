@@ -3,7 +3,7 @@ PY := $(UV) run python
 RUN := $(UV) run columnmap
 
 .DEFAULT_GOAL := help
-.PHONY: help setup test lint sample full pairs permute report data bench open status stop clean
+.PHONY: help setup test lint sample full pairs report data bench open status stop clean
 
 help: ## Show this list
 	@grep -E '^[a-z]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
@@ -25,9 +25,6 @@ full: ## Run all seven samples
 
 pairs: ## Slow calibrated mode (one yes/no per column and field) on a,b,c,d
 	$(RUN) --samples abcd --mode pairs
-
-permute: ## Also test option-order stability on a,b,c,d
-	$(RUN) --samples abcd --permute
 
 report: ## Rebuild files, figures and tables of the newest run, no model
 	$(RUN) --report-only

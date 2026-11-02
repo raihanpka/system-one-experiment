@@ -26,7 +26,6 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --mode both           run both modes and compare them
   columnmap --conds name,samples,table    also show the model the whole table
   columnmap --calibrate-from results/X    fit the rejection cutoffs on run X (a fair test on another case)
-  columnmap --permute             also test how stable answers are when option order changes
   columnmap --seed 5              build the samples from another seed (not written to data/)
   columnmap --split calibration   one run per seed of a split from config.toml: dev, calibration, or test (test needs --final)
   columnmap --out results/X       continue (or extend) the existing run folder X
@@ -55,7 +54,6 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from config.toml, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
     ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
-    ap.add_argument("--permute", action="store_true", help="also test option-order stability (slower)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
     ap.add_argument("--root", default="results", help="folder that holds all runs (default results)")
     ap.add_argument("--data", default=str(DATA), help="folder with the template and the samples (default data/)")
@@ -112,7 +110,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
             from .decisions.jev import JevDecider
             decider_factory = lambda: JevDecider(**cfg["model"])              # noqa: E731
         with decider_factory() as d:
-            run_models(d, sel, conds, modes, a.permute, store, t)
+            run_models(d, sel, conds, modes, store, t)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
                                    "seed": seed, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})

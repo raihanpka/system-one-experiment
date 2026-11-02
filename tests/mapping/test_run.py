@@ -35,7 +35,7 @@ def test_conditions_change_state_text():
     assert "Description" in texts["both"] and "POL-1" in texts["both"]
 
 
-def test_matrix_shape_kind_and_resume(tmp_path):
+def test_matrix_shape_and_resume(tmp_path):
     store = Store(tmp_path / "r.json")
     d = Fake()
     run(d, CASES[:3], "name", store, T, mode="pairs")
@@ -47,8 +47,7 @@ def test_matrix_shape_kind_and_resume(tmp_path):
     assert all(set(v) == {o["name"] for o in c["outputs"]} for v in r["matrix"].values())
     cell = next(iter(next(iter(r["matrix"].values())).values()))
     assert cell == {"p": 0.25, "d": -1.1}
-    avail = {o["name"] for o in c["outputs"] if o["available"]}
-    assert set(r["kind"]) == avail and all("choice" in v and "p" in v for v in r["kind"].values())
+    assert "kind" not in r                                                     # no stage that is told the true sources
     n = len(d.calls)
     run(d, CASES[:3], "name", Store(tmp_path / "r.json"), T, mode="pairs")                  # new process: resume, nothing new
     assert len(d.calls) == n and len(Store(tmp_path / "r.json").rows("mapping_pairs", "name")) == 3
@@ -86,7 +85,7 @@ def test_table_context_gives_the_whole_table_once_and_asks_per_column(tmp_path):
     assert lines[1] == ",".join(k["name"] for k in case["columns"])
     assert all(k["name"] in qs[0].instructions for k, (_, qs) in zip(case["columns"], asks))
     r = store.rows("mapping", "table")[0]
-    assert r["cond"] == "table" and r["kind"] and "seconds" in r
+    assert r["cond"] == "table" and "seconds" in r
 
 
 def test_table_context_in_pairs_mode_asks_one_statement_per_field(tmp_path):

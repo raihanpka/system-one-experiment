@@ -1,11 +1,10 @@
-# mapping step: a score for every (input column, output field) pair, plus the transformation kind
+# mapping step: a score for every (input column, output field) pair
 
 from __future__ import annotations
 
 import time
 
-from ..core.prompts import (cond_base, input_state, kind_question, kind_state, mapping_question, samples,
-                            table_options_question, table_pair_question, table_state)
+from ..core.prompts import input_state, mapping_question, samples, table_options_question, table_pair_question, table_state
 from ..core.scoring import T0, pair_p
 from ..decisions.base import Decider
 from ..decisions.types import Choice, Question
@@ -35,15 +34,7 @@ def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> 
             matrix[c["name"]] = {a.name: {"p": a.probability, "d": a.raw_scores["true"] - a.raw_scores["false"]} for a in res.answers}
         else:
             matrix[c["name"]] = {k: {"p": pair_p({"d": d}, T0), "d": d} for k, d in res.answers[0].raw_scores.items()}
-    col = {c["name"]: c for c in case["columns"]}
-    kind, kc = {}, cond_base(cond)
-    for o in case["outputs"]:
-        if not o["available"]:
-            continue
-        cols = [(n, desc[col[n]["src"]], sample[n]) for n in o["sources"]]
-        a = decider.decide(kind_state(cols, kc), [kind_question(o["name"], odesc[o["name"]], kc)]).answers[0]
-        kind[o["name"]] = {"choice": a.choice, "p": a.probabilities}
-    return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode, "matrix": matrix, "kind": kind}
+    return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode, "matrix": matrix}
 
 
 def run(decider: Decider, cases, cond: str, store, t: dict, mode: str = "options") -> int:
