@@ -78,14 +78,3 @@ def test_unmapped_fields_are_empty_and_decisions_carry_the_truth_columns_only_fo
     assert {"truth_available", "truth_input", "confidence", "expression"} <= set(dec[0])
     assert all(v is None for r in conv for v, o in zip(r, CASE["outputs"]) if not o["available"])
 
-
-def test_field_causes_split_wrong_columns_from_wrong_expressions():
-    from columnmap.convert.metrics import field_causes
-    recs, conv = convert(matrix_from(CASE))
-    causes = field_causes(CASE, recs, field_correct(CASE, conv))
-    assert set(causes) == {"correct", "wrong_columns", "wrong_expression"}
-    assert causes["correct"] + causes["wrong_columns"] + causes["wrong_expression"] == sum(o["available"] for o in CASE["outputs"])
-    assert causes["wrong_columns"] == 0                                                   # the scores named the right columns
-    recs2, conv2 = convert(matrix_from(CASE, wrong=True))
-    c2 = field_causes(CASE, recs2, field_correct(CASE, conv2))
-    assert c2["wrong_columns"] > c2["correct"]

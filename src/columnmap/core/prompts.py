@@ -6,7 +6,6 @@ import csv
 import io
 
 from ..decisions.types import Choice, Question
-from .template import KIND_DESC
 
 CONDS = ("name", "desc", "samples", "both", "table", "outdesc")
 SAMPLE_K = 5
@@ -63,11 +62,6 @@ def mapping_question(name: str, desc: str | None, cond: str) -> Question:
 
 def kind_state(cols: list[tuple[str, str | None, list]], cond: str) -> str:
     return "Input columns:\n" + "\n".join("- " + _col_text(n, cond, d, s) for n, d, s in cols)
-
-
-def kind_question(name: str, desc: str | None, cond: str) -> Question:
-    return Question("choice", f"How is the output field {_label(name, desc, cond)} produced from these input columns?",
-                    name=name, choices=tuple(Choice(k, v) for k, v in KIND_DESC.items()))
 
 
 # the table is the same text for every column, so the scorer computes it once per file and reuses it

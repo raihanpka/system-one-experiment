@@ -26,13 +26,6 @@ def _is_acronym(word: str) -> bool:
     return len(core) > 1 and core.isupper()
 
 
-def sentence_case(text: str) -> str:
-    words = text.split(" ")
-    out = [words[0][:1].upper() + words[0][1:]] if words and words[0] else []
-    out += [w if (_is_acronym(w) or w[:1].isupper() and len(re.sub(r"[^A-Za-z]", "", w)) <= 1) else w for w in words[1:]]
-    return " ".join(out)
-
-
 def _title_ok(text: str) -> bool:
     if not text:
         return True

@@ -4,17 +4,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from columnmap.core import viz  # noqa: E402
-from columnmap.core.figcheck import check_figure, sentence_case, title_case  # noqa: E402
+from columnmap.core.figcheck import check_figure, title_case  # noqa: E402
 
 
 def test_title_case_keeps_small_words_lower_and_capitalises_the_rest():
     assert title_case("accuracy as input names drift away from the template") == "Accuracy as Input Names Drift Away From the Template"
     assert title_case("calibration error vs temperature") == "Calibration Error vs Temperature"
-
-
-def test_sentence_case_keeps_acronyms_and_lowers_the_rest():
-    assert sentence_case("Predicted probability") == "Predicted probability"
-    assert sentence_case("Observed share correct") == "Observed share correct"
 
 
 def test_checker_flags_bad_titles_labels_small_ticks_and_inside_legends():
