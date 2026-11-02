@@ -15,6 +15,9 @@ from .dataset.generate import generate
 
 SECTIONS = {"options": "mapping", "pairs": "mapping_pairs"}
 
+# bump when the column cutoff rule or the candidate catalogue changes: a fit made under another policy is refused
+POLICY_VERSION = "p1"
+
 
 
 # the score of every (input column, output field) pair and whether the column is a true source
@@ -52,7 +55,8 @@ def load_run(run_dir) -> tuple[Store, dict, dict]:
 
 # the key holds everything that changes what a score means: model, quantization, mode, context, prompt version and column cutoff
 def setup_key(meta: dict, mode: str, cond: str, level: str) -> str:
-    return make_key(meta["model"], meta["quant"], mode, cond, f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}", level)
+    return make_key(meta["model"], meta["quant"], mode, cond,
+                    f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}/{POLICY_VERSION}", level)
 
 
 # every run named here must be a dev or calibration run: a test run is never used for fitting
