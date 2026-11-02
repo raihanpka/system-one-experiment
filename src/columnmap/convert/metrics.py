@@ -40,3 +40,18 @@ def field_correct(case: dict, rows: list[list]) -> dict:
         else:
             out[o["name"]] = all(v is not None and _same(v, w) if w is not None else v is None for v, w in zip(col, o["expected"]))
     return out
+
+
+# why fields that have a source are wrong: the columns were wrong, or the columns were right but the expression was not
+def field_causes(case: dict, fields: dict, correct: dict) -> dict:
+    out = {"correct": 0, "wrong_columns": 0, "wrong_expression": 0}
+    for o in case["outputs"]:
+        if not o["available"]:
+            continue
+        if correct[o["name"]]:
+            out["correct"] += 1
+        elif set(fields[o["name"]]["cols"]) != set(o["sources"]):
+            out["wrong_columns"] += 1
+        else:
+            out["wrong_expression"] += 1
+    return out
