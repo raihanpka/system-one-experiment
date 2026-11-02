@@ -108,7 +108,7 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
         base = sid if lv < 2 else srcs[sid]["names"][str(lv)]
         how = "snake" if lv == 0 else (rng.choice(STYLES[1:]) if lv == 1 else case_style)
         if lv == 5:
-            how = "snake" if case_style == "snake" else "upper"   # legacy codes: OBJ_INFO_ADDR or obj_info_addr, never camelCase
+            how = "snake" if case_style == "snake" else "upper"   # system codes: OBJ_INFO_ADDR or obj_info_addr, never camelCase
         cols.append({"name": style(base, how), "src": sid, "level": lv, "decoy": None, "gen": srcs[sid]["gen"], "type": srcs[sid]["type"]})
     if level == 6:
         for d in rng.sample(t["decoys"], rng.randint(3, len(t["decoys"]))):

@@ -35,7 +35,7 @@ def run(case_id, cond):
         res[mode] = (round(time.time() - t0, 1), hit, n)
     return res
 
-for cid, cond in (("legacy-000", "name"), ("mixed-000", "samples")):
+for cid, cond in (("coded-000", "name"), ("mixed-000", "samples")):
     r = run(cid, cond)
     print(f"{cid} ({cond}): pairs {r['pairs'][0]}s top1 {r['pairs'][1]}/{r['pairs'][2]} | options {r['options'][0]}s top1 {r['options'][1]}/{r['options'][2]}", flush=True)
 m.close()

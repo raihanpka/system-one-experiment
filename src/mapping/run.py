@@ -10,6 +10,7 @@ over options is ignored). "pairs" asks one yes/no question per (input column, ou
 """
 from __future__ import annotations
 
+from ..decisions.base import Decider
 from ..core.prompts import input_state, kind_question, kind_state, mapping_question, samples
 from ..decisions.types import Choice, Question
 from ..core.scoring import T0, pair_p
@@ -42,7 +43,7 @@ def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> 
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode, "matrix": matrix, "kind": kind}
 
 
-def run(decider, cases, cond: str, store, t: dict, mode: str = "options") -> int:
+def run(decider: Decider, cases, cond: str, store, t: dict, mode: str = "options") -> int:
     n = 0
     for c in cases:
         if not store.has("mapping", cond, c["case_id"]):

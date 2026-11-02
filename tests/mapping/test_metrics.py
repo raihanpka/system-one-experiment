@@ -38,7 +38,7 @@ class Oracle:
         return Response("o", out, {})
 
 
-def rows_for(level, orc=True):
+def rows_for(level):
     case = next(c for c in CASES.values() if c["level"] == level)
     r = run_case(Oracle(case), case, "both", T, mode="pairs")
     return [r]

@@ -17,7 +17,7 @@ make help      # every command
 
 ```bash
 uv run python src                                  # samples a,b,c,d, fast mode
-uv run python src --samples ac                     # only a (identical) and c (legacy)
+uv run python src --samples ac                     # only a (identical) and c (coded)
 uv run python src --all                            # all seven samples
 uv run python src --conds name                     # the model sees column names only
 uv run python src --mode pairs                     # slow, calibrated probabilities
@@ -55,7 +55,7 @@ the tokenizer. The scorer (`jev-score-v2`) is that source compiled against brew'
 |---|---|---|
 | a | `a_identical` | exactly like the template |
 | b | `b_synonym` | with synonyms |
-| c | `c_legacy` | as legacy codes, for example `OBJ_INFO_ADDR_C` |
+| c | `c_coded` | as system codes, for example `OBJ_INFO_ADDR_C` |
 | d | `d_mixed` | a mix of all styles, plus decoy columns |
 | e | `e_style` | same words, other style (camelCase, UPPER, kebab) |
 | f | `f_abbreviation` | abbreviations |
@@ -72,17 +72,17 @@ data/                                tracked; the single source of truth for inp
   template.json                      template definition
   template_header.csv                the empty target template
   template_columns.csv               template columns with type, kind and rule
-  samples/c_legacy/
-    input_legacy.csv                 the messy input file
-    expected_legacy.csv              what a perfect converter writes
-    ground_truth_legacy.csv          true input column and expression per output field
+  samples/c_coded/
+    input_coded.csv                 the messy input file
+    expected_coded.csv              what a perfect converter writes
+    ground_truth_coded.csv          true input column and expression per output field
 
 results/<samples>_<timestamp>/       one folder per run, for example identical-synonym_20261102-153012
   result.json                        raw model output of this run, for transparency
-  c_legacy/
-    converted_legacy_name.csv        the template filled from Jev's decisions
-    decisions_legacy_name.csv        per output field: chosen input column, probability, kind, expression
-    probabilities_legacy_name.csv    probability of every (input column, output field) pair
+  c_coded/
+    converted_coded_name.csv        the template filled from Jev's decisions
+    decisions_coded_name.csv        per output field: chosen input column, probability, kind, expression
+    probabilities_coded_name.csv    probability of every (input column, output field) pair
   report/
     summary.md                       tables and figures of this run
     figures/*.svg                    accuracy, outcomes, drift regression, calibration, kinds, heatmaps

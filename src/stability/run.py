@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import random
 
+from ..decisions.base import Decider
 from ..core.prompts import kind_question, kind_state, samples
 from ..core.template import KIND_DESC, KIND_LABEL
 from ..decisions.types import Choice, Question
@@ -59,7 +60,7 @@ def run_case(decider, case: dict, cond: str, t: dict, k: int = 3, seed: int = 0)
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "k": k, "transform": transform, "kind": kind}
 
 
-def run(decider, cases, cond: str, store, t: dict, k: int = 3) -> int:
+def run(decider: Decider, cases, cond: str, store, t: dict, k: int = 3) -> int:
     n = 0
     for c in cases:
         if not store.has("permute", cond, c["case_id"]):

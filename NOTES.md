@@ -28,7 +28,7 @@
 
 ## T3-T5: data and runner
 
-- Template: 26 sources, 31 outputs (11 derived: concat, arith, format, lookup), 6 decoys. Level 5 names are legacy-style codes (`OBJ_INFO_ADDR_C`, `MVT_AMT_MAIN`), kept UPPER_SNAKE (or lower snake), never camelCase.
+- Template: 26 sources, 31 outputs (11 derived: concat, arith, format, lookup), 6 decoys. Level 5 names are system-style codes (`OBJ_INFO_ADDR_C`, `MVT_AMT_MAIN`), kept UPPER_SNAKE (or lower snake), never camelCase.
 - Files: see `README.md` ("Where files go"). `data/` is tracked and is the single source of truth for inputs; each run writes only its own outputs under `results/<samples>_<timestamp>/`.
 - Runner config is `config.toml` (stdlib `tomllib`) instead of YAML, to avoid a dependency.
 - Throughput (Q8_0, M3): about 0.1 s per question regardless of state sharing (31 questions = 3.2 s). One case (about 26 input columns x 31 outputs + 31 kind questions) takes about 90 s of scoring plus load time. Default `n_per_level = 3` gives 21 cases, about 32 min per context condition, about 2 h for all four. Raise it in `config.toml` or with `--n`.
@@ -67,7 +67,7 @@
 
 ## First real run (4 samples, 2 contexts, options mode, Q8_0, M3, 6 minutes)
 
-- Top-1 (best input column is a true source): name only 79.3 percent, name + values 86.2 percent. By sample (name only / name + values): identical 95.7 / 95.7, synonym 87.1 / 90.3, legacy codes 48.4 / 71.0, mixed 90.3 / 90.3. A string-similarity baseline gets 82.6 percent on identical names and about 19 percent on the others.
+- Top-1 (best input column is a true source): name only 79.3 percent, name + values 86.2 percent. By sample (name only / name + values): identical 95.7 / 95.7, synonym 87.1 / 90.3, system codes 48.4 / 71.0, mixed 90.3 / 90.3. A string-similarity baseline gets 82.6 percent on identical names and about 19 percent on the others.
 - Calibration: pooled ECE 0.007 at T = 0.828 and it worsens for higher T (0.21 at T = 3). The pooled number is flattered by the many negative pairs.
 - Weak spots: output fields with no source column are not rejected at levels 3 to 6 (reject rate 0 percent at threshold 0.5), and 60 percent of decoy columns reached P >= 0.5 for some field. Pair recall at 0.5 is low (44 to 50 percent), so the options-mode scores sit below 0.5 for many true pairs. A per-field threshold fitted on the ground truth, or `--mode pairs`, is the next thing to try.
 - Transformation kind given the true sources: 77 to 100 percent depending on sample and context.

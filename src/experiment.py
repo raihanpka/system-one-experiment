@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import time
 
+from .decisions.base import Decider
 from .mapping import run as run_mapping
 from .stability import run as run_stability
 from .transform import run as run_transform
 
 
-def run_models(decider, cases, conds, mode, with_stability, store, template, log=print) -> None:
+def run_models(decider: Decider, cases, conds, mode, with_stability, store, template, log=print) -> None:
     """For each context: mapping (+ kind), transformation ranking, optionally option-order stability.
     Cases already in the store are skipped, so an interrupted run can be continued."""
     t0 = time.time()

@@ -84,7 +84,7 @@ def fig_calibration(rows_by_cond, cases, path):
     if rel:
         sns.lineplot(pd.concat(rel), x="conf", y="acc", hue="condition", marker="o", ax=b)
         b.plot([0, 1], [0, 1], color="gray", linestyle="--")
-        b.set(title="Reliability at T = 0.828", xlabel="mean predicted probability", ylabel="observed share true",
+        b.set(title="Reliability at T = 0.828", xlabel="mean probability", ylabel="observed share true",
               xlim=(0, 1), ylim=(0, 1.02))
     return save(fig, path)
 

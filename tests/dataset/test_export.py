@@ -25,7 +25,7 @@ def test_samples_folder_is_the_single_source_of_truth(tmp_path):
     by_id = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=5)}
     write_samples(T, by_id, "abcd", tmp_path)
     assert (tmp_path / "template_header.csv").exists()
-    assert sorted(p.name for p in (tmp_path / "samples").iterdir()) == ["a_identical", "b_synonym", "c_legacy", "d_mixed"]
+    assert sorted(p.name for p in (tmp_path / "samples").iterdir()) == ["a_identical", "b_synonym", "c_coded", "d_mixed"]
     c = by_id["mixed-000"]
     d = tmp_path / "samples" / "d_mixed"
     assert sorted(p.name for p in d.iterdir()) == ["expected_mixed.csv", "ground_truth_mixed.csv", "input_mixed.csv"]
@@ -49,7 +49,7 @@ def test_samples_folder_is_the_single_source_of_truth(tmp_path):
     assert (d / "input_mixed.csv").read_text() == before
 
 
-def test_level5_has_legacy_style_codes():
+def test_level5_has_coded_style_codes():
     many = generate(T, n_per_level=12, seed=5)
     names = [k["name"] for c in many if c["level"] == 5 for k in c["columns"]]
     assert any(n.isupper() and "_" in n for n in names)          # e.g. OBJ_INFO_ADDR_C

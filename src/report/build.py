@@ -4,7 +4,7 @@ Inputs, expected files and ground truth live once, in data/samples/ (not copied 
 
 results/<samples>_<timestamp>/
   result.json                       all raw Jev results of this run (see core/store.py)
-  <letter>_<word>/                  one folder per tested sample, e.g. c_legacy/
+  <letter>_<word>/                  one folder per tested sample, e.g. c_coded/
     converted_<word>_<context>.csv  the template filled from Jev's decisions
     decisions_<word>_<context>.csv  per output field: input column chosen, probability, kind, expression
     probabilities_<word>_<context>.csv  probability of every (input column, output field) pair
@@ -24,8 +24,8 @@ from ..mapping.figures import fig_accuracy, fig_calibration, fig_drift, fig_heat
 from ..transform.figures import fig_transform
 from .tables import build_tables
 
-DECISION_COLUMNS = ["output", "available", "true_input", "predicted_input", "p", "runner_up", "p_runner_up",
-                    "correct", "kind_predicted", "method", "expression"]
+DECISION_COLUMNS = ["output", "available", "true_input", "chosen_input", "p", "runner_up", "p_runner_up",
+                    "correct", "kind_chosen", "method", "expression"]
 
 
 def make_report(store, cases, letters, conds, run_dir) -> list[Path]:

@@ -36,7 +36,7 @@ def convert_case(map_row: dict, tr_row: dict | None, case: dict, threshold: floa
         columns.append(values)
         correct = c1 in o["sources"] if o["available"] else p1 < threshold
         decisions.append({"output": o["name"], "available": o["available"], "true_input": "|".join(o["sources"]),
-                          "predicted_input": c1, "p": round(p1, 4), "runner_up": c2, "p_runner_up": round(p2, 4),
-                          "correct": correct, "kind_predicted": kind, "method": method, "expression": expr})
+                          "chosen_input": c1, "p": round(p1, 4), "runner_up": c2, "p_runner_up": round(p2, 4),
+                          "correct": correct, "kind_chosen": kind, "method": method, "expression": expr})
     rows = [list(r) for r in zip(*columns)]
     return [o["name"] for o in case["outputs"]], rows, decisions

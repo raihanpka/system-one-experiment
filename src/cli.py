@@ -21,7 +21,7 @@ from .report.build import make_report
 ROOT = Path(__file__).resolve().parents[1]
 EPILOG = """examples:
   uv run python src                              samples a,b,c,d, fast mode, new run folder
-  uv run python src --samples ac                 only a (identical) and c (legacy)
+  uv run python src --samples ac                 only a (identical) and c (coded)
   uv run python src --all                        all seven samples
   uv run python src --mode pairs                 slow, calibrated probabilities
   uv run python src --permute                    also test option-order stability

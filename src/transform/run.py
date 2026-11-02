@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import math
 
+from ..decisions.base import Decider
 from ..core.dsl import safe_evaluate
 from ..decisions.types import Question
 from .prompts import pick_question, prepare
@@ -46,7 +47,7 @@ def run_case(decider, case: dict, cond: str, t: dict) -> dict:
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "transform": res}
 
 
-def run(decider, cases, cond: str, store, t: dict) -> int:
+def run(decider: Decider, cases, cond: str, store, t: dict) -> int:
     n = 0
     for c in cases:
         if not store.has("transform", cond, c["case_id"]):

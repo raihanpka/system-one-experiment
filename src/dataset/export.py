@@ -1,9 +1,9 @@
 """CSV files of the template and of the seven named samples: data/ is the single source of truth.
 Run: uv run python -m src.dataset.export   (deterministic; `python src` refreshes the samples it uses)
 
-A sample folder holds three files named after the kind of input, e.g. data/samples/c_legacy/:
-input_legacy.csv (the messy file), expected_legacy.csv (the converted file, ready to upload) and
-ground_truth_legacy.csv (which input columns feed each output field, and how).
+A sample folder holds three files named after the kind of input, e.g. data/samples/c_coded/:
+input_coded.csv (the messy file), expected_coded.csv (the converted file, ready to upload) and
+ground_truth_coded.csv (which input columns feed each output field, and how).
 """
 from __future__ import annotations
 

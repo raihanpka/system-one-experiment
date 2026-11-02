@@ -24,7 +24,7 @@ def oracle_rows(case, wrong_kind=False, p_true=0.9):
 
 
 def test_oracle_decisions_rebuild_the_expected_file():
-    case = CASES["legacy-000"]
+    case = CASES["coded-000"]
     m, tr = oracle_rows(case)
     header, rows, decisions = convert_case(m, tr, case)
     assert header == [o["name"] for o in case["outputs"]] and len(rows) == len(case["rows"])
@@ -34,11 +34,11 @@ def test_oracle_decisions_rebuild_the_expected_file():
     first_pass = next(o["name"] for o in case["outputs"] if o["available"] and o["kind"] == "pass")
     assert by_out[first_pass]["method"] == "copy" and by_out[first_pass]["correct"]
     calc = next(o["name"] for o in case["outputs"] if o["available"] and o["kind"] == "arith")
-    assert by_out[calc]["method"] == "expression" and by_out[calc]["expression"] and by_out[calc]["kind_predicted"] == "arithmetic"
+    assert by_out[calc]["method"] == "expression" and by_out[calc]["expression"] and by_out[calc]["kind_chosen"] == "arithmetic"
 
 
 def test_low_probability_leaves_the_field_empty():
-    case = CASES["legacy-000"]
+    case = CASES["coded-000"]
     m, tr = oracle_rows(case, p_true=0.2)                                     # nothing reaches 0.5
     header, rows, decisions = convert_case(m, tr, case)
     assert all(v is None for r in rows for v in r)
