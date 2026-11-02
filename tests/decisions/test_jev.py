@@ -6,7 +6,7 @@ import pytest
 from src.decisions.jev import JevDecider
 from src.decisions.types import Choice, Level, Question, request_from_dict, response_to_dict
 
-FIX = Path(__file__).parent / "fixtures"
+FIX = Path(__file__).parents[1] / "fixtures"
 MODEL = "Jev-Style-2B-Decision-v3"
 
 
@@ -70,7 +70,7 @@ def test_empty_questions_and_error_passthrough():
         JevDecider(backend=Boom()).decide("x", [Question("predicate", "q")])
 
 
-GGUF = Path(__file__).parent.parent / "vendor/jev-v3-2b-gguf/Jev-Style-2B-Decision-v3-Q8_0.gguf"
+GGUF = Path(__file__).parents[2] / "vendor/jev-v3-2b-gguf/Jev-Style-2B-Decision-v3-Q8_0.gguf"
 
 
 @pytest.mark.skipif(not GGUF.exists(), reason="run scripts/setup_jev.sh")

@@ -7,7 +7,7 @@ from src.decisions.types import (
     Choice, Level, Question, request_from_dict, request_to_dict, response_from_dict, response_to_dict,
 )
 
-FIX = Path(__file__).parent / "fixtures"
+FIX = Path(__file__).parents[1] / "fixtures"
 
 
 def load(name):

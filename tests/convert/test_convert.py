@@ -6,7 +6,7 @@ from src.core.scoring import T0
 from src.core.template import KIND_LABEL, load_template
 from src.dataset.generate import generate
 from src.transform.run import run_case as transform_case
-from tests.test_run_transform import Oracle as TransformOracle
+from tests.fakes import TransformOracle
 
 T = load_template()
 CASES = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=4)}

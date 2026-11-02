@@ -1,13 +1,9 @@
-from src.core.template import load_template
+"""Fake deciders shared by the tests; they stand in for the model."""
+from __future__ import annotations
+
+from src.core.dsl import render
 from src.core.template import KIND_DESC, KIND_LABEL
 from src.decisions.types import Answer, Response
-from src.core.dsl import render
-from src.dataset.generate import generate
-from src.transform.run import run
-from src.core.store import Store
-
-T = load_template()
-CASES = generate(T, n_per_level=2, seed=11)
 
 
 def truth_texts(case):
@@ -15,7 +11,7 @@ def truth_texts(case):
     return {o["name"]: render(o["rule"], name_of.get) for o in case["outputs"] if o["available"] and o["kind"] != "pass"}
 
 
-class Oracle:
+class TransformOracle:
     """Picks the true expression / true kind for choice, scores 0.9/0.1 for predicates."""
 
     def __init__(self, case, right=True):
@@ -40,25 +36,3 @@ class Oracle:
                 p = 0.9 if hit == self.right else 0.1
                 out.append(Answer("predicate", q.name, probability=p, raw_scores={"false": 0.0, "true": 0.0}))
         return Response("oracle", out, {})
-
-
-def test_oracle_gets_everything_right_and_resume(tmp_path):
-    case = next(c for c in CASES if c["level"] == 3)
-    store = Store(tmp_path / "t.json")
-    assert run(Oracle(case), [case], "both", store, T) == 1
-    r = store.rows("transform", "both")[0]
-    derived = [o["name"] for o in case["outputs"] if o["available"] and o["kind"] != "pass"]
-    assert set(r["transform"]) == set(derived) and derived
-    for v in r["transform"].values():
-        assert len(v["cands"]) >= 4 and len(set(v["cands"])) == len(v["cands"])
-        assert v["choice_idx"] == v["truth_idx"] and v["pred_idx"] == v["truth_idx"]
-        assert v["choice_value_ok"] and v["pred_value_ok"]
-    assert run(Oracle(case), [case], "both", Store(tmp_path / "t.json"), T) == 0   # resume
-
-
-def test_wrong_pick_is_detected_by_value_check(tmp_path):
-    case = next(c for c in CASES if c["level"] == 2)
-    store = Store(tmp_path / "t.json")
-    run(Oracle(case, right=False), [case], "name", store, T)
-    r = store.rows("transform", "name")[0]
-    assert all(v["choice_idx"] != v["truth_idx"] and not v["choice_value_ok"] for v in r["transform"].values())

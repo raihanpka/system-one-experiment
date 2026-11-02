@@ -3,7 +3,7 @@ from src.decisions.types import Answer, Response
 from src.dataset.generate import generate
 from src.stability.run import run
 from src.core.store import Store
-from tests.test_run_transform import Oracle
+from tests.fakes import TransformOracle as Oracle
 
 T = load_template()
 CASE = next(c for c in generate(T, n_per_level=2, seed=11) if c["level"] == 3)
