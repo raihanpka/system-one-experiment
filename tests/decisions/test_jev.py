@@ -91,29 +91,12 @@ def test_real_model_card_example_and_budget():
         assert 0 <= s.score <= 1
 
 
-def test_config_built_options_reach_the_decider_for_each_question_type():
-    from columnmap.core.config import load_config, model_options
-    cfg = load_config('''
-[model]
-quant = "Q8_0"
-ngl = 999
-flash_attn = "default"
-
-[run]
-mode = "options"
-target_precision = 1.0
-prompt_version = "v1"
-keep_d = 0.0
-seed = 1234
-
-[splits]
-dev = [11]
-calibration = [12, 13]
-test = [21, 22]
-
-[device]
-mode = "cpu"
-''')
+def test_settings_built_options_reach_the_decider_for_each_question_type():
+    from columnmap.core.settings import model_options, parse
+    cfg = parse({"Backend": {"Type": "local"}, "Local": {"Quant": "Q8_0", "Ngl": 999, "FlashAttn": "default"},
+                 "Device": {"Mode": "cpu"},
+                 "Run": {"Mode": "options", "TargetPrecision": 1.0, "PromptVersion": "v1", "KeepD": 0.0, "Seed": 1234},
+                 "Splits": {"Dev": [11], "Calibration": [12, 13], "Test": [21, 22]}}, env={})
     opts = model_options(cfg)
     assert opts["ngl"] == 0
     fb = FakeBackend()

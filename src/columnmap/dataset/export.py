@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..core.csvio import write_csv as _write
 from ..core.dsl import render
-from ..core.paths import CONFIG, DATA
+from ..core.paths import DATA
 from ..core.template import load_template
 from .samples import SAMPLES, word
 
@@ -46,10 +46,9 @@ def write_samples(t: dict, cases: dict, letters: str, data_dir) -> None:
 
 
 if __name__ == "__main__":
-    import tomllib
-
+    from ..core.settings import load_settings
     from .generate import generate
-    cfg = tomllib.loads(CONFIG.read_text())["run"]
+    cfg = load_settings()["run"]
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, cfg["seed"])}
     write_samples(t, cases, "".join(SAMPLES), DATA)

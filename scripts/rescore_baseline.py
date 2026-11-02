@@ -2,13 +2,12 @@
 # usage: uv run python scripts/rescore_baseline.py   (about 3 minutes, writes baselines/v1/honest.md and honest_result.json)
 
 import re
-import tomllib
 
 from columnmap.convert.honest import convert_fields
 from columnmap.convert.metrics import cell_match, field_causes, field_correct
 from columnmap.core.baselines import RUNS, V1, baseline_rows
-from columnmap.core.paths import CONFIG
 from columnmap.core.prompts import context_label
+from columnmap.core.settings import load_settings, model_options
 from columnmap.core.store import Store
 from columnmap.core.tables import md_table, pct
 from columnmap.core.template import load_template
@@ -27,7 +26,7 @@ def old_cells(run: str, cond: str) -> str:
     return m.group(1) if m else "-"
 
 
-with JevDecider(**tomllib.loads(CONFIG.read_text())["model"]) as d:
+with JevDecider(**model_options(load_settings())) as d:      # this baseline was scored by the local model
     for cond in CONDS:
         for row in baseline_rows("mapping", cond):
             if not out.has("honest", cond, row["case_id"]):

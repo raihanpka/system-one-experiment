@@ -6,8 +6,9 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-from .core.config import load_config, model_options
-from .core.paths import CONFIG, DATA, ROOT
+from .core.paths import DATA, ROOT
+from .core.settings import load_settings
+from .decisions.factory import backend_meta, make_decider
 from .calibrate import fit as fit_calibration
 from .core.calibration import Calibration
 from .core.runs import new_run_dir, newest_run
@@ -30,7 +31,7 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --fit-calibration results/A results/B    fit calibration.json from dev or calibration runs A and B
   columnmap --calibrate-from results/X    fit the rejection cutoffs on run X (a fair test on another case)
   columnmap --seed 5              build the samples from another seed (not written to data/)
-  columnmap --split calibration   one run per seed of a split from config.toml: dev, calibration, or test (test needs --final)
+  columnmap --split calibration   one run per seed of a split from appsettings.json: dev, calibration, or test (test needs --final)
   columnmap --out results/X       continue (or extend) the existing run folder X
   columnmap --report-only         rebuild files, figures and tables of the newest run, no model
 """
@@ -41,7 +42,7 @@ def _abs(p: str) -> Path:
 
 
 def main(argv=None, decider_factory=None) -> int:
-    cfg = load_config(CONFIG.read_text())
+    cfg = load_settings()
     ap = argparse.ArgumentParser(prog="columnmap", description="Run Jev on sample files and write the results.",
                                  epilog=EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--samples", help=f"letters from {''.join(SAMPLES)} (default {DEFAULT}): "
@@ -53,12 +54,12 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs", "both"),
                     help="options: one question per input column, fast; pairs: one yes/no per column and field, slow, calibrated; "
                          "both: run and compare the two")
-    ap.add_argument("--seed", type=int, help="seed that builds the samples (default: run.seed in config.toml)")
-    ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from config.toml, one run each")
+    ap.add_argument("--seed", type=int, help="seed that builds the samples (default: Run:Seed in appsettings.json)")
+    ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from appsettings.json, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
     ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
     ap.add_argument("--lift", metavar="TOP,SECOND", help="choose columns by the lift rule with these two thresholds (overrides --keep)")
-    ap.add_argument("--keep", type=float, help="score a column needs to be chosen for a field (default: run.keep_d in config.toml; 0.0 is probability 0.5)")
+    ap.add_argument("--keep", type=float, help="score a column needs to be chosen for a field (default: Run:KeepD in appsettings.json; 0.0 is probability 0.5)")
     ap.add_argument("--fit-calibration", nargs="+", metavar="RUN", help="fit calibration parameters from these dev or calibration runs, write calibration.json, and stop")
     ap.add_argument("--calibration", default=str(ROOT / "calibration.json"), help="calibration file (default calibration.json in the project)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
@@ -131,13 +132,13 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
 
     if not a.report_only:
         if decider_factory is None:
-            if cfg["backend"]["type"] != "local_gguf":
-                ap.error(f"backend {cfg['backend']['type']!r} has settings but no adapter yet; set [backend] type = \"local_gguf\" to run")
-            from .decisions.jev import JevDecider
-            decider_factory = lambda: JevDecider(**model_options(cfg))        # noqa: E731
+            try:
+                decider_factory = make_decider(cfg)
+            except ValueError as e:
+                ap.error(str(e))
         with decider_factory() as d:
             run_models(d, sel, conds, modes, store, t, keep=keep)
-        store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
+        store.data["meta"].update({**backend_meta(cfg), "samples": letters,
                                    "seed": seed, "split": a.split or ("baseline" if baseline else "custom"), "prompt_version": cfg["run"]["prompt_version"], "keep_d": keep, "mode": ",".join(modes), "contexts": list(dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])),
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
