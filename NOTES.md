@@ -130,3 +130,10 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 5. Hosted mapping ranking is fine (top-1 on sample d 90.9 to 95.5). Field confidence is still not good enough for auto-fill at 100 percent.
 6. Adapter fixes found by a live call: score probabilities are keyed by index with a legend; choice and score raw scores use logit(p) so 0 means 0.5 (log(p) rejected every field).
 
+## 14. ECE Target Is Below the Noise Floor at Our Sample Size
+
+1. Target 0.03 for field ECE was set early in the plan. It has no derivation in the repo.
+2. Simulation: a perfectly calibrated model with n field points gives this median ECE (10 bins): n=60 gives 0.129, n=300 gives 0.058, n=2000 gives 0.022.
+3. So field ECE 0.10 to 0.13 at n about 60 is what perfect calibration looks like. The earlier "failure" is mostly noise, not miscalibration. Pair level (n=2263) is near its floor and fine.
+4. Decision needed: keep 0.03 and collect about 2000 field points, or replace the field check with a test that does not depend on ECE at this n (for example, precision at the cutoff with a confidence bound).
+
