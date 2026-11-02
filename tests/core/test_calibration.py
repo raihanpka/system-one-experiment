@@ -3,7 +3,8 @@ import json
 import numpy as np
 import pytest
 
-from columnmap.core.calibration import (Calibration, CalibrationKeyError, apply_platt, fit_platt, make_key, reliability_bins)
+from columnmap.core.calibration import (Calibration, CalibrationKeyError, apply_platt, apply_temperature, ece_by_group, fit_platt,
+                                        fit_temperature, make_key, reliability_bins)
 from columnmap.core.scoring import ece
 
 
@@ -51,3 +52,30 @@ def test_calibration_file_round_trip_and_a_key_that_does_not_match_is_refused(tm
         again.get(other)
     assert "Q4_K_M" in str(e.value) and "refit" in str(e.value).lower()
     assert again.get(other, missing_ok=True) is None
+
+
+def synthetic_temperature(T, n=40000, seed=2):
+    rng = np.random.default_rng(seed)
+    x = rng.uniform(-6, 6, n)
+    y = rng.random(n) < 1 / (1 + np.exp(-x / T))
+    return x.tolist(), y.tolist()
+
+
+def test_temperature_recovers_known_scale_within_five_percent():
+    xs, ys = synthetic_temperature(0.83)
+    T = fit_temperature(xs, ys)
+    assert abs(T - 0.83) / 0.83 < 0.05
+
+
+def test_temperature_scales_logits_toward_the_observed_rate():
+    xs, ys = synthetic_temperature(0.83, seed=3)
+    T = fit_temperature(xs, ys)
+    assert apply_temperature(3.0, T) == pytest.approx(1 / (1 + np.exp(-3.0 / T)))
+    assert ece([apply_temperature(x, T) for x in xs], ys) < ece([apply_temperature(x, 1.0) for x in xs], ys)
+
+
+def test_ece_by_group_reports_each_sample_so_a_drifting_one_is_visible():
+    ps = [0.9] * 20
+    ys = [True] * 9 + [False] + [False] * 10
+    by = ece_by_group(ps, ys, ["easy"] * 10 + ["hard"] * 10)
+    assert set(by) == {"easy", "hard"} and by["easy"] < 0.01 and by["hard"] == pytest.approx(0.9)

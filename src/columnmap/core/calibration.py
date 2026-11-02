@@ -8,6 +8,8 @@ from pathlib import Path
 
 import numpy as np
 
+from .scoring import ece
+
 
 class CalibrationKeyError(KeyError):
     def __str__(self) -> str:
@@ -21,6 +23,40 @@ def make_key(model: str, quant: str, mode: str, cond: str, prompt: str, level: s
 def apply_platt(x: float, a: float, b: float) -> float:
     z = a * x + b
     return 1 / (1 + np.exp(-z)) if z > -700 else 0.0
+
+
+# temperature: probability = sigmoid(x / T), one scalar per question type; T is found by golden-section search on log T (log-loss)
+def apply_temperature(x: float, T: float) -> float:
+    return apply_platt(x, 1.0 / T, 0.0)
+
+
+def fit_temperature(xs, ys, lo: float = 0.05, hi: float = 20.0, iters: int = 80) -> float:
+    x, y = np.asarray(xs, float), np.asarray(ys, float)
+
+    def nll(logT: float) -> float:
+        z = np.clip(x / np.exp(logT), -35, 35)
+        p = np.clip(1 / (1 + np.exp(-z)), 1e-12, 1 - 1e-12)
+        return float(-(y * np.log(p) + (1 - y) * np.log(1 - p)).mean())
+
+    a, b = np.log(lo), np.log(hi)
+    g = (np.sqrt(5) - 1) / 2
+    c, d = b - g * (b - a), a + g * (b - a)
+    for _ in range(iters):
+        if nll(c) < nll(d):
+            b = d
+        else:
+            a = c
+        c, d = b - g * (b - a), a + g * (b - a)
+    return float(np.exp((a + b) / 2))
+
+
+# expected calibration error per group (one sample or context at a time), so a single drifting group is not hidden by the average
+def ece_by_group(ps, ys, groups) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for g in dict.fromkeys(groups):
+        idx = [i for i, k in enumerate(groups) if k == g]
+        out[g] = ece([ps[i] for i in idx], [ys[i] for i in idx])
+    return out
 
 
 # logistic regression on one feature by Newton steps; a small ridge keeps the slope near 1 when the data are thin
