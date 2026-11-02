@@ -87,10 +87,10 @@ def test_a_calibrated_cutoff_keeps_low_confidence_fields_out_of_the_converted_fi
     path = tmp_path / "calibration.json"
     key = "|".join((meta["model"], meta["quant"], "options", "name", "v1/keep0.0/p1", "field"))
     path.write_text(json.dumps({"version": 1, "entries": {key: {"a": 1.0, "b": 0.0, "n": 200, "positives": 150, "seeds": [12],
-                                                                "curve": [[0.9999, 1.0, 1000]]}}}))      # 1000 fields, all right: a lower bound still stays below 100 percent
+                                                                "curve": [[0.9999, 0.5, 1000]]}}}))      # 1000 fields, half right: no cutoff reaches the 0.9 target
     main(["--report-only", "--out", str(dev), "--calibration", str(path), "--root", str(root), "--data", str(data)])
     md = (dev / "report" / "summary.md").read_text()
-    assert "no cutoff reaches 100% precision" in md                                                       # a bound never reaches 1.0
+    assert "no cutoff reaches 90% precision" in md                                                        # the config target is 0.9
     converted = (dev / "a_easy_identical" / "converted_easy_identical_name.csv").read_text().splitlines()[1:]
     assert all(set(line) <= {","} for line in converted)                                                  # nothing filled
     decisions = (dev / "a_easy_identical" / "decisions_easy_identical_name.csv").read_text()
