@@ -1,11 +1,11 @@
 import math
 
-from src.convert.apply import convert_case
-from src.convert.metrics import cell_match
-from src.core.scoring import T0
-from src.core.template import KIND_LABEL, load_template
-from src.dataset.generate import generate
-from src.transform.run import run_case as transform_case
+from columnmap.convert.apply import convert_case
+from columnmap.convert.metrics import cell_match
+from columnmap.core.scoring import T0
+from columnmap.core.template import KIND_LABEL, load_template
+from columnmap.dataset.generate import generate
+from columnmap.transform.run import run_case as transform_case
 from tests.fakes import TransformOracle
 
 T = load_template()

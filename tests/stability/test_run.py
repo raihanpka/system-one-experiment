@@ -1,8 +1,8 @@
-from src.core.template import load_template
-from src.decisions.types import Answer, Response
-from src.dataset.generate import generate
-from src.stability.run import run
-from src.core.store import Store
+from columnmap.core.template import load_template
+from columnmap.decisions.types import Answer, Response
+from columnmap.dataset.generate import generate
+from columnmap.stability.run import run
+from columnmap.core.store import Store
 from tests.fakes import TransformOracle as Oracle
 
 T = load_template()

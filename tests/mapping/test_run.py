@@ -1,9 +1,9 @@
-from src.core.template import load_template
-from src.core.prompts import CONDS, input_state
-from src.decisions.types import Answer, Response
-from src.dataset.generate import generate
-from src.mapping.run import run
-from src.core.store import Store
+from columnmap.core.template import load_template
+from columnmap.core.prompts import CONDS, input_state
+from columnmap.decisions.types import Answer, Response
+from columnmap.dataset.generate import generate
+from columnmap.mapping.run import run
+from columnmap.core.store import Store
 
 T = load_template()
 CASES = generate(T, n_per_level=2, seed=3)

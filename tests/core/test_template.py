@@ -1,4 +1,4 @@
-from src.core.template import OPS, check, load_template, rule_sources
+from columnmap.core.template import OPS, check, load_template, rule_sources
 
 
 def test_template_is_valid():

@@ -1,5 +1,5 @@
 """CSV files of the template and of the seven named samples: data/ is the single source of truth.
-Run: uv run python -m src.dataset.export   (deterministic; `python src` refreshes the samples it uses)
+Run: uv run python -m columnmap.dataset.export   (deterministic; `python src` refreshes the samples it uses)
 
 A sample folder holds three files named after the kind of input, e.g. data/samples/c_coded/:
 input_coded.csv (the messy file), expected_coded.csv (the converted file, ready to upload) and
@@ -11,10 +11,10 @@ from pathlib import Path
 
 from ..core.csvio import write_csv as _write
 from ..core.dsl import render
+from ..core.paths import CONFIG, DATA
 from ..core.template import load_template
 from .samples import SAMPLES, word
 
-ROOT = Path(__file__).resolve().parents[2]
 
 
 def write_template(t: dict, out) -> None:
@@ -55,8 +55,8 @@ if __name__ == "__main__":
     import tomllib
 
     from .generate import generate
-    cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
+    cfg = tomllib.loads(CONFIG.read_text())["run"]
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, cfg["seed"])}
-    write_samples(t, cases, "".join(SAMPLES), ROOT / "data")
+    write_samples(t, cases, "".join(SAMPLES), DATA)
     print(f"template and {len(SAMPLES)} samples written under data/ (input, expected, ground truth per sample)")

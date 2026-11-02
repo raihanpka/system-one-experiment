@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.decisions.types import (
+from columnmap.decisions.types import (
     Choice, Level, Question, request_from_dict, request_to_dict, response_from_dict, response_to_dict,
 )
 

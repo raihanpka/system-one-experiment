@@ -5,9 +5,9 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+from ..core.paths import VENDOR
 from .types import Answer, Question, Response
 
-VENDOR = Path(__file__).resolve().parents[2] / "vendor" / "jev-v3-2b-gguf"
 
 
 def _load_backend(quant: str, ngl: int = 999, flash_attn: str = "default", threads: int | None = None):

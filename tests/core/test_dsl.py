@@ -1,6 +1,6 @@
 import pytest
 
-from src.core.dsl import evaluate, render, safe_evaluate
+from columnmap.core.dsl import evaluate, render, safe_evaluate
 
 S = lambda x: {"src": x}  # noqa: E731
 L = lambda x: {"lit": x}  # noqa: E731

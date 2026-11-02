@@ -2,12 +2,12 @@ import math
 
 import pytest
 
-from src.core.template import load_template
-from src.decisions.types import Answer, Response
-from src.dataset.generate import generate
-from src.core.scoring import ece, pair_p
-from src.mapping.metrics import lexical_mapping, mapping_metrics, sweep
-from src.mapping.run import run_case
+from columnmap.core.template import load_template
+from columnmap.decisions.types import Answer, Response
+from columnmap.dataset.generate import generate
+from columnmap.core.scoring import ece, pair_p
+from columnmap.mapping.metrics import lexical_mapping, mapping_metrics, sweep
+from columnmap.mapping.run import run_case
 
 T = load_template()
 CASES = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=2)}

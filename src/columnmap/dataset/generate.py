@@ -1,4 +1,4 @@
-"""Synthetic ground truth. Cases are rebuilt in memory from the seed (no big file on disk); `python -m src.dataset.export` writes CSV views.
+"""Synthetic ground truth. Cases are rebuilt in memory from the seed (no big file on disk); `python -m columnmap.dataset.export` writes CSV views.
 
 Drift levels: 0 identical, 1 style only (camel, UPPER, kebab...), 2 abbreviation, 3 synonym,
 4 Indonesian, 5 far/absurd phrase, 6 mixed levels + decoy columns. Each case = one input "file".

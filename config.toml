@@ -1,4 +1,4 @@
-# Defaults for the experiment runners; CLI flags override.
+# Defaults for the experiment; options given to the command override them.
 [model]
 # Passed to the llama.cpp based Jev scorer. Defaults are the documented fast and parity-tested setting.
 quant = "Q8_0"          # F16 (reference), Q8_0 (recommended), Q4_K_M (smaller and faster, noisier)

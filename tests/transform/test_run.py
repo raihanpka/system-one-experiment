@@ -1,7 +1,7 @@
-from src.core.store import Store
-from src.core.template import load_template
-from src.dataset.generate import generate
-from src.transform.run import run
+from columnmap.core.store import Store
+from columnmap.core.template import load_template
+from columnmap.dataset.generate import generate
+from columnmap.transform.run import run
 from tests.fakes import TransformOracle as Oracle
 
 T = load_template()

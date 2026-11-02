@@ -1,19 +1,19 @@
 """Compare the two mapping modes on the model: wall time and per-column top-1 (about 5 minutes).
 Run: make bench"""
 import sys, time
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT), str(ROOT / "vendor/jev-v3-2b-gguf")]
+from columnmap.core.paths import VENDOR
+
+sys.path.insert(0, str(VENDOR))
 from jev_style_decision_gguf import JevStyleDecisionGGUF
-from src.check_template import load_template
-from src.gen_gt import generate
-from src.context import samples, input_state
+from columnmap.core.prompts import input_state, samples
+from columnmap.core.template import load_template
+from columnmap.dataset.generate import generate
 
 T = load_template()
 desc = {s["id"]: s["desc"] for s in T["sources"] + T["decoys"]}
 cases = {c["case_id"]: c for c in generate(T, 1, 1234)}
-m = JevStyleDecisionGGUF(model_dir=ROOT / "vendor/jev-v3-2b-gguf", quant="Q8_0")
+m = JevStyleDecisionGGUF(model_dir=VENDOR, quant="Q8_0")
 
 def run(case_id, cond):
     c = cases[case_id]; outs = [o["name"] for o in c["outputs"]]

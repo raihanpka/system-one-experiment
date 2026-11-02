@@ -1,5 +1,6 @@
 UV ?= uv
 PY := $(UV) run python
+RUN := $(UV) run columnmap
 
 .DEFAULT_GOAL := help
 .PHONY: help setup test lint sample full pairs permute report data bench open status stop clean
@@ -17,22 +18,22 @@ lint: ## Unused imports and names
 	uvx pyflakes src tests scripts
 
 sample: ## Run samples a,b,c,d into results/<samples>_<timestamp>/ (about 6 minutes)
-	$(PY) src --samples abcd
+	$(RUN) --samples abcd
 
 full: ## Run all seven samples
-	$(PY) src --all
+	$(RUN) --all
 
 pairs: ## Slow calibrated mode (one yes/no per column and field) on a,b,c,d
-	$(PY) src --samples abcd --mode pairs
+	$(RUN) --samples abcd --mode pairs
 
 permute: ## Also test option-order stability on a,b,c,d
-	$(PY) src --samples abcd --permute
+	$(RUN) --samples abcd --permute
 
 report: ## Rebuild files, figures and tables of the newest run, no model
-	$(PY) src --report-only
+	$(RUN) --report-only
 
 data: ## Write the template and sample CSV files under data/ (deterministic)
-	$(PY) -m src.dataset.export
+	$(PY) -m columnmap.dataset.export
 
 bench: ## Speed and accuracy of the two scoring modes (about 5 minutes)
 	$(PY) scripts/bench_modes.py

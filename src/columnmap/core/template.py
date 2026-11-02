@@ -1,11 +1,13 @@
-"""Validate data/template.json. Run: uv run python -m src.core.template"""
+"""Validate data/template.json. Run: uv run python -m columnmap.core.template"""
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
 
-TEMPLATE = Path(__file__).resolve().parents[2] / "data" / "template.json"
+from .paths import DATA
+
+TEMPLATE = DATA / "template.json"
 OPS = {"concat", "add", "sub", "mul", "div", "year", "days_between", "lookup"}
 GENS = {"id", "pick", "date", "money", "rate"}
 KINDS = {"pass", "concat", "arith", "format", "lookup"}

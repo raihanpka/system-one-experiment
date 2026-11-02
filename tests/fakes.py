@@ -1,9 +1,9 @@
 """Fake deciders shared by the tests; they stand in for the model."""
 from __future__ import annotations
 
-from src.core.dsl import render
-from src.core.template import KIND_DESC, KIND_LABEL
-from src.decisions.types import Answer, Response
+from columnmap.core.dsl import render
+from columnmap.core.template import KIND_DESC, KIND_LABEL
+from columnmap.decisions.types import Answer, Response
 
 
 def truth_texts(case):

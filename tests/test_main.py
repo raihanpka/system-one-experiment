@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from src.decisions.types import Answer, Response
-from src.cli import main
+from columnmap.decisions.types import Answer, Response
+from columnmap.main import main
 
 
 class Generic:

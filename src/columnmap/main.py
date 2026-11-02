@@ -1,7 +1,4 @@
-"""Command line: pick samples and a run folder, run the model, write the results.
-
-    uv run python src                      # samples a,b,c,d into results/<samples>_<timestamp>/
-"""
+# entry point: choose samples and a run folder, run the model, write the results
 from __future__ import annotations
 
 import argparse
@@ -9,6 +6,7 @@ import tomllib
 from datetime import datetime
 from pathlib import Path
 
+from .core.paths import CONFIG, DATA, ROOT
 from .core.runs import latest_run, link_latest, new_run_dir
 from .core.store import Store
 from .core.template import load_template
@@ -18,16 +16,15 @@ from .dataset.samples import DEFAULT, SAMPLES, word
 from .experiment import run_models
 from .report.build import make_report
 
-ROOT = Path(__file__).resolve().parents[1]
-EPILOG = """examples:
-  uv run python src                              samples a,b,c,d, fast mode, new run folder
-  uv run python src --samples ac                 only a (identical) and c (coded)
-  uv run python src --all                        all seven samples
-  uv run python src --mode pairs                 slow, calibrated probabilities
-  uv run python src --permute                    also test option-order stability
-  uv run python src --conds name                 only the column names, no sample values
-  uv run python src --out results/NAME_TIMESTAMP continue or extend an existing run
-  uv run python src --report-only                rebuild files, figures and tables of the newest run (no model)
+EPILOG = """examples (run with: uv run columnmap ...):
+  columnmap                       run samples a, b, c, d into a new folder results/<samples>_<timestamp>/
+  columnmap --samples ac          run only samples a and c
+  columnmap --all                 run all seven samples
+  columnmap --conds name          show the model only the column names (no sample values)
+  columnmap --mode pairs          slower, calibrated probabilities
+  columnmap --permute             also test how stable answers are when option order changes
+  columnmap --out results/X       continue (or extend) the existing run folder X
+  columnmap --report-only         rebuild files, figures and tables of the newest run, no model
 """
 
 
@@ -36,8 +33,8 @@ def _abs(p: str) -> Path:
 
 
 def main(argv=None, decider_factory=None) -> int:
-    cfg = tomllib.loads((ROOT / "config.toml").read_text())
-    ap = argparse.ArgumentParser(prog="python src", description="Run Jev on sample files and write the results.",
+    cfg = tomllib.loads(CONFIG.read_text())
+    ap = argparse.ArgumentParser(prog="columnmap", description="Run Jev on sample files and write the results.",
                                  epilog=EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--samples", help=f"letters from {''.join(SAMPLES)} (default {DEFAULT}): "
                     + ", ".join(f"{k} {v[1]}" for k, v in SAMPLES.items()))
@@ -49,7 +46,7 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--permute", action="store_true", help="also test option-order stability (slower)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
     ap.add_argument("--root", default="results", help="folder that holds all runs (default results)")
-    ap.add_argument("--data", default="data", help="folder with the template and the samples (default data)")
+    ap.add_argument("--data", default=str(DATA), help="folder with the template and the samples (default data/)")
     ap.add_argument("--out", help="use this run folder (continue it) instead of creating a new one named <samples>_<timestamp>")
     a = ap.parse_args(argv)
 
