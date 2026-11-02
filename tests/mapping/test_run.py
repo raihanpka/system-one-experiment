@@ -106,3 +106,39 @@ def test_the_two_modes_do_not_overwrite_each_other(tmp_path):
     run(d, CASES[:1], "name", store, T, mode="pairs")
     assert len(store.rows("mapping", "name")) == 1 and len(store.rows("mapping_pairs", "name")) == 1
     assert store.rows("mapping", "name")[0]["mode"] == "options" and store.rows("mapping_pairs", "name")[0]["mode"] == "pairs"
+
+
+class PositionBias:
+    """Scores each option base + 0.5 * its position in the question, so the answer depends on the option order."""
+
+    def __init__(self):
+        self.orders = []
+
+    def decide(self, text, questions):
+        q = questions[0]
+        names = [c.value for c in q.choices]
+        self.orders.append(names)
+        raw = {n: (-2.0 if n == "policy_number" else -3.0) + 0.5 * i for i, n in enumerate(names)}
+        return Response("pb", [Answer("choice", q.name, choice=names[0], probabilities={n: 1 / len(names) for n in names}, raw_scores=raw)], {})
+
+
+def test_orders_ask_the_same_column_in_several_option_orders_and_average_the_scores(tmp_path):
+    from columnmap.mapping.run import shuffled
+    outs = [o["name"] for o in CASES[0]["outputs"]]
+    assert shuffled(outs, "col", 0) == outs
+    assert shuffled(outs, "col", 1) == shuffled(outs, "col", 1) and shuffled(outs, "col", 1) != shuffled(outs, "col", 2)
+    assert sorted(shuffled(outs, "col", 1)) == sorted(outs)
+
+    one, three = PositionBias(), PositionBias()
+    s1, s3 = Store(tmp_path / "o1.json"), Store(tmp_path / "o3.json")
+    run(one, CASES[:1], "name", s1, T, orders=1)
+    run(three, CASES[:1], "name", s3, T, orders=3)
+    cols = len(CASES[0]["columns"])
+    assert len(one.orders) == cols and len(three.orders) == 3 * cols                       # three questions per column
+    assert len({tuple(o) for o in three.orders[:3]}) == 3                                  # in three different orders
+    r1, r3 = s1.rows("mapping", "name")[0], s3.rows("mapping", "name")[0]
+    col = next(iter(r3["matrix"]))
+    expected = sum(-3.0 + 0.5 * o.index("claim_number") for o in three.orders[:3]) / 3
+    assert abs(r3["matrix"][col]["claim_number"]["d"] - expected) < 1e-3                  # the mean over the three orders
+    spread = lambda r: max(v["d"] for v in r["matrix"][col].values()) - min(v["d"] for v in r["matrix"][col].values())     # noqa: E731
+    assert spread(r3) < spread(r1)                                                          # averaging shrinks the position effect

@@ -57,7 +57,7 @@ def load_run(run_dir) -> tuple[Store, dict, dict]:
 
 # the key holds everything that changes what a score means: model, quantization, mode, context, prompt version and column cutoff
 def setup_key(meta: dict, mode: str, cond: str, level: str) -> str:
-    return make_key(meta["model"], meta["quant"], mode, cond, f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}", level)
+    return make_key(meta["model"], meta["quant"], mode, cond, f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}/orders{meta.get('orders', 1)}", level)
 
 
 # every run named here must be a dev or calibration run: a test run is never used for fitting
