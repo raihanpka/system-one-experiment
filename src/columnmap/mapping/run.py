@@ -2,43 +2,57 @@
 
 from __future__ import annotations
 
-from ..decisions.base import Decider
-from ..core.prompts import input_state, kind_question, kind_state, mapping_question, samples
-from ..decisions.types import Choice, Question
-from ..core.scoring import T0, pair_p
+import time
 
+from ..core.prompts import (cond_base, input_state, kind_question, kind_state, mapping_question, samples,
+                            table_options_question, table_pair_question, table_state)
+from ..core.scoring import T0, pair_p
+from ..decisions.base import Decider
+from ..decisions.types import Choice, Question
+
+SECTIONS = {"options": "mapping", "pairs": "mapping_pairs"}
+
+
+# options: one choice question per column, the raw score of each output field is read; pairs: one yes/no per field
 def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> dict:
     desc = {s["id"]: s["desc"] for s in t["sources"] + t["decoys"]}
     odesc = {o["name"]: o["description"] for o in t["outputs"]}
+    outs = [o["name"] for o in case["outputs"]]
     sample = {c["name"]: samples(case["rows"], c["name"]) for c in case["columns"]}
+    if cond != "table":
+        qs = ([mapping_question(o, odesc[o], cond) for o in outs] if mode == "pairs" else
+              [Question("choice", "Which output fields does this input column provide data for?", name="field",
+                        choices=tuple(Choice(o) for o in outs))])
     matrix = {}
-    if mode == "pairs":
-        qs = [mapping_question(o["name"], odesc[o["name"]], cond) for o in case["outputs"]]
-    else:
-        qs = [Question("choice", "Which output fields does this input column provide data for?", name="field",
-                       choices=tuple(Choice(o["name"]) for o in case["outputs"]))]
     for c in case["columns"]:
-        res = decider.decide(input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]]), qs)
+        if cond == "table":
+            state = table_state(case)
+            qs = [table_pair_question(c["name"], o) for o in outs] if mode == "pairs" else [table_options_question(c["name"], outs)]
+        else:
+            state = input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]])
+        res = decider.decide(state, qs)
         if mode == "pairs":
             matrix[c["name"]] = {a.name: {"p": a.probability, "d": a.raw_scores["true"] - a.raw_scores["false"]} for a in res.answers}
         else:
-            raw = res.answers[0].raw_scores
-            matrix[c["name"]] = {k: {"p": pair_p({"d": d}, T0), "d": d} for k, d in raw.items()}
+            matrix[c["name"]] = {k: {"p": pair_p({"d": d}, T0), "d": d} for k, d in res.answers[0].raw_scores.items()}
     col = {c["name"]: c for c in case["columns"]}
-    kind = {}
+    kind, kc = {}, cond_base(cond)
     for o in case["outputs"]:
         if not o["available"]:
             continue
         cols = [(n, desc[col[n]["src"]], sample[n]) for n in o["sources"]]
-        a = decider.decide(kind_state(cols, cond), [kind_question(o["name"], odesc[o["name"]], cond)]).answers[0]
+        a = decider.decide(kind_state(cols, kc), [kind_question(o["name"], odesc[o["name"]], kc)]).answers[0]
         kind[o["name"]] = {"choice": a.choice, "p": a.probabilities}
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode, "matrix": matrix, "kind": kind}
 
 
 def run(decider: Decider, cases, cond: str, store, t: dict, mode: str = "options") -> int:
-    n = 0
+    section, n = SECTIONS[mode], 0
     for c in cases:
-        if not store.has("mapping", cond, c["case_id"]):
-            store.add("mapping", cond, run_case(decider, c, cond, t, mode))
+        if not store.has(section, cond, c["case_id"]):
+            t0 = time.time()
+            rec = run_case(decider, c, cond, t, mode)
+            rec["seconds"] = round(time.time() - t0, 1)
+            store.add(section, cond, rec)
             n += 1
     return n

@@ -1,33 +1,34 @@
 output,kind,available,input_columns,expression
-policy_number,pass,True,NOMOR_POLIS,NOMOR_POLIS
-insured_full_name,concat,True,NAMA_DEPAN|NAMA_BELAKANG,"concat(NAMA_DEPAN, "" "", NAMA_BELAKANG)"
+policy_number,pass,True,nomorPolis,nomorPolis
+insured_full_name,concat,False,,
 insured_birth_date,pass,False,,
 insured_birth_year,format,False,,
-insured_gender,pass,True,JENIS_KELAMIN,JENIS_KELAMIN
-insured_city,pass,True,KOTA,KOTA
-insured_province,pass,True,PROVINSI,PROVINSI
-postal_code,pass,True,KODE_POS,KODE_POS
-insured_address,concat,True,KOTA|PROVINSI|KODE_POS,"concat(concat(KOTA, "", "", PROVINSI), "" "", KODE_POS)"
+insured_gender,pass,True,jenisKelamin,jenisKelamin
+insured_city,pass,True,kota,kota
+insured_province,pass,False,,
+postal_code,pass,True,kodePos,kodePos
+insured_address,concat,False,,
 coverage_start_date,pass,False,,
-coverage_end_date,pass,True,TGL_AKHIR_POLIS,TGL_AKHIR_POLIS
+coverage_end_date,pass,True,tglAkhirPolis,tglAkhirPolis
 coverage_days,arith,False,,
-sum_insured_amount,pass,True,UANG_PERTANGGUNGAN,UANG_PERTANGGUNGAN
-currency_code,pass,True,MATA_UANG,MATA_UANG
-gross_premium,arith,True,PREMI_DASAR|PERSEN_PAJAK_PREMI,PREMI_DASAR * (1 + PERSEN_PAJAK_PREMI)
-net_premium_after_discount,arith,True,PREMI_DASAR|PERSEN_DISKON,PREMI_DASAR * (1 - PERSEN_DISKON)
-claim_number,pass,True,NOMOR_KLAIM,NOMOR_KLAIM
-claim_incident_date,pass,True,TGL_KEJADIAN,TGL_KEJADIAN
+sum_insured_amount,pass,True,uangPertanggungan,uangPertanggungan
+currency_code,pass,True,mataUang,mataUang
+gross_premium,arith,True,premiDasar|persenPajakPremi,premiDasar * (1 + persenPajakPremi)
+net_premium_after_discount,arith,True,premiDasar|persenDiskon,premiDasar * (1 - persenDiskon)
+claim_number,pass,True,nomorKlaim,nomorKlaim
+claim_incident_date,pass,True,tglKejadian,tglKejadian
 claim_age_days,arith,False,,
-claimed_amount,pass,True,JUMLAH_KLAIM,JUMLAH_KLAIM
+claimed_amount,pass,True,jumlahKlaim,jumlahKlaim
 deductible_amount,pass,False,,
 net_claim_payable,arith,False,,
 claim_paid_amount,pass,False,,
 claim_paid_ratio,arith,False,,
-claim_status,lookup,True,KODE_STATUS_KLAIM,"lookup(KODE_STATUS_KLAIM, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
-agent_id,pass,True,KODE_AGEN,KODE_AGEN
-account_number,pass,True,NOMOR_REKENING,NOMOR_REKENING
+claim_status,lookup,True,kodeStatusKlaim,"lookup(kodeStatusKlaim, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,pass,True,kodeAgen,kodeAgen
+account_number,pass,True,nomorRekening,nomorRekening
 transaction_date,pass,False,,
-transaction_amount,pass,True,NOMINAL_TRANSAKSI,NOMINAL_TRANSAKSI
-transaction_fee_amount,pass,True,BIAYA_ADMIN,BIAYA_ADMIN
-total_charge,arith,True,NOMINAL_TRANSAKSI|BIAYA_ADMIN,NOMINAL_TRANSAKSI + BIAYA_ADMIN
-,anomaly,False,PERSEN_DISKON@row1,negative: -0.25
+transaction_amount,pass,True,nominalTransaksi,nominalTransaksi
+transaction_fee_amount,pass,True,biayaAdmin,biayaAdmin
+total_charge,arith,True,nominalTransaksi|biayaAdmin,nominalTransaksi + biayaAdmin
+,anomaly,False,kodePos@row17,na: 'N/A'
+,anomaly,False,kodeStatusKlaim@row21,na: 'N/A'

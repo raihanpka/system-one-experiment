@@ -45,7 +45,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
 
     data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
-    assert set(data_json) == {"meta", "mapping", "transform", "permute"} and data_json["meta"]["mode"] == "options"
+    assert set(data_json) == {"meta", "mapping", "mapping_pairs", "transform", "permute"} and data_json["meta"]["mode"] == "options"
     assert data_json["meta"]["samples"] == "abcd"
     assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["identical-000", "synonym-000", "coded-000", "mixed-000"]
     assert set(data_json["mapping"]) == {"name", "samples"}
@@ -67,7 +67,8 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
     md = (rep / "summary.md").read_text()
     assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_coded/" in md
-    assert "## Mapping" in md and "## Converted file against the expected file" in md
+    assert "## Mapping" in md and "## Converted File Against the Expected File" in md
+    assert "## At a Glance" in md and "## Rejecting Fields Without a Source" in md
 
     capsys.readouterr()
     main(["--out", str(run), "--samples", "abcd", *args], decider_factory=Generic)              # same folder again: nothing recomputed
@@ -95,3 +96,26 @@ def test_bad_sample_letter_is_rejected(tmp_path):
 def test_report_only_without_any_run_is_an_error(tmp_path):
     with pytest.raises(SystemExit):
         main(["--root", str(tmp_path / "empty"), "--data", str(tmp_path), "--report-only"])
+
+
+def test_two_modes_whole_table_and_cutoffs_fitted_on_another_run(tmp_path):
+    root, data = tmp_path / "r", tmp_path / "d"
+    args = ["--root", str(root), "--data", str(data), "--conds", "name,table", "--mode", "both"]
+    main(["--samples", "c", *args], decider_factory=Generic)
+    time.sleep(1.1)
+    first = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()][0]
+    main(["--samples", "d", "--calibrate-from", str(first), *args], decider_factory=Generic)
+    second = sorted((p for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda p: p.name.rsplit("_", 1)[-1])[-1]
+    assert second != first and second.name.startswith("mixed_")
+
+    store = json.loads((second / "result.json").read_text())
+    assert set(store["mapping"]) == {"name", "table"} and set(store["mapping_pairs"]) == {"name", "table"}
+    assert set(store["transform"]) == {"name"}                                           # the whole-table context reuses the others
+    assert store["meta"]["mode"] == "options,pairs"
+
+    md = (second / "report" / "summary.md").read_text()
+    assert "## Options Mode Versus Pairs Mode" in md and "fitted on other run" in md
+    assert "name + whole table, options mode" in md                                      # readable context labels in the headline
+    assert (second / "d_mixed" / "converted_mixed_name_calibrated.csv").exists()
+    first_md = (first / "report" / "summary.md").read_text()
+    assert "fitted on this run, optimistic" in first_md and "fitted on other run" not in first_md

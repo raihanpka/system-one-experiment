@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..convert.apply import convert_case
+from ..convert.tables import rules_for
 from ..core.csvio import write_csv
 from ..core.scoring import T0, pair_p
 from ..core.viz import setup_style
@@ -12,20 +13,23 @@ from ..dataset.export import sample_folder
 from ..dataset.samples import SAMPLES, word
 from ..mapping.figures import fig_accuracy, fig_calibration, fig_drift, fig_heatmap, fig_kind, fig_outcomes
 from ..transform.figures import fig_transform
+from .glance import at_a_glance
 from .tables import build_tables
 
 DECISION_COLUMNS = ["output", "available", "true_input", "chosen_input", "p", "runner_up", "p_runner_up",
                     "correct", "kind_chosen", "method", "expression"]
 
 
-def make_report(store, cases, letters, conds, run_dir) -> list[Path]:
+def make_report(store, cases, letters, conds, run_dir, other=None) -> list[Path]:
     run = Path(run_dir)
     out, figs, paths = run / "report", run / "report" / "figures", []
     labels = {SAMPLES[x][0]: f"{x}: {SAMPLES[x][1]}" for x in letters}
     letter = {SAMPLES[x][0]: x for x in letters}
-    rows_by_cond = {c: store.rows("mapping", c, set(labels)) for c in conds}
+    ids = set(labels)
+    section = "mapping" if any(store.rows("mapping", c, ids) for c in conds) else "mapping_pairs"
+    rows_by_cond = {c: store.rows(section, c, ids) for c in conds}
     rows_by_cond = {c: r for c, r in rows_by_cond.items() if r}
-    transform = {c: store.rows("transform", c, set(labels)) for c in rows_by_cond}
+    transform = {c: store.rows("transform", c, ids) for c in rows_by_cond}
     font_ok = setup_style()
 
     if rows_by_cond:
@@ -43,6 +47,12 @@ def make_report(store, cases, letters, conds, run_dir) -> list[Path]:
                 d, w = run / sample_folder(x), word(r["case_id"])
                 header, conv, decisions = convert_case(r, tr.get(r["case_id"]), case)
                 outs = [o["name"] for o in case["outputs"]]
+                if other and other.rows(section, cond):
+                    rule = next((x for x in rules_for(rows, cases, other.rows(section, cond))
+                                 if x[0].startswith("score cutoff") and "other run" in x[0]), None)
+                    if rule:
+                        _, cal, _ = convert_case(r, tr.get(r["case_id"]), case, rule[1])
+                        paths.append(write_csv(d / f"converted_{w}_{cond}_calibrated.csv", header, cal))
                 paths += [
                     fig_heatmap(r, case, labels[r["case_id"]], cond, figs / f"heatmap_{x}_{w}_{cond}.svg"),
                     write_csv(d / f"converted_{w}_{cond}.csv", header, conv),
@@ -57,8 +67,9 @@ def make_report(store, cases, letters, conds, run_dir) -> list[Path]:
           "| sample | input, expected, ground truth | Jev outputs (this run) | input naming |", "|---|---|---|---|", legend, "",
           "Per sample and context: the converted file, the decisions and the probability matrix. "
           "Raw model output for everything: `result.json`.", "",
+          *at_a_glance(store, cases, list(rows_by_cond), ids, other),
           *(f"![{n[:-4]}](figures/{n})\n" for n in names), "Heatmaps: `figures/heatmap_<sample>_<context>.svg`.", "",
-          build_tables(store, cases, list(rows_by_cond), set(labels))]
+          build_tables(store, cases, list(rows_by_cond), ids, other, section)]
     if not font_ok:
         md.insert(2, "_Times New Roman was not found; figures use a fallback serif font._\n")
     out.mkdir(parents=True, exist_ok=True)

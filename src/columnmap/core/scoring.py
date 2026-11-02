@@ -18,6 +18,11 @@ def safe_div(a, b):
     return a / b if b else 0.0
 
 
+# like safe_div, but None when there is nothing to divide by (an undefined rate, not zero)
+def rate(a, b):
+    return a / b if b else None
+
+
 # Expected calibration error over equal-width probability bins
 def ece(ps, ys, bins: int = 10) -> float:
     if not ps:
@@ -30,3 +35,16 @@ def ece(ps, ys, bins: int = 10) -> float:
             acc = sum(bool(ys[i]) for i in idx) / len(idx)
             tot += len(idx) / len(ps) * abs(conf - acc)
     return tot
+
+
+# a field is kept when the best input column passes a rule on (best score d1, lift above the median column)
+def FIXED(d1: float, lift: float) -> bool:
+    return d1 >= 0.0                                                              # probability 0.5
+
+
+def accept_score(cut: float):
+    return lambda d1, lift: d1 >= cut
+
+
+def accept_lift(cut: float):
+    return lambda d1, lift: lift >= cut

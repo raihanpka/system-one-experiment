@@ -23,6 +23,9 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --all                 run all seven samples
   columnmap --conds name          show the model only the column names (no sample values)
   columnmap --mode pairs          slower, calibrated probabilities
+  columnmap --mode both           run both modes and compare them
+  columnmap --conds name,samples,table    also show the model the whole table
+  columnmap --calibrate-from results/X    fit the rejection cutoffs on run X (a fair test on another case)
   columnmap --permute             also test how stable answers are when option order changes
   columnmap --out results/X       continue (or extend) the existing run folder X
   columnmap --report-only         rebuild files, figures and tables of the newest run, no model
@@ -42,8 +45,10 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--all", action="store_true", help="all seven samples")
     ap.add_argument("--conds", default=",".join(cfg["run"]["conds"]),
                     help="what the model sees: name = column name; samples = name + 5 values (desc, both add column descriptions)")
-    ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs"),
-                    help="options: one question per input column, fast; pairs: one yes/no per column and field, slow, calibrated")
+    ap.add_argument("--mode", default=cfg["run"]["mode"], choices=("options", "pairs", "both"),
+                    help="options: one question per input column, fast; pairs: one yes/no per column and field, slow, calibrated; "
+                         "both: run and compare the two")
+    ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
     ap.add_argument("--permute", action="store_true", help="also test option-order stability (slower)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
     ap.add_argument("--root", default="results", help="folder that holds all runs (default results)")
@@ -71,6 +76,8 @@ def main(argv=None, decider_factory=None) -> int:
     if not letters or any(x not in SAMPLES for x in letters):
         ap.error(f"samples must be letters from {''.join(SAMPLES)}")
     conds = a.conds.split(",")
+    modes = ["options", "pairs"] if a.mode == "both" else [a.mode]
+    other = Store(_abs(a.calibrate_from) / "result.json") if a.calibrate_from else None
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, cfg["run"]["seed"])}
     sel = [cases[SAMPLES[x][0]] for x in letters]
@@ -82,13 +89,13 @@ def main(argv=None, decider_factory=None) -> int:
             from .decisions.jev import JevDecider
             decider_factory = lambda: JevDecider(**cfg["model"])              # noqa: E731
         with decider_factory() as d:
-            run_models(d, sel, conds, a.mode, a.permute, store, t)
+            run_models(d, sel, conds, modes, a.permute, store, t)
         store.data["meta"].update({"model": "Jev-Style-2B-Decision-v3", "backend": "llama.cpp", **cfg["model"], "samples": letters,
-                                   "seed": cfg["run"]["seed"], "mode": a.mode, "contexts": conds,
+                                   "seed": cfg["run"]["seed"], "mode": ",".join(modes), "contexts": conds,
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 
-    paths = make_report(store, cases, letters, conds, run)
+    paths = make_report(store, cases, letters, conds, run, other)
     if run.parent == root and not a.report_only:
         link_latest(root, run)
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")

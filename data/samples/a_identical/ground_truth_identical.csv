@@ -1,6 +1,6 @@
 output,kind,available,input_columns,expression
 policy_number,pass,True,policy_number,policy_number
-insured_full_name,concat,True,holder_first_name|holder_last_name,"concat(holder_first_name, "" "", holder_last_name)"
+insured_full_name,concat,False,,
 insured_birth_date,pass,True,insured_birth_date,insured_birth_date
 insured_birth_year,format,True,insured_birth_date,year(insured_birth_date)
 insured_gender,pass,True,insured_gender,insured_gender
@@ -9,8 +9,8 @@ insured_province,pass,True,insured_province,insured_province
 postal_code,pass,False,,
 insured_address,concat,False,,
 coverage_start_date,pass,True,coverage_start_date,coverage_start_date
-coverage_end_date,pass,True,coverage_end_date,coverage_end_date
-coverage_days,arith,True,coverage_start_date|coverage_end_date,"days_between(coverage_start_date, coverage_end_date)"
+coverage_end_date,pass,False,,
+coverage_days,arith,False,,
 sum_insured_amount,pass,False,,
 currency_code,pass,False,,
 gross_premium,arith,True,base_premium|premium_tax_rate,base_premium * (1 + premium_tax_rate)
@@ -30,5 +30,5 @@ transaction_date,pass,True,transaction_date,transaction_date
 transaction_amount,pass,True,transaction_amount,transaction_amount
 transaction_fee_amount,pass,True,transaction_fee_amount,transaction_fee_amount
 total_charge,arith,True,transaction_amount|transaction_fee_amount,transaction_amount + transaction_fee_amount
-,anomaly,False,insured_gender@row9,na: 'N/A'
-,anomaly,False,insured_birth_date@row22,sentinel: '1900-01-01'
+,anomaly,False,claim_number@row5,empty: ''
+,anomaly,False,account_number@row7,na: 'N/A'

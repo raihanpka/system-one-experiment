@@ -13,7 +13,7 @@ def by_level(rows) -> dict:
 
 
 def pct(x) -> str:
-    return f"{100 * x:.1f}"
+    return "-" if x is None else f"{100 * x:.1f}"
 
 
 def md_table(header, rows) -> str:

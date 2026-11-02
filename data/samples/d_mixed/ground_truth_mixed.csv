@@ -1,39 +1,40 @@
 output,kind,available,input_columns,expression
-policy_number,pass,True,NomorPolis,NomorPolis
-insured_full_name,concat,True,holder first name|holder last name,"concat(holder first name, "" "", holder last name)"
-insured_birth_date,pass,True,Dob,Dob
-insured_birth_year,format,True,Dob,year(Dob)
-insured_gender,pass,True,insured_gender,insured_gender
-insured_city,pass,True,Town,Town
-insured_province,pass,True,Provinsi,Provinsi
-postal_code,pass,True,OBJ_INFO_ADDR_Z,OBJ_INFO_ADDR_Z
-insured_address,concat,True,Town|Provinsi|OBJ_INFO_ADDR_Z,"concat(concat(Town, "", "", Provinsi), "" "", OBJ_INFO_ADDR_Z)"
-coverage_start_date,pass,True,PERIOD_FROM_X,PERIOD_FROM_X
-coverage_end_date,pass,True,ExpiryDate,ExpiryDate
-coverage_days,arith,True,PERIOD_FROM_X|ExpiryDate,"days_between(PERIOD_FROM_X, ExpiryDate)"
-sum_insured_amount,pass,True,SumIns,SumIns
-currency_code,pass,True,Ccy,Ccy
-gross_premium,arith,True,PremiDasar|PersenPajakPremi,PremiDasar * (1 + PersenPajakPremi)
-net_premium_after_discount,arith,True,PremiDasar|CHG_RBT_PCT,PremiDasar * (1 - CHG_RBT_PCT)
-claim_number,pass,True,CaseRef,CaseRef
-claim_incident_date,pass,True,TglKejadian,TglKejadian
-claim_age_days,arith,True,PERIOD_FROM_X|TglKejadian,"days_between(PERIOD_FROM_X, TglKejadian)"
-claimed_amount,pass,True,JumlahKlaim,JumlahKlaim
-deductible_amount,pass,True,Ded,Ded
-net_claim_payable,arith,True,JumlahKlaim|Ded,JumlahKlaim - Ded
-claim_paid_amount,pass,True,SettledSum,SettledSum
-claim_paid_ratio,arith,True,SettledSum|PremiDasar,SettledSum / PremiDasar
-claim_status,lookup,True,claim_status_code,"lookup(claim_status_code, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
-agent_id,pass,True,BrokerId,BrokerId
-account_number,pass,True,AcctNo,AcctNo
-transaction_date,pass,True,PostingDate,PostingDate
-transaction_amount,pass,True,MovementValue,MovementValue
-transaction_fee_amount,pass,True,FeeAmt,FeeAmt
-total_charge,arith,True,MovementValue|FeeAmt,MovementValue + FeeAmt
-,decoy,False,AdjusterName,
-,decoy,False,PolicyVersion,
-,decoy,False,PremiumReceiptDate,
-,decoy,False,InternalRemark,
-,decoy,False,AgentCommissionAmount,
-,anomaly,False,Provinsi@row2,empty: ''
-,anomaly,False,AgentCommissionAmount@row8,huge: 242000001
+policy_number,pass,True,Nomor Polis,Nomor Polis
+insured_full_name,concat,True,PRTY_NM_1|Surname,"concat(PRTY_NM_1, "" "", Surname)"
+insured_birth_date,pass,False,,
+insured_birth_year,format,False,,
+insured_gender,pass,False,,
+insured_city,pass,True,Kota,Kota
+insured_province,pass,False,,
+postal_code,pass,True,postal code,postal code
+insured_address,concat,False,,
+coverage_start_date,pass,True,Tgl Mulai Polis,Tgl Mulai Polis
+coverage_end_date,pass,True,COVERAGE_END_DATE,COVERAGE_END_DATE
+coverage_days,arith,True,Tgl Mulai Polis|COVERAGE_END_DATE,"days_between(Tgl Mulai Polis, COVERAGE_END_DATE)"
+sum_insured_amount,pass,True,Sum Ins,Sum Ins
+currency_code,pass,False,,
+gross_premium,arith,False,,
+net_premium_after_discount,arith,False,,
+claim_number,pass,False,,
+claim_incident_date,pass,True,Tgl Kejadian,Tgl Kejadian
+claim_age_days,arith,True,Tgl Mulai Polis|Tgl Kejadian,"days_between(Tgl Mulai Polis, Tgl Kejadian)"
+claimed_amount,pass,True,Clm Amt,Clm Amt
+deductible_amount,pass,False,,
+net_claim_payable,arith,False,,
+claim_paid_amount,pass,False,,
+claim_paid_ratio,arith,False,,
+claim_status,lookup,True,Clm Stat,"lookup(Clm Stat, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,pass,False,,
+account_number,pass,True,account number,account number
+transaction_date,pass,False,,
+transaction_amount,pass,True,Txn Amt,Txn Amt
+transaction_fee_amount,pass,True,transaction_fee_amount,transaction_fee_amount
+total_charge,arith,True,Txn Amt|transaction_fee_amount,Txn Amt + transaction_fee_amount
+,decoy,False,Internal Remark,
+,decoy,False,Agent Commission Amount,
+,decoy,False,Adjuster Name,
+,decoy,False,Record Hash,
+,decoy,False,Premium Receipt Date,
+,decoy,False,Policy Version,
+,anomaly,False,postal code@row20,na: 'N/A'
+,anomaly,False,COVERAGE_END_DATE@row21,sentinel: '1900-01-01'

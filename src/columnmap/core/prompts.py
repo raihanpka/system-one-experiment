@@ -1,14 +1,17 @@
-# Prompt text per context condition: name only | +description | +sample values | both
+# prompt text per context: name only, plus description, plus sample values, both, or the whole table
 
 from __future__ import annotations
+
+import csv
+import io
 
 from ..decisions.types import Choice, Question
 from .template import KIND_DESC
 
-CONDS = ("name", "desc", "samples", "both")
+CONDS = ("name", "desc", "samples", "both", "table")
 SAMPLE_K = 5
 CONTEXT_LABEL = {"name": "name only", "samples": "name + values", "desc": "name + description",
-                 "both": "name + description + values"}
+                 "both": "name + description + values", "table": "name + whole table"}
 
 
 # What the model sees about each input column, in words (file names keep the short key)
@@ -20,6 +23,8 @@ def context_label(cond: str) -> str:
 def samples(rows, name, k=SAMPLE_K):
     n = len(rows)
     return [rows[i * (n - 1) // (k - 1)][name] for i in range(k)] if n >= k else [r[name] for r in rows]
+
+
 def _desc(cond):
     return cond in ("desc", "both")
 
@@ -61,3 +66,27 @@ def kind_state(cols: list[tuple[str, str | None, list]], cond: str) -> str:
 def kind_question(name: str, desc: str | None, cond: str) -> Question:
     return Question("choice", f"How is the output field {_label(name, desc, cond)} produced from these input columns?",
                     name=name, choices=tuple(Choice(k, v) for k, v in KIND_DESC.items()))
+
+
+# the table is the same text for every column, so the scorer computes it once per file and reuses it
+def table_state(case: dict) -> str:
+    names = [c["name"] for c in case["columns"]]
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(names)
+    w.writerows([[r[n] for n in names] for r in case["rows"]])
+    return "Input table (CSV):\n" + buf.getvalue().rstrip("\n")
+
+
+def table_options_question(col: str, outs: list[str]) -> Question:
+    return Question("choice", f"Which output fields does the input column '{col}' provide data for?", name="field",
+                    choices=tuple(Choice(o) for o in outs))
+
+
+def table_pair_question(col: str, out: str) -> Question:
+    return Question("predicate", f"The input column '{col}' provides the data for the output field '{out}'.", name=out)
+
+
+# kind and transformation questions describe the columns the usual way when the context is the whole table
+def cond_base(cond: str) -> str:
+    return "samples" if cond == "table" else cond

@@ -7,8 +7,8 @@ from ..core.tables import by_level, md_table, pct
 from .metrics import kind_metrics, lexical_mapping, mapping_metrics, sweep
 
 
-def mapping_tables(store, cases, conds, only=None) -> list[str]:
-    ld = lambda cond: store.rows("mapping", cond, only)                           # noqa: E731
+def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[str]:
+    ld = lambda cond: store.rows(section, cond, only)                           # noqa: E731
     allmap = {c: ld(c) for c in conds}
     lex = defaultdict(list)
     for c in cases.values():
@@ -16,7 +16,7 @@ def mapping_tables(store, cases, conds, only=None) -> list[str]:
             lex[c["level"]].append(c)
     levels = sorted({r["level"] for rows in allmap.values() for r in rows}) or sorted(lex)
 
-    out = ["## Mapping: which input column feeds each output field", ""]
+    out = [f"## Mapping: Which Input Column Feeds Each Output Field ({'options' if section == 'mapping' else 'pairs'} mode)", ""]
     for cond in conds:
         rows = allmap[cond]
         if not rows:
@@ -48,3 +48,21 @@ def mapping_tables(store, cases, conds, only=None) -> list[str]:
            for cond in conds for lv, rs in by_level(allmap[cond]).items()]
     return out + ["## Transformation kind (given the true source columns)", "",
                   md_table(["Jev sees", "level", "n outputs", "accuracy"], trs), ""]
+
+
+# both scoring modes on the same files, side by side
+def compare_tables(store, cases, conds, only=None) -> list[str]:
+    trs = []
+    for cond in conds:
+        for section, name in (("mapping", "options"), ("mapping_pairs", "pairs")):
+            rows = store.rows(section, cond, only)
+            if not rows:
+                continue
+            m = mapping_metrics(rows, cases)
+            secs = [r["seconds"] for r in rows if "seconds" in r]
+            trs.append([ctx(cond), name, pct(m["top1"]), pct(m["exact"]), pct(m["reject_unavailable"]), pct(m["f1"]),
+                        f"{m['ece']:.3f}", f"{sum(secs) / len(secs):.0f}" if secs else "-"])
+    if len({r[0] for r in trs if r[1] == "pairs"}) == 0:
+        return []
+    return ["## Options Mode Versus Pairs Mode", "",
+            md_table(["Jev sees", "mode", "top1", "exact", "reject n/a (fixed 0.5)", "pair F1", "ECE", "seconds per file"], trs), ""]

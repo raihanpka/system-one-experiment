@@ -1,34 +1,33 @@
 output,kind,available,input_columns,expression
 policy_number,pass,True,policy number,policy number
-insured_full_name,concat,True,holder first name|HolderLastName,"concat(holder first name, "" "", HolderLastName)"
+insured_full_name,concat,False,,
 insured_birth_date,pass,False,,
 insured_birth_year,format,False,,
-insured_gender,pass,True,Insured Gender,Insured Gender
-insured_city,pass,True,insured city,insured city
-insured_province,pass,True,INSURED_PROVINCE,INSURED_PROVINCE
-postal_code,pass,True,POSTAL_CODE,POSTAL_CODE
-insured_address,concat,True,insured city|INSURED_PROVINCE|POSTAL_CODE,"concat(concat(insured city, "", "", INSURED_PROVINCE), "" "", POSTAL_CODE)"
+insured_gender,pass,True,insuredGender,insuredGender
+insured_city,pass,True,InsuredCity,InsuredCity
+insured_province,pass,True,Insured Province,Insured Province
+postal_code,pass,True,Postal Code,Postal Code
+insured_address,concat,True,InsuredCity|Insured Province|Postal Code,"concat(concat(InsuredCity, "", "", Insured Province), "" "", Postal Code)"
 coverage_start_date,pass,False,,
-coverage_end_date,pass,True,Coverage End Date,Coverage End Date
+coverage_end_date,pass,True,coverage-end-date,coverage-end-date
 coverage_days,arith,False,,
 sum_insured_amount,pass,True,sum insured amount,sum insured amount
 currency_code,pass,False,,
 gross_premium,arith,False,,
 net_premium_after_discount,arith,False,,
-claim_number,pass,True,Claim Number,Claim Number
-claim_incident_date,pass,True,Claim Incident Date,Claim Incident Date
+claim_number,pass,True,claim number,claim number
+claim_incident_date,pass,True,ClaimIncidentDate,ClaimIncidentDate
 claim_age_days,arith,False,,
-claimed_amount,pass,True,claimed-amount,claimed-amount
+claimed_amount,pass,True,Claimed Amount,Claimed Amount
 deductible_amount,pass,False,,
 net_claim_payable,arith,False,,
-claim_paid_amount,pass,True,claim paid amount,claim paid amount
+claim_paid_amount,pass,True,Claim Paid Amount,Claim Paid Amount
 claim_paid_ratio,arith,False,,
 claim_status,lookup,True,claim status code,"lookup(claim status code, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
-agent_id,pass,True,Agent Id,Agent Id
-account_number,pass,True,account-number,account-number
+agent_id,pass,True,agent-id,agent-id
+account_number,pass,True,account number,account number
 transaction_date,pass,False,,
-transaction_amount,pass,True,transactionAmount,transactionAmount
+transaction_amount,pass,True,transaction amount,transaction amount
 transaction_fee_amount,pass,True,transaction fee amount,transaction fee amount
-total_charge,arith,True,transactionAmount|transaction fee amount,transactionAmount + transaction fee amount
-,anomaly,False,policy number@row10,na: 'N/A'
-,anomaly,False,transactionAmount@row17,negative: -28201109
+total_charge,arith,True,transaction amount|transaction fee amount,transaction amount + transaction fee amount
+,anomaly,False,transaction fee amount@row26,zero: 0

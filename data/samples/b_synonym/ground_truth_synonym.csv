@@ -1,34 +1,34 @@
 output,kind,available,input_columns,expression
-policy_number,pass,True,contract-ref,contract-ref
-insured_full_name,concat,True,given-name|surname,"concat(given-name, "" "", surname)"
-insured_birth_date,pass,True,born-on,born-on
-insured_birth_year,format,True,born-on,year(born-on)
+policy_number,pass,True,contractRef,contractRef
+insured_full_name,concat,False,,
+insured_birth_date,pass,True,bornOn,bornOn
+insured_birth_year,format,True,bornOn,year(bornOn)
 insured_gender,pass,True,sex,sex
-insured_city,pass,True,town,town
-insured_province,pass,True,state-region,state-region
+insured_city,pass,False,,
+insured_province,pass,True,stateRegion,stateRegion
 postal_code,pass,True,zip,zip
-insured_address,concat,True,town|state-region|zip,"concat(concat(town, "", "", state-region), "" "", zip)"
-coverage_start_date,pass,True,effective-date,effective-date
-coverage_end_date,pass,True,expiry-date,expiry-date
-coverage_days,arith,True,effective-date|expiry-date,"days_between(effective-date, expiry-date)"
-sum_insured_amount,pass,True,cover-limit,cover-limit
-currency_code,pass,True,money-unit,money-unit
-gross_premium,arith,True,base-charge|levy-rate,base-charge * (1 + levy-rate)
-net_premium_after_discount,arith,True,base-charge|rebate-rate,base-charge * (1 - rebate-rate)
-claim_number,pass,True,case-ref,case-ref
-claim_incident_date,pass,True,loss-date,loss-date
-claim_age_days,arith,True,effective-date|loss-date,"days_between(effective-date, loss-date)"
-claimed_amount,pass,True,requested-payout,requested-payout
+insured_address,concat,False,,
+coverage_start_date,pass,False,,
+coverage_end_date,pass,True,expiryDate,expiryDate
+coverage_days,arith,False,,
+sum_insured_amount,pass,True,coverLimit,coverLimit
+currency_code,pass,True,moneyUnit,moneyUnit
+gross_premium,arith,False,,
+net_premium_after_discount,arith,False,,
+claim_number,pass,True,caseRef,caseRef
+claim_incident_date,pass,True,lossDate,lossDate
+claim_age_days,arith,False,,
+claimed_amount,pass,True,requestedPayout,requestedPayout
 deductible_amount,pass,True,excess,excess
-net_claim_payable,arith,True,requested-payout|excess,requested-payout - excess
-claim_paid_amount,pass,True,settled-sum,settled-sum
-claim_paid_ratio,arith,True,settled-sum|base-charge,settled-sum / base-charge
-claim_status,lookup,True,case-state,"lookup(case-state, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
-agent_id,pass,True,broker-id,broker-id
-account_number,pass,True,ledger-ref,ledger-ref
-transaction_date,pass,True,posting-date,posting-date
-transaction_amount,pass,True,movement-value,movement-value
-transaction_fee_amount,pass,True,service-charge,service-charge
-total_charge,arith,True,movement-value|service-charge,movement-value + service-charge
-,anomaly,False,ledger-ref@row10,empty: ''
-,anomaly,False,service-charge@row7,zero: 0
+net_claim_payable,arith,True,requestedPayout|excess,requestedPayout - excess
+claim_paid_amount,pass,True,settledSum,settledSum
+claim_paid_ratio,arith,False,,
+claim_status,lookup,True,caseState,"lookup(caseState, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
+agent_id,pass,True,brokerId,brokerId
+account_number,pass,True,ledgerRef,ledgerRef
+transaction_date,pass,True,postingDate,postingDate
+transaction_amount,pass,False,,
+transaction_fee_amount,pass,True,serviceCharge,serviceCharge
+total_charge,arith,False,,
+,anomaly,False,moneyUnit@row13,na: 'N/A'
+,anomaly,False,lossDate@row11,sentinel: '1900-01-01'

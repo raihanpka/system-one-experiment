@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from difflib import SequenceMatcher
 
-from ..core.scoring import T0, TS, ece, pair_p, safe_div as _div
+from ..core.scoring import T0, TS, ece, pair_p, rate, safe_div as _div
 from ..core.template import KIND_LABEL
 
 OUTCOMES = ["Correct column", "Wrong column", "Left empty (no source)", "False match (no source)"]
@@ -42,7 +42,7 @@ def mapping_metrics(rows, cases, T: float = T0) -> dict:
                 flag += any(pair_p(mat[k["name"]][o["name"]], T) >= 0.5 for o in c["outputs"])
     prec, rec = _div(tp, tp + fp), _div(tp, tp + fn)
     return {"cases": len(rows), "n_outputs": n, "n_unavailable": nun, "top1": _div(top1, n), "exact": _div(exact, n),
-            "top3": _div(top3, n), "reject_unavailable": _div(rej, nun), "decoy_flag": _div(flag, decoys),
+            "top3": _div(top3, n), "reject_unavailable": rate(rej, nun), "decoy_flag": rate(flag, decoys),
             "precision": prec, "recall": rec, "f1": _div(2 * prec * rec, prec + rec), "ece": ece(ps, ys),
             "brier": _div(sum((p - y) ** 2 for p, y in zip(ps, ys)), len(ps))}
 

@@ -96,7 +96,7 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
     rng = random.Random(f"{seed}:{level}:{i}")
     srcs = {s["id"]: s for s in t["sources"]}
     types = {k: v["type"] for k, v in srcs.items()}
-    present = sorted(rng.sample(list(srcs), rng.randint(16, len(srcs))), key=list(srcs).index)
+    present = sorted(rng.sample(list(srcs), rng.randint(14, 22)), key=list(srcs).index)
     case_style = "snake" if level == 0 else rng.choice(STYLES)
 
     cols = []
