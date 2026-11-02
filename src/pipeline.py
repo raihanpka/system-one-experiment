@@ -1,6 +1,6 @@
 """One command: samples -> Jev -> result.json -> converted files, figures and tables.
 
-    uv run python src                      # samples a,b,c,d into results/<timestamp>_abcd/
+    uv run python src                      # samples a,b,c,d into results/<samples>_<timestamp>/
 """
 from __future__ import annotations
 
@@ -13,8 +13,9 @@ from pathlib import Path
 from .core.runs import latest_run, link_latest, new_run_dir
 from .core.store import Store
 from .core.template import load_template
+from .dataset.export import write_samples
 from .dataset.generate import generate
-from .dataset.samples import DEFAULT, SAMPLES
+from .dataset.samples import DEFAULT, SAMPLES, word
 from .mapping import run as run_mapping
 from .report.build import make_report
 from .stability import run as permute
@@ -28,7 +29,7 @@ EPILOG = """examples:
   uv run python src --mode pairs                 slow, calibrated probabilities
   uv run python src --permute                    also test option-order stability
   uv run python src --conds name                 only the column names, no sample values
-  uv run python src --out results/20261102-120000_abcd      continue or extend an existing run
+  uv run python src --out results/NAME_TIMESTAMP continue or extend an existing run
   uv run python src --report-only                rebuild files, figures and tables of the newest run (no model)
 """
 
@@ -51,7 +52,8 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--permute", action="store_true", help="also test option-order stability (slower)")
     ap.add_argument("--report-only", action="store_true", help="rebuild files, figures and tables from result.json, no model")
     ap.add_argument("--root", default="results", help="folder that holds all runs (default results)")
-    ap.add_argument("--out", help="use this run folder (continue it) instead of creating a new timestamped one")
+    ap.add_argument("--data", default="data", help="folder with the template and the samples (default data)")
+    ap.add_argument("--out", help="use this run folder (continue it) instead of creating a new one named <samples>_<timestamp>")
     a = ap.parse_args(argv)
 
     root = _abs(a.root)
@@ -64,7 +66,10 @@ def main(argv=None, decider_factory=None) -> int:
             ap.error(f"no run found under {root}; run without --report-only first")
     else:
         letters_new = "".join(SAMPLES) if a.all else (a.samples or DEFAULT).replace(",", "")
-        run = new_run_dir(root, letters_new)
+        if any(x not in SAMPLES for x in letters_new):
+            ap.error(f"samples must be letters from {''.join(SAMPLES)}")
+        names = "all" if len(letters_new) == len(SAMPLES) else "-".join(word(SAMPLES[x][0]) for x in letters_new)
+        run = new_run_dir(root, names)
     store = Store(run / "result.json")
 
     letters = "".join(SAMPLES) if a.all else (a.samples or (store.data["meta"].get("samples") if a.report_only else None) or DEFAULT).replace(",", "")
@@ -74,6 +79,7 @@ def main(argv=None, decider_factory=None) -> int:
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, cfg["run"]["seed"])}
     sel = [cases[SAMPLES[x][0]] for x in letters]
+    write_samples(t, cases, letters, _abs(a.data))                      # data/ stays the single source of truth
     print(f"samples {letters}, contexts {conds}, mode {a.mode}, run folder {run}")
 
     if not a.report_only:
@@ -92,7 +98,7 @@ def main(argv=None, decider_factory=None) -> int:
                                    "updated": datetime.now().isoformat(timespec="seconds")})
         store.save()
 
-    paths = make_report(store, cases, letters, conds, run, template=t)
+    paths = make_report(store, cases, letters, conds, run)
     if run.parent == root and not a.report_only:
         link_latest(root, run)
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")

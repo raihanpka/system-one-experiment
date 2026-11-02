@@ -31,24 +31,28 @@ class Generic:
 
 
 def test_run_folder_layout_files_and_resume(tmp_path, capsys):
-    root = tmp_path / "results"
-    assert main(["--samples", "abcd", "--root", str(root)], decider_factory=Generic) == 0
+    root, data = tmp_path / "results", tmp_path / "data"
+    args = ["--root", str(root), "--data", str(data)]
+    assert main(["--samples", "abcd", *args], decider_factory=Generic) == 0
     runs = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()]
-    assert len(runs) == 1 and re.fullmatch(r"\d{8}-\d{6}_abcd", runs[0].name)         # sorts by time, names the samples
+    assert len(runs) == 1 and re.fullmatch(r"identical-synonym-legacy-mixed_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
     run = runs[0]
     assert (root / "latest").is_symlink() and (root / "latest").resolve() == run.resolve()
 
-    data = json.loads((run / "result.json").read_text())                                 # one plain JSON file
-    assert set(data) == {"meta", "mapping", "transform", "permute"} and data["meta"]["mode"] == "options"
-    assert data["meta"]["samples"] == "abcd"
-    assert [r["case_id"] for r in data["mapping"]["name"]] == ["identical-000", "synonym-000", "legacy-000", "mixed-000"]
-    assert set(data["mapping"]) == {"name", "samples"}
+    for f in ("input_legacy.csv", "expected_legacy.csv", "ground_truth_legacy.csv"):              # single source of truth
+        assert (data / "samples" / "c_legacy" / f).exists(), f
+    assert (data / "template_header.csv").exists()
+    assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
 
-    assert (run / "template_header.csv").exists()
+    data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
+    assert set(data_json) == {"meta", "mapping", "transform", "permute"} and data_json["meta"]["mode"] == "options"
+    assert data_json["meta"]["samples"] == "abcd"
+    assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["identical-000", "synonym-000", "legacy-000", "mixed-000"]
+    assert set(data_json["mapping"]) == {"name", "samples"}
+
     for letter, word in (("a", "identical"), ("b", "synonym"), ("c", "legacy"), ("d", "mixed")):
         d = run / f"{letter}_{word}"
-        for f in (f"input_{word}.csv", f"expected_{word}.csv", f"ground_truth_{word}.csv",
-                  f"converted_{word}_name.csv", f"converted_{word}_samples.csv", f"decisions_{word}_name.csv",
+        for f in (f"converted_{word}_name.csv", f"converted_{word}_samples.csv", f"decisions_{word}_name.csv",
                   f"probabilities_{word}_samples.csv"):
             assert (d / f).exists(), f"{d.name}/{f}"
     converted = (run / "a_identical" / "converted_identical_name.csv").read_text().splitlines()
@@ -62,31 +66,32 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     svg = (rep / "figures/accuracy.svg").read_text()
     assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
     md = (rep / "summary.md").read_text()
-    assert "![accuracy](figures/accuracy.svg)" in md and "| sample | folder | input naming |" in md
-    assert "## Mapping" in md and "## Converted file against the expected file" in md and "c_legacy/" in md
+    assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_legacy/" in md
+    assert "## Mapping" in md and "## Converted file against the expected file" in md
 
     capsys.readouterr()
-    main(["--out", str(run), "--samples", "abcd"], decider_factory=Generic)             # same folder again: nothing recomputed
+    main(["--out", str(run), "--samples", "abcd", *args], decider_factory=Generic)              # same folder again: nothing recomputed
     assert "0 new, 4 resumed" in capsys.readouterr().out
-    main(["--root", str(root), "--report-only"])                                         # newest run, no model, samples from meta
+    main(["--root", str(root), "--data", str(data), "--report-only"])                            # newest run, no model, samples from meta
     assert "d_mixed" in (rep / "summary.md").read_text()
 
 
-def test_new_run_does_not_overwrite_and_latest_follows(tmp_path):
-    root = tmp_path / "r"
-    main(["--samples", "a", "--root", str(root), "--conds", "name"], decider_factory=Generic)
-    time.sleep(1.1)                                                                      # folder names carry seconds
-    main(["--samples", "b", "--root", str(root), "--conds", "name"], decider_factory=Generic)
-    runs = sorted(p.name for p in root.iterdir() if p.is_dir() and not p.is_symlink())
-    assert len(runs) == 2 and runs[0].endswith("_a") and runs[1].endswith("_b")
+def test_each_run_gets_its_own_folder_and_latest_follows(tmp_path):
+    root, data = tmp_path / "r", tmp_path / "d"
+    main(["--samples", "a", "--root", str(root), "--data", str(data), "--conds", "name"], decider_factory=Generic)
+    time.sleep(1.1)                                                                              # names carry seconds
+    main(["--samples", "b", "--root", str(root), "--data", str(data), "--conds", "name"], decider_factory=Generic)
+    runs = sorted((p.name for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda n: n.rsplit("_", 1)[-1])
+    assert len(runs) == 2 and runs[0].startswith("identical_") and runs[1].startswith("synonym_")
+    assert all((root / r / "result.json").exists() for r in runs)                                # one result.json per run
     assert (root / "latest").resolve().name == runs[1]
 
 
 def test_bad_sample_letter_is_rejected(tmp_path):
     with pytest.raises(SystemExit):
-        main(["--samples", "az", "--root", str(tmp_path)], decider_factory=Generic)
+        main(["--samples", "az", "--root", str(tmp_path), "--data", str(tmp_path)], decider_factory=Generic)
 
 
 def test_report_only_without_any_run_is_an_error(tmp_path):
     with pytest.raises(SystemExit):
-        main(["--root", str(tmp_path / "empty"), "--report-only"])
+        main(["--root", str(tmp_path / "empty"), "--data", str(tmp_path), "--report-only"])

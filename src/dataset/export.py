@@ -1,6 +1,7 @@
-"""CSV views of the template and of the generated cases. Run: uv run python -m src.dataset.export [--n 3]
+"""CSV files of the template and of the seven named samples: data/ is the single source of truth.
+Run: uv run python -m src.dataset.export   (deterministic; `python src` refreshes the samples it uses)
 
-A case folder holds three files named after the kind of input, e.g. for `legacy-000`:
+A sample folder holds three files named after the kind of input, e.g. data/samples/c_legacy/:
 input_legacy.csv (the messy file), expected_legacy.csv (the converted file, ready to upload) and
 ground_truth_legacy.csv (which input columns feed each output field, and how).
 """
@@ -11,7 +12,7 @@ from pathlib import Path
 from ..core.csvio import write_csv as _write
 from ..core.dsl import render
 from ..core.template import load_template
-from .samples import word
+from .samples import SAMPLES, word
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -38,22 +39,24 @@ def write_case(case: dict, d) -> None:
     _write(d / f"ground_truth_{w}.csv", ["output", "kind", "available", "input_columns", "expression"], rows)
 
 
-def write_cases(cases, out) -> None:
-    for c in cases:
-        write_case(c, Path(out) / c["case_id"])
+def sample_folder(letter: str) -> str:
+    return f"{letter}_{word(SAMPLES[letter][0])}"
+
+
+def write_samples(t: dict, cases: dict, letters: str, data_dir) -> None:
+    """data/: the template and one folder per sample (input, expected output, ground truth). Deterministic."""
+    data_dir = Path(data_dir)
+    write_template(t, data_dir)
+    for x in letters:
+        write_case(cases[SAMPLES[x][0]], data_dir / "samples" / sample_folder(x))
 
 
 if __name__ == "__main__":
-    import argparse
     import tomllib
 
     from .generate import generate
     cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--n", type=int, default=cfg["n_per_level"], help="cases per drift level")
-    a = ap.parse_args()
     t = load_template()
-    cases = generate(t, a.n, cfg["seed"])
-    write_template(t, ROOT / "data")
-    write_cases(cases, ROOT / "data" / "cases")
-    print(f"template + {len(cases)} cases (3 CSVs each) written under data/")
+    cases = {c["case_id"]: c for c in generate(t, 1, cfg["seed"])}
+    write_samples(t, cases, "".join(SAMPLES), ROOT / "data")
+    print(f"template and {len(SAMPLES)} samples written under data/ (input, expected, ground truth per sample)")
