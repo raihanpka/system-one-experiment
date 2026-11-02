@@ -33,13 +33,13 @@
 
 1. `decisions/` defines the question types (predicate, choice, score) and a `Decider` protocol. `JevDecider` is the only adapter.
 2. Temperature on Jev only rescales scores (calibration) and never changes the top answer.
-3. Option order matters for `choice` (smoke test, 3 orders): the transform pick stayed the same for 10/11 and 9/11 outputs, the kind pick for 25/31 and 28/31. Average over orders when it matters.
+3. Option order matters for `choice` (smoke test, 3 orders): the transform pick stayed the same for 10/11 and 9/11 outputs, the kind pick (stage since removed) for 25/31 and 28/31. Average over orders when it matters.
 4. Candidate expressions come from the ground truth (1 true, 3 distractors). Jev picks one; it does not write formulas.
 5. A field is kept when its best input column passes a rule: fixed 0.5, or a cutoff on the best score or on its lift above the median column, fitted on ground truth (`--calibrate-from RUN` fits it on another run).
 
 ## 5. Real Runs
 
-1. Earlier runs (`coded`, `mixed`, one file each, 3 contexts, 2 modes) are frozen in `baselines/v1/`. Their converted cells use the true transformation kind and candidate expressions, so their cell numbers are optimistic. `baselines/v1/honest.md` recomputes them without ground truth help.
+1. Earlier runs (`coded`, `mixed`, one file each, 3 contexts, 2 modes) are frozen in `baselines/v1/`. Their converted cells used the true transformation kind and candidate expressions (stage since removed), so their cell numbers are optimistic. `baselines/v1/honest.md` recomputes them without ground truth help.
 2. Honest stage (no ground truth reaches the model or the conversion): the three best columns per field, a program builds candidate expressions from their names and types, the model ranks them with three example results each. Baseline v1 without ground truth help: 3 to 7 of 16 to 21 fields with a source correct, depending on sample and context.
 3. Dev split (seed 11, five samples, name plus values): top-1 92,1 percent, fields correct 51 of 101, wrongly filled cells 73. Ground truth enters only as the test of the result, never as input.
 4. Calibration split (seeds 12 and 13) fitted Platt parameters. Pair-level calibration is good: ECE 0.006 raw and 0.005 calibrated on the test split. Field-level calibration is not: 76 and 73 points, ECE 0.114 raw and 0.126 calibrated on seed 21, 0.181 raw and 0.093 calibrated on seed 22. Target was 0.03 or less, so this fails. Few points are the likely cause.

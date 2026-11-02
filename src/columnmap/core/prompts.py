@@ -85,8 +85,3 @@ def table_options_question(col: str, outs: list[str]) -> Question:
 
 def table_pair_question(col: str, out: str) -> Question:
     return Question("predicate", f"The input column '{col}' provides the data for the output field '{out}'.", name=out)
-
-
-# kind and transformation questions describe the columns the usual way when the context is the whole table
-def cond_base(cond: str) -> str:
-    return "samples" if cond == "table" else cond

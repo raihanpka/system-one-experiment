@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 from .convert.honest import convert_fields
@@ -97,7 +96,7 @@ def evaluate(store, meta: dict, cases: dict, calibration: Calibration, mode: str
         xs, ys = xy()
         if entry is None or not xs:
             continue
-        raw = [pair_p({"d": x}, T0) if level == "pair" else 1 / (1 + math.exp(-x)) for x in xs]
+        raw = [pair_p({"d": x}, T0) if level == "pair" else apply_platt(x, 1.0, 0.0) for x in xs]
         cal = [apply_platt(x, entry["a"], entry["b"]) for x in xs]
         out.append({"level": level, "n": len(xs), "ece_raw": ece(raw, ys), "ece_cal": ece(cal, ys), "bins_raw": reliability_bins(raw, ys),
                     "bins_cal": reliability_bins(cal, ys), "held_out": meta["seed"] not in entry["seeds"], "cond": cond})
