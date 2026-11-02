@@ -39,12 +39,12 @@ class Oracle:
 
 def rows_for(level, orc=True):
     case = next(c for c in CASES.values() if c["level"] == level)
-    r = run_case(Oracle(case), case, "both", T)
+    r = run_case(Oracle(case), case, "both", T, mode="pairs")
     return [r]
 
 
 def test_pair_p_matches_stored_probability_and_temperature_flattens():
-    cell = {"p": 0.9, "raw": logit_raw(0.9)}
+    cell = {"p": 0.9, "d": logit_raw(0.9)["true"]}
     assert pair_p(cell, T0) == pytest.approx(0.9)
     assert 0.5 < pair_p(cell, 2.0) < 0.9                      # higher T = less confident
 

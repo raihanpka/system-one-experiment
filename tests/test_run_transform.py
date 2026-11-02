@@ -1,11 +1,10 @@
-import json
-
 from src.check_template import load_template
 from src.context import KIND_DESC, KIND_LABEL
 from src.decisions.types import Answer, Response
 from src.dsl import render
 from src.gen_gt import generate
 from src.run_transform import run
+from src.store import Store
 
 T = load_template()
 CASES = generate(T, n_per_level=2, seed=11)
@@ -45,21 +44,21 @@ class Oracle:
 
 def test_oracle_gets_everything_right_and_resume(tmp_path):
     case = next(c for c in CASES if c["level"] == 3)
-    out = tmp_path / "t.jsonl"
-    assert run(Oracle(case), [case], "both", out, T) == 1
-    r = json.loads(out.read_text())
+    store = Store(tmp_path / "t.json")
+    assert run(Oracle(case), [case], "both", store, T) == 1
+    r = store.rows("transform", "both")[0]
     derived = [o["name"] for o in case["outputs"] if o["available"] and o["kind"] != "pass"]
     assert set(r["transform"]) == set(derived) and derived
     for v in r["transform"].values():
         assert len(v["cands"]) >= 4 and len(set(v["cands"])) == len(v["cands"])
         assert v["choice_idx"] == v["truth_idx"] and v["pred_idx"] == v["truth_idx"]
         assert v["choice_value_ok"] and v["pred_value_ok"]
-    assert run(Oracle(case), [case], "both", out, T) == 0                       # resume
+    assert run(Oracle(case), [case], "both", Store(tmp_path / "t.json"), T) == 0   # resume
 
 
 def test_wrong_pick_is_detected_by_value_check(tmp_path):
     case = next(c for c in CASES if c["level"] == 2)
-    out = tmp_path / "t.jsonl"
-    run(Oracle(case, right=False), [case], "name", out, T)
-    r = json.loads(out.read_text())
+    store = Store(tmp_path / "t.json")
+    run(Oracle(case, right=False), [case], "name", store, T)
+    r = store.rows("transform", "name")[0]
     assert all(v["choice_idx"] != v["truth_idx"] and not v["choice_value_ok"] for v in r["transform"].values())

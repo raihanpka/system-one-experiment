@@ -1,34 +1,36 @@
-"""Mapping runner (backend-agnostic). Run: uv run python -m src.run_mapping --cond name,both --n 10
+"""Mapping runner (backend-agnostic); `python src` drives it.
 
-Per case: for every input column (decoys included) one predicate per output field -> matrix[input][output];
-per available output one choice question for the transformation kind given its true source columns.
+Per case: for every input column (decoys included) a score for every output field -> matrix[input][output]
+= {"p": probability, "d": s_true - s_false} (d lets any temperature be re-applied offline); per available
+output one choice question for the transformation kind given its true source columns.
+
+Modes: "options" (default, about 7x faster) asks ONE choice question per input column with all output fields as
+options and reads each option's raw yes/no score (independent, so one column can feed several fields; the softmax
+over options is ignored). "pairs" asks one yes/no question per (input column, output field): slower, calibrated.
 """
 from __future__ import annotations
 
-import argparse
-import json
-import tomllib
-from pathlib import Path
+from .context import input_state, kind_question, kind_state, mapping_question, samples
+from .decisions.types import Choice, Question
+from .metrics import T0, pair_p
 
-from .check_template import load_template
-from .context import CONDS, input_state, kind_question, kind_state, mapping_question, samples
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def _done(path: Path) -> set[str]:
-    return {json.loads(l)["case_id"] for l in path.read_text().splitlines()} if path.exists() else set()
-
-
-def run_case(decider, case: dict, cond: str, t: dict) -> dict:
+def run_case(decider, case: dict, cond: str, t: dict, mode: str = "options") -> dict:
     desc = {s["id"]: s["desc"] for s in t["sources"] + t["decoys"]}
     odesc = {o["name"]: o["description"] for o in t["outputs"]}
     sample = {c["name"]: samples(case["rows"], c["name"]) for c in case["columns"]}
-    qs = [mapping_question(o["name"], odesc[o["name"]], cond) for o in case["outputs"]]
     matrix = {}
+    if mode == "pairs":
+        qs = [mapping_question(o["name"], odesc[o["name"]], cond) for o in case["outputs"]]
+    else:
+        qs = [Question("choice", "Which output fields does this input column provide data for?", name="field",
+                       choices=tuple(Choice(o["name"]) for o in case["outputs"]))]
     for c in case["columns"]:
         res = decider.decide(input_state(c, cond, desc[c["src"] or c["decoy"]], sample[c["name"]]), qs)
-        matrix[c["name"]] = {a.name: {"p": a.probability, "raw": a.raw_scores} for a in res.answers}
+        if mode == "pairs":
+            matrix[c["name"]] = {a.name: {"p": a.probability, "d": a.raw_scores["true"] - a.raw_scores["false"]} for a in res.answers}
+        else:
+            raw = res.answers[0].raw_scores
+            matrix[c["name"]] = {k: {"p": pair_p({"d": d}, T0), "d": d} for k, d in raw.items()}
     col = {c["name"]: c for c in case["columns"]}
     kind = {}
     for o in case["outputs"]:
@@ -36,44 +38,14 @@ def run_case(decider, case: dict, cond: str, t: dict) -> dict:
             continue
         cols = [(n, desc[col[n]["src"]], sample[n]) for n in o["sources"]]
         a = decider.decide(kind_state(cols, cond), [kind_question(o["name"], odesc[o["name"]], cond)]).answers[0]
-        kind[o["name"]] = {"choice": a.choice, "p": a.probabilities, "raw": a.raw_scores}
-    return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "matrix": matrix, "kind": kind}
+        kind[o["name"]] = {"choice": a.choice, "p": a.probabilities}
+    return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode, "matrix": matrix, "kind": kind}
 
 
-def run(decider, cases, cond: str, out, t: dict) -> int:
-    out = Path(out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    done, n = _done(out), 0
-    with out.open("a") as f:
-        for c in cases:
-            if c["case_id"] in done:
-                continue
-            f.write(json.dumps(run_case(decider, c, cond, t), ensure_ascii=False) + "\n")
-            f.flush()
+def run(decider, cases, cond: str, store, t: dict, mode: str = "options") -> int:
+    n = 0
+    for c in cases:
+        if not store.has("mapping", cond, c["case_id"]):
+            store.add("mapping", cond, run_case(decider, c, cond, t, mode))
             n += 1
     return n
-
-
-def load_cases(levels=None, n=5, seed=1234):
-    """Cases are rebuilt from the seed; the first n per level (ids are stable across n)."""
-    from .gen_gt import generate
-    return [c for c in generate(load_template(), n, seed) if levels is None or c["level"] in levels]
-
-
-if __name__ == "__main__":
-    cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--cond", default=",".join(cfg["conds"]))
-    ap.add_argument("--levels", default=",".join(map(str, cfg["levels"])))
-    ap.add_argument("--n", type=int, default=cfg["n_per_level"])
-    ap.add_argument("--seed", type=int, default=cfg["seed"])
-    ap.add_argument("--out-dir", default=cfg["out_dir"])
-    a = ap.parse_args()
-    from .decisions.jev import JevDecider
-    t = load_template()
-    cases = load_cases({int(x) for x in a.levels.split(",")}, a.n, a.seed)
-    with JevDecider(cfg["quant"]) as d:
-        for cond in a.cond.split(","):
-            assert cond in CONDS, cond
-            k = run(d, cases, cond, ROOT / a.out_dir / "jev" / f"{cond}.jsonl", t)
-            print(f"{cond}: {k} new cases")

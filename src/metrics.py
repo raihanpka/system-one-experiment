@@ -1,4 +1,4 @@
-"""Metrics and report. Run: uv run python -m src.metrics   (reads results/jev/*.jsonl, writes results/summary.md)
+"""Metrics and markdown tables (library; `python src` writes the report)
 
 Mapping: for each available output, input columns are ranked by P(true). top1 = best column is a true
 source; exact = the best |sources| columns are exactly the sources; top3 = a true source is in the top 3.
@@ -8,25 +8,19 @@ Temperature: Jev probabilities are sigmoid((s_true - s_false) / T); T is re-appl
 """
 from __future__ import annotations
 
-import json
 import math
 import re
-import tomllib
 from collections import defaultdict
 from difflib import SequenceMatcher
-from pathlib import Path
 
-from .check_template import load_template
 from .context import KIND_LABEL
-from .gen_gt import generate
 
-ROOT = Path(__file__).resolve().parents[1]
 T0 = 0.8278650620942867                     # calibrated global temperature of Jev v3
 TS = (0.5, 0.7, T0, 1.0, 1.5, 2.0, 3.0)
 
 
 def pair_p(cell: dict, T: float) -> float:
-    d = (cell["raw"]["true"] - cell["raw"]["false"]) / T
+    d = cell["d"] / T
     return 1 / (1 + math.exp(-d)) if d > -700 else 0.0
 
 
@@ -142,11 +136,6 @@ def permute_metrics(rows, part: str) -> dict:
 
 
 # ---------------------------------------------------------------- report
-def _load(path):
-    p = Path(path)
-    return [json.loads(l) for l in p.read_text().splitlines()] if p.exists() else []
-
-
 def _by_level(rows):
     g = defaultdict(list)
     for r in rows:
@@ -163,15 +152,16 @@ def _table(header, rows):
                      + ["| " + " | ".join(map(str, r)) + " |" for r in rows])
 
 
-def build_report(res_dir, cases_by_id, conds) -> str:
-    out = ["# Results: column mapping with Jev-Style-2B-Decision-v3 (Q8_0, local)", "",
-           "All numbers are percentages unless noted. Levels: 0 identical, 1 style only, 2 abbreviation, 3 synonym, "
-           "4 Indonesian, 5 legacy codes (OBJ_INFO_ADDR), 6 mixed + decoys. Small samples: read as indications.", ""]
-    jev = Path(res_dir) / "jev"
+def build_tables(store, cases_by_id, conds, only=None) -> str:
+    """Markdown tables for the given samples (`only` = set of case ids)."""
+    out = ["All numbers are percentages unless noted. Levels: 0 identical, 1 style only, 2 abbreviation, 3 synonym, "
+           "4 Indonesian, 5 legacy codes (OBJ_INFO_ADDR), 6 mixed + decoys. Few cases per level: read as indications.", ""]
+    ld = lambda sec, cond: store.rows(sec, cond, only)                                # noqa: E731
     lex = defaultdict(list)
     for c in cases_by_id.values():
-        lex[c["level"]].append(c)
-    allmap = {cond: _load(jev / f"{cond}.jsonl") for cond in conds}
+        if only is None or c["case_id"] in only:
+            lex[c["level"]].append(c)
+    allmap = {cond: ld("mapping", cond) for cond in conds}
     levels = sorted({r["level"] for rows in allmap.values() for r in rows}) or sorted(lex)
 
     out += ["## Mapping: which input column feeds each output field", ""]
@@ -179,7 +169,7 @@ def build_report(res_dir, cases_by_id, conds) -> str:
         rows = allmap[cond]
         if not rows:
             continue
-        out += [f"### Context condition `{cond}`", ""]
+        out += [f"### Context `{cond}`", ""]
         trs = []
         for lv, rs in _by_level(rows).items():
             m = mapping_metrics(rs, cases_by_id)
@@ -190,50 +180,40 @@ def build_report(res_dir, cases_by_id, conds) -> str:
                     "-", _pct(m["f1"]), f"{m['ece']:.3f}"])
         out += [_table(["level", "cases", "top1", "exact", "top3", "reject n/a", "decoy flagged", "pair F1", "ECE"], trs), ""]
 
-    out += ["### Model-free baseline (string similarity of names, no description or values)", ""]
-    out += [_table(["level", "top1", "exact", "top3"], [[lv, *[_pct(lexical_mapping(lex[lv])[k]) for k in ("top1", "exact", "top3")]] for lv in levels]), ""]
+    out += ["### Baseline without a model (string similarity of names only)", "",
+            _table(["level", "top1", "exact", "top3"],
+                   [[lv, *[_pct(lexical_mapping(lex[lv])[k]) for k in ("top1", "exact", "top3")]] for lv in levels if lex[lv]]), ""]
 
-    out += ["## Temperature: effect on calibration (pooled over levels)", "",
-            "Jev probability = sigmoid((s_true - s_false) / T). T = 0.828 is the calibrated value. top1 does not change with T.", ""]
+    out += ["## Temperature and calibration (pooled)", "",
+            "Probability = sigmoid((s_true - s_false) / T). T = 0.828 is the calibrated value. top1 does not depend on T.", ""]
     for cond in conds:
         if allmap[cond]:
             out += [f"`{cond}`", "", _table(["T", "ECE", "Brier", "pair F1", "precision", "recall"],
                                           [[f"{s['T']:.3f}", f"{s['ece']:.3f}", f"{s['brier']:.3f}", _pct(s["f1"]), _pct(s["precision"]), _pct(s["recall"])]
                                            for s in sweep(allmap[cond], cases_by_id)]), ""]
 
-    out += ["## Transformation kind (choice, given the true source columns)", ""]
-    trs = []
-    for cond in conds:
-        for lv, rs in _by_level(allmap[cond]).items():
-            k = kind_metrics(rs, cases_by_id)
-            trs.append([cond, lv, k["n"], _pct(k["acc"])])
-    out += [_table(["cond", "level", "n outputs", "accuracy"], trs), ""]
+    out += ["## Transformation kind (given the true source columns)", ""]
+    trs = [[cond, lv, (k := kind_metrics(rs, cases_by_id))["n"], _pct(k["acc"])]
+           for cond in conds for lv, rs in _by_level(allmap[cond]).items()]
+    out += [_table(["context", "level", "n outputs", "accuracy"], trs), ""]
 
-    out += ["## Picking the right expression among candidates (1 true + 3 distractors, chance 25%)", ""]
     trs = []
     for cond in conds:
-        for lv, rs in _by_level(_load(jev / f"transform_{cond}.jsonl")).items():
+        for lv, rs in _by_level(ld("transform", cond)).items():
             t = transform_metrics(rs)
             trs.append([cond, lv, t["n"], _pct(t["choice"]), _pct(t["predicate"]), _pct(t["choice_value_ok"]), _pct(t["pred_value_ok"])])
-    out += [_table(["cond", "level", "n", "choice", "predicate", "choice value ok", "predicate value ok"], trs), ""]
+    if trs:
+        out += ["## Right expression among 4 candidates (chance 25%)", "",
+                _table(["context", "level", "n", "choice", "yes/no per candidate", "choice value ok", "yes/no value ok"], trs), ""]
 
-    out += ["## Option-order stability (same question, shuffled option order)", ""]
     trs = []
     for cond in conds:
-        rows = _load(jev / f"permute_{cond}.jsonl")
+        rows = ld("permute", cond)
         for part in ("transform", "kind"):
             if rows:
                 p = permute_metrics(rows, part)
                 trs.append([cond, part, p["n"], _pct(p["consistent"]), _pct(p["acc_over_orders"]), _pct(p["slot0"])])
-    out += [_table(["cond", "question", "n", "same pick in every order", "mean accuracy over orders", "picked slot 0"], trs), ""]
+    if trs:
+        out += ["## Option-order stability", "",
+                _table(["context", "question", "n", "same pick in every order", "mean accuracy over orders", "picked slot 0"], trs), ""]
     return "\n".join(out)
-
-
-if __name__ == "__main__":
-    cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
-    res = ROOT / cfg["out_dir"]
-    cases = {c["case_id"]: c for c in generate(load_template(), cfg["n_per_level"], cfg["seed"])}
-    present = [c for c in cfg["conds"] if (res / "jev" / f"{c}.jsonl").exists()]
-    md = build_report(res, cases, present)
-    (res / "summary.md").write_text(md)
-    print(md)

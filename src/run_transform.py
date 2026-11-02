@@ -1,22 +1,16 @@
 """Transformation ranking: Jev picks the right expression among candidates (1 truth + distractors).
-Run: uv run python -m src.run_transform --cond both --n 5
 
 Per derived, available output: one `choice` question over the rendered candidates and one `predicate`
 per candidate. The winner is executed on the sample rows and compared with the expected values.
 """
 from __future__ import annotations
 
-import argparse
-import json
 import math
-import tomllib
-from pathlib import Path
 
-from .check_template import load_template, rule_sources
-from .context import CONDS, kind_state, samples
+from .check_template import rule_sources
+from .context import kind_state, samples
 from .decisions.types import Choice, Question
 from .dsl import render, safe_evaluate
-from .run_mapping import ROOT, _done, load_cases
 
 
 def _same(a, b):
@@ -65,41 +59,17 @@ def run_case(decider, case: dict, cond: str, t: dict) -> dict:
         ti = cands.index(o["rule"])
         res[o["name"]] = {
             "kind": o["kind"], "cands": texts, "truth_idx": ti,
-            "choice_idx": ci, "choice_p": [a[0].probabilities[x] for x in texts], "choice_raw": a[0].raw_scores,
-            "pred_idx": pi, "pred_p": probs, "pred_raw": [x.raw_scores for x in a[1:]],
+            "choice_idx": ci, "choice_p": [a[0].probabilities[x] for x in texts],
+            "pred_idx": pi, "pred_p": probs,
             "choice_value_ok": _ok(cands[ci], by_id, o["expected"]), "pred_value_ok": _ok(cands[pi], by_id, o["expected"]),
         }
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "transform": res}
 
 
-def run(decider, cases, cond: str, out, t: dict) -> int:
-    out = Path(out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    done, n = _done(out), 0
-    with out.open("a") as f:
-        for c in cases:
-            if c["case_id"] in done:
-                continue
-            f.write(json.dumps(run_case(decider, c, cond, t), ensure_ascii=False) + "\n")
-            f.flush()
+def run(decider, cases, cond: str, store, t: dict) -> int:
+    n = 0
+    for c in cases:
+        if not store.has("transform", cond, c["case_id"]):
+            store.add("transform", cond, run_case(decider, c, cond, t))
             n += 1
     return n
-
-
-if __name__ == "__main__":
-    cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--cond", default=",".join(cfg["conds"]))
-    ap.add_argument("--levels", default=",".join(map(str, cfg["levels"])))
-    ap.add_argument("--n", type=int, default=cfg["n_per_level"])
-    ap.add_argument("--seed", type=int, default=cfg["seed"])
-    ap.add_argument("--out-dir", default=cfg["out_dir"])
-    a = ap.parse_args()
-    from .decisions.jev import JevDecider
-    t = load_template()
-    cases = load_cases({int(x) for x in a.levels.split(",")}, a.n, a.seed)
-    with JevDecider(cfg["quant"]) as d:
-        for cond in a.cond.split(","):
-            assert cond in CONDS, cond
-            k = run(d, cases, cond, ROOT / a.out_dir / "jev" / f"transform_{cond}.jsonl", t)
-            print(f"{cond}: {k} new cases")

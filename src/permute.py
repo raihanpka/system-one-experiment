@@ -1,5 +1,4 @@
 """Option-order stability: re-ask each choice question with shuffled option order.
-Run: uv run python -m src.permute --cond both --n 3 --k 3
 
 Per derived output: `k` orders of the candidate expressions (first = as generated); per available output
 the transformation-kind question with `k` orders of its labels. Records picked text, picked slot and
@@ -7,16 +6,10 @@ whether the pick was the true one, so order sensitivity and position bias can be
 """
 from __future__ import annotations
 
-import argparse
-import json
 import random
-import tomllib
-from pathlib import Path
 
-from .check_template import load_template
-from .context import CONDS, KIND_DESC, KIND_LABEL, kind_question, kind_state, samples
+from .context import KIND_DESC, KIND_LABEL, kind_question, kind_state, samples
 from .decisions.types import Choice, Question
-from .run_mapping import ROOT, _done, load_cases
 from .run_transform import pick_question, prepare
 
 
@@ -65,34 +58,10 @@ def run_case(decider, case: dict, cond: str, t: dict, k: int = 3, seed: int = 0)
     return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "k": k, "transform": transform, "kind": kind}
 
 
-def run(decider, cases, cond: str, out, t: dict, k: int = 3) -> int:
-    out = Path(out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    done, n = _done(out), 0
-    with out.open("a") as f:
-        for c in cases:
-            if c["case_id"] in done:
-                continue
-            f.write(json.dumps(run_case(decider, c, cond, t, k), ensure_ascii=False) + "\n")
-            f.flush()
+def run(decider, cases, cond: str, store, t: dict, k: int = 3) -> int:
+    n = 0
+    for c in cases:
+        if not store.has("permute", cond, c["case_id"]):
+            store.add("permute", cond, run_case(decider, c, cond, t, k))
             n += 1
     return n
-
-
-if __name__ == "__main__":
-    cfg = tomllib.loads((ROOT / "config.toml").read_text())["run"]
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--cond", default="samples")
-    ap.add_argument("--levels", default=",".join(map(str, cfg["levels"])))
-    ap.add_argument("--n", type=int, default=cfg["n_per_level"])
-    ap.add_argument("--k", type=int, default=3)
-    ap.add_argument("--seed", type=int, default=cfg["seed"])
-    ap.add_argument("--out-dir", default=cfg["out_dir"])
-    a = ap.parse_args()
-    from .decisions.jev import JevDecider
-    t = load_template()
-    cases = load_cases({int(x) for x in a.levels.split(",")}, a.n, a.seed)
-    with JevDecider(cfg["quant"]) as d:
-        for cond in a.cond.split(","):
-            assert cond in CONDS, cond
-            print(f"{cond}: {run(d, cases, cond, ROOT / a.out_dir / 'jev' / f'permute_{cond}.jsonl', t, a.k)} new cases")

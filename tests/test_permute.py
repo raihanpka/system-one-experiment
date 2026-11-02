@@ -1,9 +1,8 @@
-import json
-
 from src.check_template import load_template
 from src.decisions.types import Answer, Response
 from src.gen_gt import generate
 from src.permute import run
+from src.store import Store
 from tests.test_run_transform import Oracle
 
 T = load_template()
@@ -19,25 +18,21 @@ class FirstOption:
                                          raw_scores={n: 0.0 for n in names}) for _ in questions[:1]], {})
 
 
-def read(p):
-    return json.loads(p.read_text())
-
-
 def test_oracle_is_order_invariant(tmp_path):
-    out = tmp_path / "p.jsonl"
-    assert run(Oracle(CASE), [CASE], "both", out, T, k=3) == 1
-    r = read(out)
+    store = Store(tmp_path / "p.json")
+    assert run(Oracle(CASE), [CASE], "both", store, T, k=3) == 1
+    r = store.rows("permute", "both")[0]
     assert r["transform"] and r["kind"]
     for v in list(r["transform"].values()):
         assert len(v["orders"]) == 3 and v["orders"][0] == sorted(v["orders"][0])      # first order = as generated
         assert len(set(v["picks"])) == 1 and all(v["correct"])
-    assert run(Oracle(CASE), [CASE], "both", out, T, k=3) == 0                          # resume
+    assert run(Oracle(CASE), [CASE], "both", Store(tmp_path / "p.json"), T, k=3) == 0   # resume
 
 
 def test_position_bias_is_visible(tmp_path):
-    out = tmp_path / "p.jsonl"
-    run(FirstOption(), [CASE], "name", out, T, k=4)
-    r = read(out)
+    store = Store(tmp_path / "p.json")
+    run(FirstOption(), [CASE], "name", store, T, k=4)
+    r = store.rows("permute", "name")[0]
     vs = list(r["transform"].values())
     assert all(v["pos"] == [0, 0, 0, 0] for v in vs)                                    # always picks slot 0
     assert any(len(set(v["picks"])) > 1 for v in vs)                                    # ...so the picked text changes with order

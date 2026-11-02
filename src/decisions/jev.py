@@ -10,11 +10,11 @@ from .types import Answer, Question, Response
 VENDOR = Path(__file__).resolve().parents[2] / "vendor" / "jev-v3-2b-gguf"
 
 
-def _load_backend(quant: str):
+def _load_backend(quant: str, ngl: int = 999, flash_attn: str = "default", threads: int | None = None):
     sys.path.insert(0, str(VENDOR))
     from jev_style_decision_gguf import JevStyleDecisionGGUF  # noqa: PLC0415
 
-    return JevStyleDecisionGGUF(model_dir=VENDOR, quant=quant)
+    return JevStyleDecisionGGUF(model_dir=VENDOR, quant=quant, n_gpu_layers=ngl, flash_attn=flash_attn, threads=threads)
 
 
 def _to_jev(q: Question) -> dict:
@@ -41,8 +41,15 @@ def _answer(q: Question, r: dict) -> Answer:
 
 class JevDecider:
     # ponytail: one subprocess, one model load (~20 s); inject `backend` in tests, close() or use `with` to free it
-    def __init__(self, quant: str = "Q8_0", backend=None):
-        self._b = backend if backend is not None else _load_backend(quant)
+    def __init__(self, quant: str = "Q8_0", backend=None, **opts):
+        self._b = backend if backend is not None else _load_backend(quant, **opts)
+
+    @classmethod
+    def from_config(cls, path=None):
+        """Build from the [model] table of config.toml (quant, ngl, flash_attn, threads)."""
+        import tomllib
+        path = path or Path(__file__).resolve().parents[2] / "config.toml"
+        return cls(**tomllib.loads(Path(path).read_text())["model"])
 
     def decide(self, text: str, questions: Sequence[Question]) -> Response:
         if not questions:

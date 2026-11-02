@@ -1,6 +1,13 @@
 # Defaults for the experiment runners; CLI flags override.
+[model]
+# Passed to the llama.cpp based Jev scorer. Defaults are the documented fast and parity-tested setting.
+quant = "Q8_0"          # F16 (reference), Q8_0 (recommended), Q4_K_M (smaller and faster, noisier)
+ngl = 999               # layers on the GPU (Metal); 0 = CPU only
+flash_attn = "default"  # default | auto | on | off
+# threads = 8           # CPU threads of the scorer process (optional)
+
 [run]
-quant = "Q8_0"
+mode = "options"   # options: one question per input column (fast); pairs: one yes/no per (column, field), calibrated
 seed = 1234
 out_dir = "results"
 conds = ["name", "samples"]   # desc and both (column descriptions) exist in code but are not given to the model: the real template has headers only
