@@ -1,7 +1,7 @@
 # OpenRouter Decisions API (hosted, default backend). Sends the state text to OpenRouter; use synthetic data until retention is checked.
 # The API returns calibrated probabilities, not logits. Scores are derived from them so the pipeline keeps its contract:
 #   predicate: raw true = logit(p), raw false = 0, so true - false = logit(p)
-#   choice, score: raw per option = log(p); softmax of these is the returned distribution, the ranking is unchanged
+#   choice, score: raw per option = logit(p), so 0 means p = 0.5 as in Jev; the ranking is unchanged
 
 from __future__ import annotations
 
@@ -13,7 +13,9 @@ from typing import Callable, Sequence
 
 from .types import Answer, Question, Response
 
-LOG_FLOOR = 1e-12
+def _logit(p: float) -> float:
+    p = min(max(p, P_CLIP), 1 - P_CLIP)
+    return math.log(p / (1 - p))
 P_CLIP = 1e-6
 
 
@@ -41,13 +43,17 @@ def _answer(q: Question, name: str, body: dict) -> Answer:
     if q.type == "predicate":
         p = float(body["noul"])
         p = min(max(p, P_CLIP), 1 - P_CLIP)
-        return Answer("predicate", name, probability=p, raw_scores={"true": math.log(p / (1 - p)), "false": 0.0})
+        return Answer("predicate", name, probability=p, raw_scores={"true": _logit(p), "false": 0.0})
     probs = _distribution(body["probabilities"])
-    raw = {k: math.log(max(v, LOG_FLOOR)) for k, v in probs.items()}
     if q.type == "choice":
+        raw = {k: _logit(v) for k, v in probs.items()}
         return Answer("choice", name, choice=str(body["choice"]), probabilities=probs, raw_scores=raw)
-    score = float(body["score"])
-    return Answer("score", name, score=score, probabilities=probs, raw_scores=raw)
+    # score: the API keys levels by index ("0", "1", ...) with a legend; relabel to the question's level labels
+    labels = [lv.label for lv in q.levels]
+    legend = body.get("legend") or {str(i): lab for i, lab in enumerate(labels)}
+    probs = {legend.get(k, k): v for k, v in probs.items()}
+    raw = {k: _logit(v) for k, v in probs.items()}
+    return Answer("score", name, score=float(body["score"]), probabilities=probs, raw_scores=raw)
 
 
 def _post(url: str, headers: dict, body: dict, timeout: float) -> dict:

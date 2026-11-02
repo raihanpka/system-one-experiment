@@ -75,3 +75,15 @@ def test_factory_picks_openrouter_when_the_setting_says_so(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-x")
     d = make_decider(cfg)()
     assert isinstance(d, OpenRouterDecider)
+
+
+def test_score_uses_the_real_index_keys_and_legend_from_the_api():
+    # shape seen on a live call (synthetic text): score is the expected level index, probabilities keyed "0", "1", "2" with a legend
+    qs = [Question("score", "how worn?", name="condition", levels=(Level("Like new"), Level("Light wear"), Level("Heavy wear")))]
+    body = {"condition": {"type": "score", "score": 0.995, "legend": {"0": "Like new", "1": "Light wear", "2": "Heavy wear"},
+                          "probabilities": {"0": 0.011, "1": 0.983, "2": 0.006}}}
+    a = OpenRouterDecider("k", "m", "u", transport=fake(body)).decide("x", qs).answers[0]
+    assert a.score == pytest.approx(0.995)
+    assert list(a.probabilities) == ["Like new", "Light wear", "Heavy wear"]
+    assert a.probabilities["Light wear"] == pytest.approx(0.983)
+    assert max(a.raw_scores, key=a.raw_scores.get) == "Light wear"
