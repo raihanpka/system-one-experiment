@@ -89,7 +89,7 @@ class OpenRouterDecider:
                 out.append(Answer("refusal", n, message="no answer returned"))
                 continue
             out.append(_answer(q, n, answers[n]))
-        return Response(res.get("model", self._model), out, {})
+        return Response(res.get("model", self._model), out, res.get("usage", {}))
 
     def close(self):
         return None
