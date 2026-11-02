@@ -9,3 +9,4 @@ tasks/
 .env
 appsettings.local.json
 .claude/
+data/real/
