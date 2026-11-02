@@ -113,3 +113,10 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 2. `config.toml` checked on load (`core/config.py`): backend type, quant, run mode, target precision, splits. `[device] mode` picks GPU layers (cpu = 0).
 3. Tests: 133 pass, `pyflakes` clean.
 4. README describes the layout and the local-only backend.
+
+## 12. OpenRouter Settings (not yet an adapter)
+
+1. `[backend.openrouter]` in `config.toml`: model `~liquid/d1-ultra-latest`, base URL `https://openrouter.ai/api/alpha/decisions`, key from env `OPENROUTER_API_KEY`. The key is never in the file. `.env.example` and `.env` (gitignored) are set up. `.env` is not loaded automatically.
+2. Output is calibrated probabilities (`noul` probability, `choice` and `score` distributions), not logits. The `Backend.score` contract (raw logits) cannot be met as is. Calibration would have to be fitted on probabilities under a separate backend key.
+3. Retention: the pasted API page has no privacy text. OpenRouter's listing says successful requests may be used to train Liquid models. Send synthetic data only until that is checked.
+4. `main` refuses any backend type other than `local_gguf` until an adapter exists.
