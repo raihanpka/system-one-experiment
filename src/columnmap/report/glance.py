@@ -48,7 +48,8 @@ def at_a_glance(store, cases, conds, only=None, other=None) -> list[str]:
                 line += f", {pct(reject_metrics(feats, fitted[1])['rejected'])}% with a cutoff fitted on another run"
             line += "." + _honest(store, cases, cond, mode, only)
             secs = [r["seconds"] for r in rows if "seconds" in r]
+            toks = [r["tokens"] for r in rows if r.get("tokens")]
             if secs:
-                line += f" {sum(secs) / len(secs):.0f} s per file."
+                line += f" {sum(secs) / len(secs):.0f} s per file" + (f", {sum(toks) / len(toks) / 1000:.0f}k prompt tokens." if toks else ".")
             out.append(line)
     return out + [""] if len(out) > 2 else []

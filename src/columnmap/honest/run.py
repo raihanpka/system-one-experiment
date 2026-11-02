@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 from ..core.candidates import candidates
+import time
+
 from ..core.scoring import T0, pair_p
+from ..core.usage import mark, since
 from ..decisions.base import Decider
 from .prompts import check_question, expression_text, option_text, pick_question, pool_state
 
@@ -73,6 +76,10 @@ def run(decider: Decider, cases, cond: str, store, mode: str = "options") -> int
     n = 0
     for c in cases:
         if c["case_id"] in maps and not store.has("honest", cond, c["case_id"]):
-            store.add("honest", cond, run_case(decider, c, cond, maps[c["case_id"]], mode))
+            t0, before = time.time(), mark(decider)
+            rec = run_case(decider, c, cond, maps[c["case_id"]], mode)
+            rec["seconds"] = round(time.time() - t0, 1)
+            rec.update(since(decider, before))
+            store.add("honest", cond, rec)
             n += 1
     return n

@@ -6,6 +6,7 @@ import time
 
 from ..core.prompts import input_state, mapping_question, samples, table_options_question, table_pair_question, table_state
 from ..core.scoring import T0, pair_p
+from ..core.usage import mark, since
 from ..decisions.base import Decider
 from ..decisions.types import Choice, Question
 
@@ -41,9 +42,10 @@ def run(decider: Decider, cases, cond: str, store, t: dict, mode: str = "options
     section, n = SECTIONS[mode], 0
     for c in cases:
         if not store.has(section, cond, c["case_id"]):
-            t0 = time.time()
+            t0, before = time.time(), mark(decider)
             rec = run_case(decider, c, cond, t, mode)
             rec["seconds"] = round(time.time() - t0, 1)
+            rec.update(since(decider, before))
             store.add(section, cond, rec)
             n += 1
     return n
