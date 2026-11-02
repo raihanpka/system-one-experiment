@@ -37,17 +37,14 @@ def ece(ps, ys, bins: int = 10) -> float:
     return tot
 
 
-# a field is kept when the best input column passes a rule on (best score d1, lift above the median column)
-def FIXED(d1: float, lift: float) -> bool:
+# a field is kept when its best input column passes a rule on its best score d1
+def FIXED(d1: float) -> bool:
     return d1 >= 0.0                                                              # probability 0.5
 
 
 def accept_score(cut: float):
-    return lambda d1, lift: d1 >= cut
+    return lambda d1: d1 >= cut
 
-
-def accept_lift(cut: float):
-    return lambda d1, lift: lift >= cut
 
 
 # log-odds of a probability, clipped away from 0 and 1

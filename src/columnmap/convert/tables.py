@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..core.prompts import context_label as ctx
-from ..core.scoring import FIXED, accept_lift, accept_score
+from ..core.scoring import FIXED, accept_score
 from ..core.tables import md_table, pct
 from ..mapping.reject import field_scores, fit_cuts, reject_metrics
 from .honest import convert_fields
@@ -38,8 +38,6 @@ def rules_for(rows, cases, other_rows=None) -> list[tuple[str, object]]:
         cuts = fit_cuts(data, cases)
         if cuts["d1"] is not None:
             rules.append((f"score cutoff {cuts['d1']:.2f}, fitted on {label}", accept_score(cuts["d1"])))
-        if cuts["lift"] is not None:
-            rules.append((f"lift cutoff {cuts['lift']:.2f}, fitted on {label}", accept_lift(cuts["lift"])))
     return rules
 
 

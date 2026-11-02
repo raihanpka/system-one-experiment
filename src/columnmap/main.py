@@ -58,7 +58,6 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument("--split", choices=("dev", "calibration", "test"), help="run every seed of this split from appsettings.json, one run each")
     ap.add_argument("--final", action="store_true", help="confirm that you really want to run the test split")
     ap.add_argument("--calibrate-from", metavar="RUN", help="run folder whose results fit the cutoffs that reject fields without a source")
-    ap.add_argument("--lift", metavar="TOP,SECOND", help="choose columns by the lift rule with these two thresholds (overrides --keep)")
     ap.add_argument("--keep", type=float, help="score a column needs to be chosen for a field (default: Run:KeepD in appsettings.json; 0.0 is probability 0.5)")
     ap.add_argument("--fit-calibration", nargs="+", metavar="RUN", help="fit calibration parameters from these dev or calibration runs, write calibration.json, and stop")
     ap.add_argument("--calibration", default=str(ROOT / "calibration.json"), help="calibration file (default calibration.json in the project)")
@@ -116,13 +115,8 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     other = Store(_abs(a.calibrate_from) / "result.json") if a.calibrate_from else None
     if other is not None and other.data["meta"].get("seed", cfg["run"]["seed"]) != seed:
         ap.error("--calibrate-from needs a run built from the same seed, otherwise its answers do not belong to these files")
-    honest_cfg = cfg.get("honest", {})
-    default_keep = ("lift", honest_cfg["lift_top"], honest_cfg["lift_second"]) if "lift_top" in honest_cfg else cfg["run"]["keep_d"]
     stored = store.data["meta"].get("keep_d")
-    keep = tuple(stored) if isinstance(stored, list) else stored if (a.report_only or a.out) and stored is not None else (a.keep if a.keep is not None else default_keep)
-    if a.lift:
-        lift_top, lift_second = (float(x) for x in a.lift.split(","))
-        keep = ("lift", lift_top, lift_second)
+    keep = stored if (a.report_only or a.out) and stored is not None else (a.keep if a.keep is not None else cfg["run"]["keep_d"])
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, seed)}
     sel = [cases[SAMPLES[x][0]] for x in letters]

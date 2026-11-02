@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import statistics
 import time
 
 from ..core.candidates import candidates
@@ -21,22 +20,6 @@ def chosen_columns(matrix: dict, field: str, keep: float = 0.0, max_cols: int = 
     return [(c, d) for d, c in scored]
 
 
-# lift rule: a column counts when it stands above the median score of all columns for the field.
-# the top column needs lift_top; every further column needs its own lift_second, so a near-tie does not add a wrong column
-def chosen_by_lift(matrix: dict, field: str, lift_top: float, lift_second: float, max_cols: int = 3) -> list[str]:
-    scored = sorted(((m[field]["d"], c) for c, m in matrix.items()), reverse=True)
-    if not scored:
-        return []
-    median = statistics.median(d for d, _ in scored)
-    chosen = []
-    for i, (d, c) in enumerate(scored[:max_cols]):
-        need = lift_top if i == 0 else lift_second
-        if d - median < need:
-            break
-        chosen.append(c)
-    return chosen
-
-
 def _empty() -> dict:
     return {"cols": [], "p_cols": [], "cands": [], "shortlist": [], "shortlist_p": [], "top_cols": [], "best_idx": None, "best": None,
             "best_text": None, "p_expr": None, "method": "unmapped", "conf": 0.0}
@@ -49,11 +32,7 @@ def _top(matrix: dict, field: str) -> list[list]:
 
 
 def _field(decider, field: str, rows: list[dict], matrix: dict, keep, max_cols: int, out_type: str | None = None) -> dict:
-    if isinstance(keep, (tuple, list)):                              # ("lift", lift_top, lift_second)
-        _, lift_top, lift_second = keep
-        chosen = [(c, matrix[c][field]["d"]) for c in chosen_by_lift(matrix, field, lift_top, lift_second, max_cols)]
-    else:
-        chosen = chosen_columns(matrix, field, keep, max_cols)
+    chosen = chosen_columns(matrix, field, keep, max_cols)
     if not chosen:
         return {**_empty(), "top_cols": _top(matrix, field)}
     names = [c for c, _ in chosen]

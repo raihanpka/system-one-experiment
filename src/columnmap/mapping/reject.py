@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import statistics
-
 from ..core.scoring import rate, safe_div
 
 
-# per output field: best score, how far it stands above the median column (lift), and whether the field has a source
+# per output field: best score, the column behind it, and whether the field has a source
 def field_scores(rows, cases) -> list[dict]:
     out = []
     for r in rows:
@@ -16,8 +14,7 @@ def field_scores(rows, cases) -> list[dict]:
         for o in c["outputs"]:
             sc = sorted(((r["matrix"][col][o["name"]]["d"], col) for col in r["matrix"]), reverse=True)
             d1, c1 = sc[0]
-            median = statistics.median(d for d, _ in sc)
-            out.append({"case_id": r["case_id"], "output": o["name"], "has_source": o["available"], "d1": d1, "lift": d1 - median,
+            out.append({"case_id": r["case_id"], "output": o["name"], "has_source": o["available"], "d1": d1,
                         "top": c1, "top_ok": c1 in o["sources"], "top_is_decoy": c1 in decoys})
     return out
 
@@ -41,11 +38,11 @@ def fit_cut(values, labels) -> float | None:
 def fit_cuts(rows, cases) -> dict:
     feats = field_scores(rows, cases)
     ys = [f["has_source"] for f in feats]
-    return {"d1": fit_cut([f["d1"] for f in feats], ys), "lift": fit_cut([f["lift"] for f in feats], ys)}
+    return {"d1": fit_cut([f["d1"] for f in feats], ys)}
 
 
 def reject_metrics(feats, accept) -> dict:
-    kept = [accept(f["d1"], f["lift"]) for f in feats]
+    kept = [accept(f["d1"]) for f in feats]
     with_src = [(f, k) for f, k in zip(feats, kept) if f["has_source"]]
     without = [(f, k) for f, k in zip(feats, kept) if not f["has_source"]]
     rec = rate(sum(k for _, k in with_src), len(with_src))
