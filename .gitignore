@@ -2,7 +2,6 @@
 vendor/
 __pycache__/
 *.pyc
-results/
 .pytest_cache/
 .dotagent/
 tasks/
