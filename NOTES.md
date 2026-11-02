@@ -23,7 +23,7 @@
 ## 3. Data
 
 1. Template: 26 source concepts, 31 output fields (11 derived: concat, arithmetic, format, lookup), 6 decoy columns. Rules are a small expression tree (`core/dsl.py`).
-2. Seven named samples, from identical names to system codes such as `OBJ_INFO_ADDR_C` (kept UPPER_SNAKE). See the README table.
+2. Four named samples, from identical names to unusual technical terms such as `OBJ_INFO_ADDR_C` (kept UPPER_SNAKE). The Indonesian sample was removed on request.
 3. Each file keeps 14 to 22 of the 26 source columns (so some fields have no source), 15 to 30 rows, and 1 to 2 anomalies (0, negative, x1000, empty, `N/A`, sentinel date). Where a rule cannot handle a value the expected cell is blank.
 4. The real template is a header only, so the model gets the input column name (and 5 sample values) and output names only. Descriptions exist in code (`desc`, `both`) but are not used.
 5. `data/` is tracked and is the only copy of inputs, expected files and ground truth. A run writes only its own outputs.

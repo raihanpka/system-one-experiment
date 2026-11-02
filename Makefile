@@ -3,7 +3,7 @@ PY := $(UV) run python
 RUN := $(UV) run columnmap
 
 .DEFAULT_GOAL := help
-.PHONY: help setup test lint sample full pairs report data bench open status stop clean
+.PHONY: help setup test lint run sample full pairs report data bench open status stop clean
 
 help: ## Show this list
 	@grep -E '^[a-z]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
@@ -17,10 +17,14 @@ test: ## Unit tests, no model needed
 lint: ## Unused imports and names
 	uvx pyflakes src tests scripts
 
-sample: ## Run samples a,b,c,d into results/<samples>_<timestamp>/ (about 6 minutes)
+run: ## Run one sample or all: make run SAMPLES=c (asks when SAMPLES is empty; all = every sample)
+	@s="$(SAMPLES)"; if [ -z "$$s" ]; then read -p "Sampel (a, b, c, d, atau all): " s; fi; \
+	if [ "$$s" = "all" ]; then $(RUN) --all; else $(RUN) --samples "$$s"; fi
+
+sample: ## Run samples a,b,c,d into results/<samples>_<timestamp>/
 	$(RUN) --samples abcd
 
-full: ## Run all seven samples
+full: ## Run all four samples
 	$(RUN) --all
 
 pairs: ## Slow calibrated mode (one yes/no per column and field) on a,b,c,d

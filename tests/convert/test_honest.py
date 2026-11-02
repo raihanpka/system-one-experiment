@@ -7,7 +7,7 @@ from columnmap.honest.prompts import _fmt
 from columnmap.honest.run import run_fields
 
 T = load_template()
-CASE = next(c for c in generate(T, 1, 1234) if c["case_id"] == "hard_codes-000")
+CASE = next(c for c in generate(T, 1, 1234) if c["case_id"] == "technical_terms-000")
 OUTS = [o["name"] for o in CASE["outputs"]]
 
 

@@ -25,6 +25,7 @@ Maps messy input columns onto a fixed output template with a decision model. Eac
 
 ```bash
 make setup     # once: Python dependencies, model download, scorer build
+make run       # asks: a, b, c, d, or all (or make run SAMPLES=c)
 make sample    # run samples a, b, c, d
 make help      # all commands
 ```
@@ -38,12 +39,12 @@ Settings live in `config.toml`. Pick the backend with `[backend] type`, and the 
 ```bash
 uv run columnmap                 # samples a, b, c, d
 uv run columnmap --samples ac    # only a and c
-uv run columnmap --all           # all five samples
+uv run columnmap --all           # all four samples
 uv run columnmap --report-only   # rebuild the newest run, no model
 uv run columnmap --help          # all options
 ```
 
-Samples: `a` identical names, `b` synonyms, `c` system codes, `d` mixed styles with extra columns, `e` Indonesian.
+Samples: `a` identical names, `b` synonyms, `c` unusual technical terms, `d` mixed styles with extra columns.
 
 ---
 

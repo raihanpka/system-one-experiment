@@ -20,7 +20,7 @@ def test_baseline_files_exist_and_data_is_unchanged():
 
 
 def test_baseline_top1_matches_the_notes():
-    expected = {("hard_codes-000", "name"): 61.9, ("hard_codes-000", "samples"): 71.4, ("hardest_noisy-000", "name"): 81.2,
+    expected = {("technical_terms-000", "name"): 61.9, ("technical_terms-000", "samples"): 71.4, ("hardest_noisy-000", "name"): 81.2,
                 ("hardest_noisy-000", "table"): 93.8}
     for (cid, cond), top1 in expected.items():
         rows = [r for r in baseline_rows("mapping", cond) if r["case_id"] == cid]

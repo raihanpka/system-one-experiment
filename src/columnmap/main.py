@@ -46,7 +46,7 @@ def main(argv=None, decider_factory=None) -> int:
                                  epilog=EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--samples", help=f"letters from {''.join(SAMPLES)} (default {DEFAULT}): "
                     + ", ".join(f"{k} {v[1]}" for k, v in SAMPLES.items()))
-    ap.add_argument("--all", action="store_true", help="all five samples")
+    ap.add_argument("--all", action="store_true", help="all four samples")
     ap.add_argument("--conds", default=None,
                     help="what the model sees: name = column name; samples = name + 5 values; table = name + the whole table "
                          "(desc, both add column descriptions). Default: the contexts already in the run folder, else name,samples")

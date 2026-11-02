@@ -14,29 +14,29 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     args = ["--root", str(root), "--data", str(data)]
     assert main(["--samples", "abcd", *args], decider_factory=Generic) == 0
     runs = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()]
-    assert len(runs) == 1 and re.fullmatch(r"easy_identical-medium_synonym-hard_codes-hardest_noisy_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
+    assert len(runs) == 1 and re.fullmatch(r"all_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
     run = runs[0]
     assert not (root / "latest").exists()                                                          # no extra link next to the runs
 
-    for f in ("input_hard_codes.csv", "expected_hard_codes.csv", "ground_truth_hard_codes.csv"):              # single source of truth
-        assert (data / "samples" / "c_hard_codes" / f).exists(), f
+    for f in ("input_technical_terms.csv", "expected_technical_terms.csv", "ground_truth_technical_terms.csv"):              # single source of truth
+        assert (data / "samples" / "c_technical_terms" / f).exists(), f
     assert (data / "template_header.csv").exists()
     assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
 
     data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
     assert set(data_json) == {"meta", "mapping", "mapping_pairs", "honest"} and data_json["meta"]["mode"] == "options"
     assert data_json["meta"]["samples"] == "abcd"
-    assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["easy_identical-000", "medium_synonym-000", "hard_codes-000", "hardest_noisy-000"]
+    assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["easy_identical-000", "medium_synonym-000", "technical_terms-000", "hardest_noisy-000"]
     assert set(data_json["mapping"]) == {"name", "samples"}
 
-    for letter, word in (("a", "easy_identical"), ("b", "medium_synonym"), ("c", "hard_codes"), ("d", "hardest_noisy")):
+    for letter, word in (("a", "easy_identical"), ("b", "medium_synonym"), ("c", "technical_terms"), ("d", "hardest_noisy")):
         d = run / f"{letter}_{word}"
         for f in (f"converted_{word}_name.csv", f"converted_{word}_samples.csv", f"decisions_{word}_name.csv",
                   f"probabilities_{word}_samples.csv"):
             assert (d / f).exists(), f"{d.name}/{f}"
     converted = (run / "a_easy_identical" / "converted_easy_identical_name.csv").read_text().splitlines()
     assert converted[0].startswith("policy_number,insured_full_name") and len(converted) > 10
-    assert len((run / "c_hard_codes" / "decisions_hard_codes_name.csv").read_text().splitlines()) == 32   # header + 31 fields
+    assert len((run / "c_technical_terms" / "decisions_technical_terms_name.csv").read_text().splitlines()) == 32   # header + 31 fields
 
     rep = run / "report"
     for f in ("summary.md", "figures/accuracy.svg", "figures/outcomes.svg", "figures/drift.svg", "figures/calibration.svg",
@@ -45,7 +45,7 @@ def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     svg = (rep / "figures/accuracy.svg").read_text()
     assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
     md = (rep / "summary.md").read_text()
-    assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_hard_codes/" in md
+    assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_technical_terms/" in md
     assert "## Mapping" in md and "## Converted File Without Ground Truth Help" in md
     assert "## At a Glance" in md and "## Rejecting Fields Without a Source" in md
 
