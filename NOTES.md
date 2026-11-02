@@ -120,3 +120,13 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 2. Output is calibrated probabilities (`noul` probability, `choice` and `score` distributions), not logits. The `Backend.score` contract (raw logits) cannot be met as is. Calibration would have to be fitted on probabilities under a separate backend key.
 3. Retention: the pasted API page has no privacy text. OpenRouter's listing says successful requests may be used to train Liquid models. Send synthetic data only until that is checked.
 4. `main` refuses any backend type other than `local_gguf` until an adapter exists.
+
+## 13. Hosted Backend (OpenRouter d1-ultra) Calibration
+
+1. Hosted run on synthetic data only: seeds 12 and 13, samples abcd, contexts name and samples, options mode. Calibration key `~liquid/d1-ultra-latest|api|...`.
+2. Fit on seed 12 only (`calibration.json`). Check on seed 13 (held out, 57 to 62 field points).
+3. Pair level: ECE 0.014 to 0.015 raw, 0.006 to 0.007 calibrated. Good.
+4. Field level: ECE 0.182 raw, 0.129 calibrated (name); 0.104 raw, 0.096 calibrated (name + values). Target 0.03: fails, same as Jev.
+5. Hosted mapping ranking is fine (top-1 on sample d 90.9 to 95.5). Field confidence is still not good enough for auto-fill at 100 percent.
+6. Adapter fixes found by a live call: score probabilities are keyed by index with a legend; choice and score raw scores use logit(p) so 0 means 0.5 (log(p) rejected every field).
+
