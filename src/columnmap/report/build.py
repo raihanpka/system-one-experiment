@@ -205,7 +205,7 @@ def make_report(
     md = [
         "# Results",
         "",
-        "Model: the hosted model named in result.json (OpenRouter). Output fields are always given by name only. "
+        f"Model: {store.data['meta']['model']} (hosted, OpenRouter). Output fields are always given by name only. "
         "For each input column the model sees: **name only** = the header text; **name + values** = the header and "
         "5 values taken from the rows (file keys: `name`, `samples`).",
         "",
