@@ -44,7 +44,7 @@ def main(argv=None, decider_factory=None) -> int:
     cfg = load_settings()
     ap = argparse.ArgumentParser(
         prog="columnmap",
-        description="Run Jev on sample files and write the results.",
+        description="Run the model on sample files and write the results.",
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

@@ -1,7 +1,7 @@
 # OpenRouter Decisions API (hosted, default backend). Sends the state text to OpenRouter; use synthetic data until retention is checked.
 # The API returns calibrated probabilities, not logits. Scores are derived from them so the pipeline keeps its contract:
 #   predicate: raw true = logit(p), raw false = 0, so true - false = logit(p)
-#   choice, score: raw per option = logit(p), so 0 means p = 0.5 as in Jev; the ranking is unchanged
+#   choice, score: raw per option = logit(p), so 0 means p = 0.5 as in the earlier local runs; the ranking is unchanged
 
 from __future__ import annotations
 

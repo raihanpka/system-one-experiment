@@ -14,7 +14,7 @@ from ..dataset.samples import LEVEL_WORDS, RANK
 from .metrics import OUTCOMES, lexical_mapping, mapping_metrics, outcomes, pair_scores
 
 
-# Top-1 mapping accuracy per sample: Jev conditions vs a name-similarity baseline
+# Top-1 mapping accuracy per sample: model conditions vs a name-similarity baseline
 def fig_accuracy(rows_by_cond, cases, labels, path):
     recs = []
     ids = list(labels)
@@ -32,7 +32,7 @@ def fig_accuracy(rows_by_cond, cases, labels, path):
                 recs.append(
                     {
                         "sample": labels[cid],
-                        "method": f"Jev, {ctx(cond)}",
+                        "method": f"Model, {ctx(cond)}",
                         "top1": 100 * mapping_metrics(rs, cases)["top1"],
                     }
                 )
@@ -175,7 +175,7 @@ def fig_outcomes(rows_by_cond, cases, labels, path):
         df = df.div(df.sum(axis=1), axis=0) * 100
         df.plot(kind="bar", stacked=True, ax=ax, color=colors, width=0.7, legend=False)
         ax.set(
-            title=tc(f"Jev sees: {ctx(cond)}"),
+            title=tc(f"Model sees: {ctx(cond)}"),
             xlabel="",
             ylabel="Share of output fields (%)",
         )
@@ -198,7 +198,7 @@ def fig_drift(rows_by_cond, cases, path):
                 {
                     "level": RANK[r["level"]],
                     "top1": 100 * mapping_metrics([r], cases)["top1"],
-                    "method": f"Jev, {ctx(cond)}",
+                    "method": f"Model, {ctx(cond)}",
                 }
             )
     ids = {r["case_id"] for rows in rows_by_cond.values() for r in rows}

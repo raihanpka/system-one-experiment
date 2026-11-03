@@ -56,7 +56,7 @@ class Answer:
         None  # choice: value -> p ; score: label -> p (level order)
     )
     message: str | None = None  # refusal
-    raw_scores: dict | None = None  # extension (Jev): logit(yes)-logit(no) per option
+    raw_scores: dict | None = None  # extension: logit(yes)-logit(no) per option
 
 
 @dataclass

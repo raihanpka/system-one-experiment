@@ -64,7 +64,7 @@ def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[st
             ]
         )
         out += [
-            f"### Jev sees: {ctx(cond)}",
+            f"### Model sees: {ctx(cond)}",
             "",
             md_table(
                 [
@@ -112,7 +112,7 @@ def mapping_tables(store, cases, conds, only=None, section="mapping") -> list[st
     for cond in conds:
         if allmap[cond]:
             out += [
-                f"Jev sees: {ctx(cond)}",
+                f"Model sees: {ctx(cond)}",
                 "",
                 md_table(
                     ["T", "ECE", "Brier", "pair F1", "precision", "recall"],
@@ -163,7 +163,7 @@ def compare_tables(store, cases, conds, only=None) -> list[str]:
         "",
         md_table(
             [
-                "Jev sees",
+                "Model sees",
                 "mode",
                 "top1",
                 "exact",

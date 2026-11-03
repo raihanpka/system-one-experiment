@@ -205,11 +205,11 @@ def make_report(
     md = [
         "# Results",
         "",
-        "Model: Jev-Style-2B-Decision-v3 (llama.cpp, local). Output fields are always given by name only. "
+        "Model: the hosted model named in result.json (OpenRouter). Output fields are always given by name only. "
         "For each input column the model sees: **name only** = the header text; **name + values** = the header and "
         "5 values taken from the rows (file keys: `name`, `samples`).",
         "",
-        "| sample | input, expected, ground truth | Jev outputs (this run) | input naming |",
+        "| sample | input, expected, ground truth | model outputs (this run) | input naming |",
         "|---|---|---|---|",
         legend,
         "",
@@ -271,7 +271,7 @@ def _calibration_section(
         "",
         md_table(
             [
-                "Jev sees",
+                "Model sees",
                 "level",
                 "points",
                 "ECE uncalibrated",
@@ -313,7 +313,7 @@ def _auto_section(auto_rows, cutoffs, target) -> list[str]:
         "",
         md_table(
             [
-                "Jev sees",
+                "Model sees",
                 "sample",
                 "fields filled",
                 "filled correct",
