@@ -7,8 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 from .core.paths import DATA, ROOT
-from .core.settings import load_settings
-from .decisions.factory import backend_meta, make_decider
+from .backends.openrouter import OpenRouterDecider
+from .core.settings import load_settings, openrouter_settings
 from .calibrate import fit as fit_calibration
 from .core.calibration import Calibration
 from .core.runs import new_run_dir, newest_run
@@ -212,12 +212,13 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     if not a.report_only:
         if decider_factory is None:
             try:
-                decider_factory = make_decider(cfg)
+                opts = openrouter_settings(cfg)
             except ValueError as e:
                 ap.error(str(e))
+            decider_factory = lambda: OpenRouterDecider(**opts)
         with decider_factory() as d:
             run_models(d, sel, conds, modes, store, t, keep=keep)
-            identity = getattr(d, "run_meta", None) or backend_meta(cfg)
+            identity = d.run_meta
         store.data["meta"].update(
             {
                 **identity,
