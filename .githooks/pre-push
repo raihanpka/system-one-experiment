@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Runs the gates CI runs, so a failure shows up here with its file and line, not as a red PR.
+set -e
+cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "==> format"
+uvx ruff@0.15.0 format --check src tests scripts
+echo "==> lint"
+make lint
+echo "==> build"
+uv build
+echo "==> test"
+make test
