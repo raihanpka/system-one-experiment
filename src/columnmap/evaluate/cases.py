@@ -11,6 +11,13 @@ from ..core.scoring import T0, pair_p
 FILL_P = 0.5  # a field is filled when its top column has p >= 0.5, the same line the mapping metrics use
 
 
+def top_column(scores: dict[str, float]) -> tuple[str, float]:
+    top = min(
+        scores, key=lambda c: (-scores[c], c)
+    )  # a tie goes to the name that sorts first
+    return top, scores[top]
+
+
 def cases_from_run(run_dir, mode: str = "options") -> list[dict]:
     store, meta, cases = load_run(run_dir)
     out = []
@@ -21,8 +28,8 @@ def cases_from_run(run_dir, mode: str = "options") -> list[dict]:
             actual, expected = {}, {}
             for o in case["outputs"]:
                 sc = {c: pair_p(row["matrix"][c][o["name"]], T0) for c in cols}
-                top = min(cols, key=lambda c: (-sc[c], c))
-                actual[o["name"]] = {"column": top, "p": round(sc[top], 4)}
+                top, p = top_column(sc)
+                actual[o["name"]] = {"column": top, "p": p}
                 expected[o["name"]] = sorted(o["sources"]) if o["available"] else []
             out.append(
                 {

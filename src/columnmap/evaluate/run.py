@@ -8,9 +8,9 @@ from pathlib import Path
 
 
 def evaluate_run(run_dir) -> dict:
-    os.environ.setdefault(
-        "DEEPEVAL_TELEMETRY_OPT_OUT", "YES"
-    )  # no usage data leaves the machine
+    os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = (
+        "YES"  # forced: no usage data leaves the machine
+    )
     from deepeval.test_case import LLMTestCase
 
     from ..core.settings import load_settings

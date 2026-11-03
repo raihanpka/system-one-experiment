@@ -1,9 +1,11 @@
-# DeepEval metrics on hand-made choices with known scores, and an end-to-end run folder through the entry point
+# DeepEval metrics on hand-made choices with known scores, the test cases against the run record, and the --deepeval entry point
 import json
 
 from deepeval.test_case import LLMTestCase
 
-from columnmap.evaluate.cases import cases_from_run
+from columnmap.calibrate import SECTIONS, load_run
+from columnmap.core.scoring import T0, pair_p
+from columnmap.evaluate.cases import cases_from_run, top_column
 from columnmap.evaluate.metrics import FillPrecision, SourceAccuracy
 from columnmap.evaluate.run import evaluate_run
 from columnmap.main import main
@@ -44,7 +46,11 @@ def test_fill_precision_counts_a_filled_field_with_no_source_as_wrong():
     assert m.is_successful() is False
 
 
-def test_end_to_end_run_folder_gets_metric_scores_and_a_report_file(tmp_path, capsys):
+def test_a_tie_in_the_top_score_goes_to_the_name_that_sorts_first():
+    assert top_column({"b": 0.7, "a": 0.7, "c": 0.2}) == ("a", 0.7)
+
+
+def test_test_cases_match_the_run_record_without_rounding(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
     main(
         [
@@ -62,10 +68,45 @@ def test_end_to_end_run_folder_gets_metric_scores_and_a_report_file(tmp_path, ca
         decider_factory=Generic,
     )
     run = next(p for p in root.iterdir() if p.is_dir())
+    store, _, cases = load_run(run)
     rows = cases_from_run(run)
-    assert rows and {r["context"] for r in rows} == {"name"}
-    summary = evaluate_run(run)
-    assert set(summary) == {"Source accuracy", "Fill precision"}
+    records = store.rows(SECTIONS["options"], "name")
+    assert len(rows) == len(records) > 0
+    for rec, row in zip(records, rows):
+        case = cases[rec["case_id"]]
+        actual, expected = (
+            json.loads(row["actual_output"]),
+            json.loads(row["expected_output"]),
+        )
+        for o in case["outputs"]:
+            col = actual[o["name"]]["column"]
+            assert col in [k["name"] for k in case["columns"]]
+            assert actual[o["name"]]["p"] == pair_p(rec["matrix"][col][o["name"]], T0)
+            assert expected[o["name"]] == (
+                sorted(o["sources"]) if o["available"] else []
+            )
+
+
+def test_deepeval_flag_scores_a_run_folder_and_writes_the_report(tmp_path, capsys):
+    root, data = tmp_path / "r", tmp_path / "d"
+    main(
+        [
+            "--samples",
+            "ac",
+            "--conds",
+            "name",
+            "--root",
+            str(root),
+            "--data",
+            str(data),
+            "--split",
+            "dev",
+        ],
+        decider_factory=Generic,
+    )
+    run = next(p for p in root.iterdir() if p.is_dir())
+    assert main(["--deepeval", str(run)]) == 0
     saved = json.loads((run / "report" / "deepeval.json").read_text())
-    assert saved["metrics"] == summary and saved["cases"] == len(rows)
+    assert set(saved["metrics"]) == {"Source accuracy", "Fill precision"}
     assert "Source accuracy: name" in capsys.readouterr().out
+    assert evaluate_run(run) == saved["metrics"]

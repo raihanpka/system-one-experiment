@@ -41,7 +41,8 @@ class SourceAccuracy(BaseMetric):
 
 
 class FillPrecision(BaseMetric):
-    # share of the filled fields that are right; a field with no source that is filled counts as wrong
+    # share of the filled fields that are right; a field with no source that is filled counts as wrong.
+    # Filled means p >= 0.5 (fixed), not the calibrated cutoff in convert/auto.py
     def __init__(self, threshold: float = 0.9):
         self.threshold = threshold
 
