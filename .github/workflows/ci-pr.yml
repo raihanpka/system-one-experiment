@@ -1,0 +1,33 @@
+# Pull Request Gate. Runs once per pull request and never on a plain push to a feature branch.
+# Make it a required status check in branch protection. Keep it fast: no services, no deploy.
+# Same commands the agent and the git hooks run locally.
+name: Pull Request Python Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Format
+        run: uvx ruff@0.15.0 format --check src tests scripts
+      - name: Lint
+        run: make lint
+      - name: Build
+        run: uv build
+      - name: Test
+        run: make test
