@@ -154,3 +154,17 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 4. Calibration keys keep their format. Hosted runs record quant `api`, so `calibration.json` needs no refit.
 5. `appsettings.json.examples` now shows `Run:TargetPrecision` 0.9, the committed value, and not the old 1.0.
 6. The format and lint commands in `.githooks/` and `ci-pr.yml` check `src tests` only, since `scripts/` is gone.
+
+## 17. DeepEval Check of the Current Hosted Run
+
+1. Run checked: `easy_identical-seed11_20261102-171034` (hosted, sample a, seed 11, contexts name and samples). One case per context, so the numbers say little about the model in general.
+2. Command: `uv run columnmap --deepeval results/easy_identical-seed11_20261102-171034`. No model call. Output: `report/deepeval.json`.
+3. Result: source accuracy 1.000 in both contexts (every available field has the right top column). Fill precision 0.867 in both contexts (13 of 15 filled fields right).
+4. The two wrong fills are fields with no source that the model filled anyway: `gross_premium` (top column `base_premium`, p 0.81 name, 0.78 samples) and `insured_full_name` (top column `holder_last_name`, p 0.97 name, 0.96 samples). This is the same error the earlier wrong-fill count showed (section 5).
+5. Metrics used: two custom non-LLM DeepEval metrics (`SourceAccuracy`, `FillPrecision`). Telemetry is off (`DEEPEVAL_TELEMETRY_OPT_OUT=YES`), no login, no judge model.
+6. DeepEval docs checked (metrics quick summary, synthetic data generation):
+   - Built-in LLM-judge metrics (G-Eval, RAG, agent, chatbot, safety, image, voice): not used. They judge free text or traces. Our output is a column choice checked against ground truth.
+   - DAG: could be deterministic, not used yet. Add when a rule needs more than one check.
+   - JevEval (scored by Jev, no LLM): not used. It is tied to the Jev scorer, which is removed.
+   - Synthetic data generation: not used. It makes new cases with an LLM from documents or scratch. A new case set would change the seed and split discipline (see section 16 and AGENTS.md), so it needs a decision first.
+   - Custom judge LLM: DeepEval supports a `DeepEvalBaseLLM` subclass. OpenRouter as a judge is not verified here; it would need a model call, so it waits for an explicit order.

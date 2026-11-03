@@ -9,6 +9,7 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 - Format: `uvx ruff@0.15.0 format src tests` (check only: `uvx ruff@0.15.0 format --check src tests`)
 - Lint: `make lint`
 - Test: `make test` (one file: `uv run pytest -q tests/core/test_selective.py`)
+- DeepEval check of a finished run, no model call: `uv run columnmap --deepeval results/<run folder>`
 - One module: not used, the repo is one package.
 
 ## Architecture
@@ -26,6 +27,7 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 - `src/columnmap/honest/`: the honest run, which picks the fields from the scores.
 - `src/columnmap/convert/`: fills the output file with the calibrated cutoff.
 - `src/columnmap/report/`: builds files, figures, and tables from all stages.
+- `src/columnmap/evaluate/`: DeepEval metrics on a finished run against the ground truth. Top-level, may use `calibrate` and `core`. DeepEval is imported only there.
 - `src/columnmap/main.py`, `calibrate.py`, `experiment.py`: entry points, may use any stage.
 
 ## Rules

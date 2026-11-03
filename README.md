@@ -40,6 +40,7 @@ uv run columnmap                 # samples a, b, c, d
 uv run columnmap --samples ac    # only a and c
 uv run columnmap --all           # all four samples
 uv run columnmap --report-only   # rebuild the newest run, no model
+uv run columnmap --deepeval results/<run>   # DeepEval metrics on a finished run, no model
 uv run columnmap --help          # all options
 ```
 
@@ -70,6 +71,7 @@ src/columnmap/
   convert/     converts files from decisions; metrics against ground truth (eval only)
   dataset/     synthetic samples and expected files (ground truth, eval only)
   report/      summary, figures, tables
+  evaluate/    DeepEval metrics on a finished run against ground truth (eval only)
   calibrate.py fits Platt parameters per setup; the key holds model, quant, mode, context, prompt, cutoff, and policy version
 ```
 
