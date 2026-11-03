@@ -23,7 +23,7 @@ from .report.build import make_report
 EPILOG = """examples (run with: uv run columnmap ...):
   columnmap                       run samples a, b, c, d into a new folder results/<samples>_<timestamp>/
   columnmap --samples ac          run only samples a and c
-  columnmap --all                 run all seven samples
+  columnmap --all                 run all four samples
   columnmap --conds name          show the model only the column names (no sample values)
   columnmap --mode pairs          slower, calibrated probabilities
   columnmap --mode both           run both modes and compare them
