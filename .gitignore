@@ -11,3 +11,4 @@ data/real/
 dist/
 docs/DOTAGENT-SETUP.md
 docs/TODO.md
+.deepeval/

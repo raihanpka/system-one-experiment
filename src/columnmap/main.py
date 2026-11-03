@@ -99,6 +99,11 @@ def main(argv=None, decider_factory=None) -> int:
         help="fit calibration parameters from these dev or calibration runs, write calibration.json, and stop",
     )
     ap.add_argument(
+        "--deepeval",
+        metavar="RUN",
+        help="run the DeepEval metrics on this finished run folder (no model call) and stop",
+    )
+    ap.add_argument(
         "--calibration",
         default=str(ROOT / "calibration.json"),
         help="calibration file (default calibration.json in the project)",
@@ -131,6 +136,11 @@ def main(argv=None, decider_factory=None) -> int:
         calibration.save()
         print("\n".join(lines) or "nothing to fit")
         print(f"written {calibration.path}")
+        return 0
+    if a.deepeval:
+        from .evaluate.run import evaluate_run
+
+        evaluate_run(_abs(a.deepeval))
         return 0
     seeds = (
         cfg["splits"][a.split]
