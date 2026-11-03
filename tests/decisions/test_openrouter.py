@@ -105,27 +105,25 @@ def test_http_error_is_raised_with_status_and_no_key_in_the_message():
     assert "sk-or-v1-secret" not in str(e.value)
 
 
-def test_factory_picks_openrouter_when_the_setting_says_so(monkeypatch):
+def test_settings_build_the_hosted_decider(monkeypatch):
+    from columnmap.core.settings import openrouter_settings
     from tests.settings_helpers import parse
-    from columnmap.decisions.factory import make_decider
 
     cfg = parse(
         {
-            "Backend": {"Type": "openrouter"},
             "OpenRouter": {
                 "Model": "m",
                 "BaseUrl": "u",
                 "ApiKeyEnv": "OPENROUTER_API_KEY",
             },
-            "Local": {"Quant": "Q8_0", "Ngl": 999},
-            "Run": {"Mode": "options", "TargetPrecision": 1.0, "Seed": 1},
+            "Run": {"Mode": "options", "TargetPrecision": 0.9, "Seed": 1},
             "Splits": {"Dev": [11], "Calibration": [12], "Test": [21]},
         },
         env={},
     )
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-x")
-    d = make_decider(cfg)()
-    assert isinstance(d, OpenRouterDecider)
+    d = OpenRouterDecider(**openrouter_settings(cfg))
+    assert d.run_meta == {"model": "m", "backend": "openrouter", "quant": "api"}
 
 
 def test_score_uses_the_real_index_keys_and_legend_from_the_api():

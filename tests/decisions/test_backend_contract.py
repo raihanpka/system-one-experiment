@@ -1,40 +1,9 @@
-# every backend returns raw scores per option (no temperature applied), and the top raw score is the chosen option
-import math
+# the hosted backend returns raw scores per option (no temperature applied), and the top raw score is the chosen option
 
 import pytest
 
-from columnmap.backends.jev_gguf import JevDecider
 from columnmap.backends.openrouter import OpenRouterDecider
 from columnmap.decisions.types import Choice, Level, Question
-
-
-class JevLike:
-    # shaped like JevStyleDecisionGGUF.score_many: raw scores in "scores", probabilities already scaled
-    def score_many(self, state, questions):
-        out = []
-        for q in questions:
-            if q["t"] == "noul":
-                names, scores = ["false", "true"], [-1.0, 0.5]
-            elif q["t"] == "choice":
-                names = [str(k) for k in q["crit"]]
-                scores = [0.2 * i for i in range(len(names))]
-            else:
-                names = [str(i) for i in range(len(q["crit"]))]
-                scores = [0.1, 1.5, -0.5][: len(names)]
-            top = max(range(len(scores)), key=scores.__getitem__)
-            probs = {n: 1 / (1 + math.exp(-s)) for n, s in zip(names, scores)}
-            out.append(
-                {
-                    "answer": names[top],
-                    "probabilities": probs,
-                    "scores": dict(zip(names, scores)),
-                    "entropy_concentration": 0.5,
-                    "input_tokens": 10,
-                    "state_tokens": 5,
-                    "model": "jev",
-                }
-            )
-        return out
 
 
 def openrouter_with(answers):
@@ -60,7 +29,6 @@ SCORE = Question(
 
 
 def deciders():
-    jev = JevDecider(backend=JevLike())
     hosted = openrouter_with(
         {
             "unit": {
@@ -75,7 +43,7 @@ def deciders():
             },
         }
     )
-    return [("jev", jev, "unit"), ("openrouter", hosted, "unit")]
+    return [("openrouter", hosted, "unit")]
 
 
 @pytest.mark.parametrize("name, decider, _", deciders())

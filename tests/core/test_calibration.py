@@ -53,7 +53,9 @@ def test_reliability_bins_give_mean_confidence_observed_rate_and_count():
 
 
 def test_calibration_file_round_trip_and_a_key_that_does_not_match_is_refused(tmp_path):
-    key = make_key("Jev-v3", "Q8_0", "options", "samples", "v1", "field")
+    key = make_key(
+        "~liquid/d1-ultra-latest", "api", "options", "samples", "v1", "field"
+    )
     c = Calibration(tmp_path / "calibration.json")
     c.set(key, a=1.2, b=-0.5, n=300, positives=40, seeds=[12, 13])
     c.save()
@@ -61,8 +63,10 @@ def test_calibration_file_round_trip_and_a_key_that_does_not_match_is_refused(tm
     assert again.get(key)["a"] == 1.2 and json.loads(
         (tmp_path / "calibration.json").read_text()
     )["entries"][key]["seeds"] == [12, 13]
-    other = make_key("Jev-v3", "Q4_K_M", "options", "samples", "v1", "field")
+    other = make_key(
+        "~liquid/d1-ultra-latest", "F16", "options", "samples", "v1", "field"
+    )
     with pytest.raises(CalibrationKeyError) as e:
         again.get(other)
-    assert "Q4_K_M" in str(e.value) and "refit" in str(e.value).lower()
+    assert "F16" in str(e.value) and "refit" in str(e.value).lower()
     assert again.get(other, missing_ok=True) is None

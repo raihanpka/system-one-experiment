@@ -61,6 +61,12 @@ class TransformOracle:
 
 
 class Generic:
+    run_meta = {
+        "model": "~liquid/d1-ultra-latest",
+        "backend": "openrouter",
+        "quant": "api",
+    }
+
     def __enter__(self):
         return self
 

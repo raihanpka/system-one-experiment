@@ -145,3 +145,12 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 3. Fit on seed 12 only. Held-out check on seed 13: pair ECE 0.006 calibrated; field ECE 0.072 (name, 57 points) and 0.099 (name+values, 62 points). Target for field ECE is no longer used (see section 14).
 4. Cutoff at 100 percent precision: none. Nothing is filled automatically with TargetPrecision 1.0.
 5. Deterministic check added (`core/validate.py`): a field whose converted cells fail the template type (date ISO, number finite, string not blank) is never filled automatically.
+
+## 16. Local Model Removed, OpenRouter Only
+
+1. The local Jev GGUF runtime is removed: adapter, device setting, local settings, setup and bench scripts, make targets, and the `vendor/jev-v3-2b-gguf/` model files (1.9 GB, deleted on request).
+2. `Backend` settings removed. There is one backend, so the switch had no effect. `OpenRouterDecider` is built directly in `main.py`; the factory is gone.
+3. Report labels name the model from the run record instead of the local runtime name. Figures and tables are not rerun here.
+4. Calibration keys keep their format. Hosted runs record quant `api`, so `calibration.json` needs no refit.
+5. `appsettings.json.examples` now shows `Run:TargetPrecision` 0.9, the committed value, and not the old 1.0.
+6. The format and lint commands in `.githooks/` and `ci-pr.yml` check `src tests` only, since `scripts/` is gone.

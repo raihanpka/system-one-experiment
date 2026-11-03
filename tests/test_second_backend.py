@@ -39,7 +39,7 @@ def test_second_backend_runs_end_to_end_and_its_key_is_not_the_first_backends_ke
     assert (run / "report" / "summary.md").exists()
     second = setup_key(meta, "options", "name", "field")
     first = setup_key(
-        {**meta, "model": "Jev-Style-2B-Decision-v3", "quant": "Q8_0"},
+        {**meta, "model": "~liquid/d1-ultra-latest", "quant": "api"},
         "options",
         "name",
         "field",

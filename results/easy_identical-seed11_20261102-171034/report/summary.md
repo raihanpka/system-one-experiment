@@ -1,8 +1,8 @@
 # Results
 
-Model: Jev-Style-2B-Decision-v3 (llama.cpp, local). Output fields are always given by name only. For each input column the model sees: **name only** = the header text; **name + values** = the header and 5 values taken from the rows (file keys: `name`, `samples`).
+Model: ~liquid/d1-ultra-latest (hosted, OpenRouter). Output fields are always given by name only. For each input column the model sees: **name only** = the header text; **name + values** = the header and 5 values taken from the rows (file keys: `name`, `samples`).
 
-| sample | input, expected, ground truth | Jev outputs (this run) | input naming |
+| sample | input, expected, ground truth | model outputs (this run) | input naming |
 |---|---|---|---|
 | a | data/samples/a_easy_identical/ | a_easy_identical/ | identical names |
 
@@ -27,12 +27,12 @@ Heatmaps: `figures/heatmap_<sample>_<context>.svg`.
 
 ## Auto-Fill or Review
 
-- name only: no cutoff reaches 100% precision with enough fields, so nothing is filled automatically.
-- name + values: no cutoff reaches 100% precision with enough fields, so nothing is filled automatically.
+- name only: no cutoff reaches 90% precision with enough fields, so nothing is filled automatically.
+- name + values: no cutoff reaches 90% precision with enough fields, so nothing is filled automatically.
 
 Fields below the cutoff stay empty in `converted_*.csv` and are listed with three candidates in `review_*.csv`. Precision counts a filled field as right only when every cell matches; a field without a source that was filled counts as wrong. Coverage is the share of fields with a source that were filled.
 
-| Jev sees | sample | fields filled | filled correct | precision % | coverage % | fields to review |
+| Model sees | sample | fields filled | filled correct | precision % | coverage % | fields to review |
 |---|---|---|---|---|---|---|
 | name only | easy_identical-000 | 0 | 0 | - | 0.0 | 31 |
 | name + values | easy_identical-000 | 0 | 0 | - | 0.0 | 31 |
@@ -43,7 +43,7 @@ Fields below the cutoff stay empty in `converted_*.csv` and are listed with thre
 
 ECE is the average gap between predicted probability and observed frequency (0 is perfect). Held-out means this run was not used to fit.
 
-| Jev sees | level | points | ECE uncalibrated | ECE calibrated | data |
+| Model sees | level | points | ECE uncalibrated | ECE calibrated | data |
 |---|---|---|---|---|---|
 | name only | pair | 465 | 0.009 | 0.009 | held-out |
 | name only | field | 15 | 0.193 | 0.129 | held-out |
@@ -56,21 +56,21 @@ All numbers are percentages unless noted. Samples, easiest to hardest: easy_iden
 
 Columns, transformation, and expression all come from the model's own choices. Fields correct = every cell matches the expected file. Wrongly filled = fields that have no source but were filled.
 
-| Jev sees | sample | fields with a source correct | fields without a source wrongly filled | cells expected | cells correct % | wrongly filled cells |
+| Model sees | sample | fields with a source correct | fields without a source wrongly filled | cells expected | cells correct % | wrongly filled cells |
 |---|---|---|---|---|---|---|
 | name only | easy_identical-000 | 11 of 15 | 2 of 16 | 255 | 73.3 | 34 |
 | name + values | easy_identical-000 | 11 of 15 | 2 of 16 | 255 | 73.3 | 34 |
 
 ## Mapping: Which Input Column Feeds Each Output Field (options mode)
 
-### Jev sees: name only
+### Model sees: name only
 
 | sample | cases | top1 | exact | top3 | reject n/a | decoy flagged | pair F1 | ECE |
 |---|---|---|---|---|---|---|---|---|
 | easy_identical | 1 | 100.0 | 100.0 | 100.0 | 87.5 | - | 81.2 | 0.009 |
 | all | 1 | 100.0 | 100.0 | 100.0 | 87.5 | - | 81.2 | 0.009 |
 
-### Jev sees: name + values
+### Model sees: name + values
 
 | sample | cases | top1 | exact | top3 | reject n/a | decoy flagged | pair F1 | ECE |
 |---|---|---|---|---|---|---|---|---|
@@ -87,7 +87,7 @@ Columns, transformation, and expression all come from the model's own choices. F
 
 Probability = sigmoid((s_true - s_false) / T). T = 0.828 is the calibrated value. top1 does not depend on T.
 
-Jev sees: name only
+Model sees: name only
 
 | T | ECE | Brier | pair F1 | precision | recall |
 |---|---|---|---|---|---|
@@ -99,7 +99,7 @@ Jev sees: name only
 | 2.000 | 0.051 | 0.012 | 81.2 | 86.7 | 76.5 |
 | 3.000 | 0.116 | 0.023 | 81.2 | 86.7 | 76.5 |
 
-Jev sees: name + values
+Model sees: name + values
 
 | T | ECE | Brier | pair F1 | precision | recall |
 |---|---|---|---|---|---|
@@ -115,7 +115,7 @@ Jev sees: name + values
 
 A field is kept when its best input column passes the rule. Kept = fields with a source that are kept; Rejected = fields without a source that are left empty; Decoys = kept fields whose best column is a distractor. Cutoffs fitted on this run are optimistic (same data); cutoffs fitted on another run are a fair test.
 
-| Jev sees | rule | kept % | rejected % | balanced % | top-1 when kept % | distractors |
+| Model sees | rule | kept % | rejected % | balanced % | top-1 when kept % | distractors |
 |---|---|---|---|---|---|---|
 | name only | fixed, probability 0.5 | 86.7 | 87.5 | 87.1 | 100.0 | 0 |
 | name only | score cutoff -2.11, fitted on this run, optimistic | 100.0 | 87.5 | 93.8 | 100.0 | 0 |

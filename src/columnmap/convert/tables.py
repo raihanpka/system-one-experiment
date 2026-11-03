@@ -41,7 +41,7 @@ def honest_tables(store, cases, conds, only=None) -> list[str]:
         "",
         md_table(
             [
-                "Jev sees",
+                "Model sees",
                 "sample",
                 "fields with a source correct",
                 "fields without a source wrongly filled",
@@ -106,7 +106,7 @@ def rule_tables(
         "",
         md_table(
             [
-                "Jev sees",
+                "Model sees",
                 "rule",
                 "kept %",
                 "rejected %",

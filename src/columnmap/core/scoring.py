@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-T0 = 0.8278650620942867  # calibrated global temperature of Jev v3
+T0 = 0.8278650620942867  # global temperature fitted on the earlier local runs, maps raw scores to p
 TS = (0.5, 0.7, T0, 1.0, 1.5, 2.0, 3.0)  # temperatures swept offline
 
 

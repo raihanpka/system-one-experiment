@@ -17,8 +17,8 @@ Each module owns one thing. Import the module, there is no single public file.
 | Module | Owns | May depend on | Public interface |
 |---|---|---|---|
 | `core/` | settings, paths, scoring, calibration, selective cutoff, validation, prompts, template | none of the stages | the module itself |
-| `decisions/` | decider interface, question and answer types, backend factory | `core` (settings), `backends` (imported inside the factory function only) | `base.py`, `factory.py` |
-| `backends/` | OpenRouter adapter and local Jev GGUF adapter | `core`, `decisions` | `openrouter.py`, `jev_gguf.py` |
+| `decisions/` | decider interface and question and answer types | none | `base.py`, `types.py` |
+| `backends/` | OpenRouter adapter, the only backend | `core`, `decisions` | `openrouter.py` |
 | `dataset/` | template and sample CSV files (`make data`) | `core` | `export.py`, `samples.py` |
 | `mapping/` | score of each input column for each output field | `core`, `decisions`, `dataset` | `run.py`, `metrics.py` |
 | `honest/` | the honest run that picks fields from the scores | `core`, `decisions` | `run.py` |
@@ -35,7 +35,7 @@ grep -rnE "from \.\.(honest|convert|report)" src/columnmap/mapping src/columnmap
 grep -rnE "from \.\.report" src/columnmap/convert
 ```
 
-All three print nothing. Known cycle, not a stage rule: `decisions/factory.py` imports `backends` inside its functions, and `backends` imports `decisions.types` at load time. It loads without error because the import is lazy.
+All three print nothing.
 
 ## Boundary check
 

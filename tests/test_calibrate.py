@@ -222,8 +222,8 @@ def test_a_calibrated_cutoff_keeps_low_confidence_fields_out_of_the_converted_fi
 
 def test_key_carries_the_policy_version_so_a_changed_rule_refuses_old_fits(tmp_path):
     meta = {
-        "model": "Jev-Style-2B-Decision-v3",
-        "quant": "Q8_0",
+        "model": "~liquid/d1-ultra-latest",
+        "quant": "api",
         "prompt_version": "v1",
         "keep_d": 0.0,
     }

@@ -9,7 +9,6 @@ import os
 import re
 from pathlib import Path
 
-from .device import resolve_device
 from .paths import ENV_FILE, SETTINGS, SETTINGS_LOCAL
 
 PREFIX = "COLUMNMAP__"
@@ -42,11 +41,6 @@ def load_dotenv(path=ENV_FILE, environ=None) -> dict:
     return loaded
 
 
-BACKENDS = (
-    "openrouter",
-    "local",
-)  # openrouter is the default (hosted); local runs the Jev GGUF model on this machine
-QUANTS = ("F16", "Q8_0", "Q4_K_M")
 RUN_MODES = ("options", "pairs", "both")
 REQUIRED_OPENROUTER = {
     "model": "Model",
@@ -92,24 +86,24 @@ def env_overrides(env) -> dict:
     return out
 
 
+REMOVED = {"backend": "Backend", "local": "Local", "device": "Device"}
+
+
 def validate(cfg: dict) -> dict:
-    backend = cfg.setdefault("backend", {})
-    kind = str(backend.get("type", "openrouter")).lower()
-    if kind not in BACKENDS:
-        raise ValueError(
-            f"Backend:Type must be one of {', '.join(BACKENDS)}, got {backend.get('type')!r}"
-        )
-    backend["type"] = kind
-    if kind == "openrouter":
-        section = cfg.get("open_router", {})
-        for key, pascal in REQUIRED_OPENROUTER.items():
-            if not section.get(key):
-                raise ValueError(f"OpenRouter:{pascal} is required in appsettings.json")
-    local = cfg.get("local", {})
-    if local.get("quant") not in QUANTS:
-        raise ValueError(f"Local:Quant must be one of {', '.join(QUANTS)}")
-    if "ngl" not in local:
-        raise ValueError("Local:Ngl is required")
+    for key, pascal in REMOVED.items():
+        if (
+            key in cfg
+        ):  # refuse, never ignore: a leftover local setting must not send data elsewhere silently
+            raise ValueError(
+                f"{pascal} settings were removed with the local model: delete the {pascal} section "
+                "from appsettings.local.json and COLUMNMAP__"
+                + pascal
+                + "__* from the environment"
+            )
+    section = cfg.get("open_router", {})
+    for key, pascal in REQUIRED_OPENROUTER.items():
+        if not section.get(key):
+            raise ValueError(f"OpenRouter:{pascal} is required in appsettings.json")
     run = cfg.get("run", {})
     if run.get("mode") not in RUN_MODES:
         raise ValueError(f"Run:Mode must be one of {', '.join(RUN_MODES)}")
@@ -117,9 +111,6 @@ def validate(cfg: dict) -> dict:
         raise ValueError("Run:TargetPrecision must be in (0, 1]")
     if "seed" not in run:
         raise ValueError("Run:Seed is required")
-    resolve_device(
-        cfg.get("device", {}).get("mode", "auto")
-    )  # raises on an unknown mode
     for split in ("dev", "calibration", "test"):
         if not isinstance(cfg.get("splits", {}).get(split), list):
             raise ValueError(f"Splits:{split.capitalize()} must be a list of seeds")
@@ -134,14 +125,6 @@ def load_settings(defaults=SETTINGS, local=SETTINGS_LOCAL, env=None) -> dict:
     if Path(local).exists():
         cfg = merge(cfg, normalize(json.loads(Path(local).read_text(encoding="utf-8"))))
     return validate(merge(cfg, env_overrides(env)))
-
-
-# local scorer options: the device decides GPU layers (cpu = 0, metal keeps the configured ngl)
-def model_options(cfg: dict) -> dict:
-    opts = dict(cfg["local"])
-    if resolve_device(cfg.get("device", {}).get("mode", "auto")) == "cpu":
-        opts["ngl"] = 0
-    return opts
 
 
 # OpenRouter settings: model and base URL from the file, the key from the environment only

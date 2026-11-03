@@ -7,8 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 from .core.paths import DATA, ROOT
-from .core.settings import load_settings
-from .decisions.factory import backend_meta, make_decider
+from .backends.openrouter import OpenRouterDecider
+from .core.settings import load_settings, openrouter_settings
 from .calibrate import fit as fit_calibration
 from .core.calibration import Calibration
 from .core.runs import new_run_dir, newest_run
@@ -23,7 +23,7 @@ from .report.build import make_report
 EPILOG = """examples (run with: uv run columnmap ...):
   columnmap                       run samples a, b, c, d into a new folder results/<samples>_<timestamp>/
   columnmap --samples ac          run only samples a and c
-  columnmap --all                 run all seven samples
+  columnmap --all                 run all four samples
   columnmap --conds name          show the model only the column names (no sample values)
   columnmap --mode pairs          slower, calibrated probabilities
   columnmap --mode both           run both modes and compare them
@@ -44,7 +44,7 @@ def main(argv=None, decider_factory=None) -> int:
     cfg = load_settings()
     ap = argparse.ArgumentParser(
         prog="columnmap",
-        description="Run Jev on sample files and write the results.",
+        description="Run the model on sample files and write the results.",
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -212,12 +212,13 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     if not a.report_only:
         if decider_factory is None:
             try:
-                decider_factory = make_decider(cfg)
+                opts = openrouter_settings(cfg)
             except ValueError as e:
                 ap.error(str(e))
+            decider_factory = lambda: OpenRouterDecider(**opts)
         with decider_factory() as d:
             run_models(d, sel, conds, modes, store, t, keep=keep)
-            identity = getattr(d, "run_meta", None) or backend_meta(cfg)
+            identity = d.run_meta
         store.data["meta"].update(
             {
                 **identity,
