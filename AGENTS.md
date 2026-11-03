@@ -31,7 +31,7 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 ## Rules
 
 - Branch from `main`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: calibration, convert, core, dataset, decisions, honest, mapping, report, settings, ontology, results, gitignore, deps, docs, test, format.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: calibration, convert, core, dataset, decisions, honest, mapping, report, settings, ontology, results, gitignore, deps, docs, test, format, cli.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
 - Never edit generated files: `data/` (regenerate with `make data`), `results/` (run output), `calibration.json` (refit with `uv run columnmap --fit-calibration <run folders>`).

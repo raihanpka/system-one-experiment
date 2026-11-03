@@ -67,6 +67,8 @@ def test_a_leftover_local_setting_is_refused_not_ignored():
         parse(with_(Backend={"Type": "local"}), env={})
     with pytest.raises(ValueError, match="Local settings were removed"):
         parse(BASE, env={"COLUMNMAP__Local__Quant": "Q8_0"})
+    with pytest.raises(ValueError, match="Device settings were removed"):
+        parse(with_(Device={"Mode": "cpu"}), env={})
 
 
 def test_openrouter_needs_model_and_base_url_and_key_env_name():
