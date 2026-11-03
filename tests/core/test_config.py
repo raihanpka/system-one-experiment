@@ -62,6 +62,13 @@ def test_local_file_overrides_defaults_without_touching_the_committed_file(tmp_p
     assert json.loads(SETTINGS.read_text())["Run"]["Seed"] == 1234
 
 
+def test_a_leftover_local_setting_is_refused_not_ignored():
+    with pytest.raises(ValueError, match="Backend settings were removed"):
+        parse(with_(Backend={"Type": "local"}), env={})
+    with pytest.raises(ValueError, match="Local settings were removed"):
+        parse(BASE, env={"COLUMNMAP__Local__Quant": "Q8_0"})
+
+
 def test_openrouter_needs_model_and_base_url_and_key_env_name():
     d = with_(OpenRouter={"Model": "", "BaseUrl": "https://x", "ApiKeyEnv": "K"})
     with pytest.raises(ValueError, match="OpenRouter:Model is required"):

@@ -86,7 +86,20 @@ def env_overrides(env) -> dict:
     return out
 
 
+REMOVED = {"backend": "Backend", "local": "Local", "device": "Device"}
+
+
 def validate(cfg: dict) -> dict:
+    for key, pascal in REMOVED.items():
+        if (
+            key in cfg
+        ):  # refuse, never ignore: a leftover local setting must not send data elsewhere silently
+            raise ValueError(
+                f"{pascal} settings were removed with the local model: delete the {pascal} section "
+                "from appsettings.local.json and COLUMNMAP__"
+                + pascal
+                + "__* from the environment"
+            )
     section = cfg.get("open_router", {})
     for key, pascal in REQUIRED_OPENROUTER.items():
         if not section.get(key):
