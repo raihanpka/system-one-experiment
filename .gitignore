@@ -9,3 +9,6 @@ tasks/
 appsettings.local.json
 .claude/
 data/real/
+dist/
+docs/DOTAGENT-SETUP.md
+docs/TODO.md
