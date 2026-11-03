@@ -21,9 +21,20 @@ def setup_style() -> bool:
         ok = True
     except ValueError:
         ok = False
-    sns.set_theme(style="whitegrid", context="paper", palette="colorblind",
-                  rc={"font.family": "serif", "font.serif": [FONT, "Times", "DejaVu Serif"], "svg.fonttype": "none",
-                      "axes.titlesize": 11, "axes.labelsize": 10, "legend.fontsize": 9, "figure.dpi": 100})
+    sns.set_theme(
+        style="whitegrid",
+        context="paper",
+        palette="colorblind",
+        rc={
+            "font.family": "serif",
+            "font.serif": [FONT, "Times", "DejaVu Serif"],
+            "svg.fonttype": "none",
+            "axes.titlesize": 11,
+            "axes.labelsize": 10,
+            "legend.fontsize": 9,
+            "figure.dpi": 100,
+        },
+    )
     return ok
 
 
@@ -32,13 +43,16 @@ ISSUES: list[str] = []
 
 def legend_outside(ax, **kw):
     # legend beside the plot, never on top of the data
-    leg = ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False, fontsize=8, **kw)
+    leg = ax.legend(
+        loc="upper left", bbox_to_anchor=(1.01, 1), frameon=False, fontsize=8, **kw
+    )
     leg.set_gid("legend-outside")
     return leg
 
 
 def save(fig, path) -> Path:
     from .figcheck import check_figure
+
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     for ax in fig.axes:

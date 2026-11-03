@@ -23,34 +23,65 @@ class JevLike:
                 scores = [0.1, 1.5, -0.5][: len(names)]
             top = max(range(len(scores)), key=scores.__getitem__)
             probs = {n: 1 / (1 + math.exp(-s)) for n, s in zip(names, scores)}
-            out.append({"answer": names[top], "probabilities": probs, "scores": dict(zip(names, scores)),
-                        "entropy_concentration": 0.5, "input_tokens": 10, "state_tokens": 5, "model": "jev"})
+            out.append(
+                {
+                    "answer": names[top],
+                    "probabilities": probs,
+                    "scores": dict(zip(names, scores)),
+                    "entropy_concentration": 0.5,
+                    "input_tokens": 10,
+                    "state_tokens": 5,
+                    "model": "jev",
+                }
+            )
         return out
 
 
 def openrouter_with(answers):
     def transport(url, headers, body, timeout):
         return {"model": "m", "answers": answers}
+
     return OpenRouterDecider("k", "m", "u", transport=transport)
 
 
-CHOICE = Question("choice", "which?", name="unit", choices=(Choice("EUR"), Choice("USD"), Choice("GBP")))
+CHOICE = Question(
+    "choice",
+    "which?",
+    name="unit",
+    choices=(Choice("EUR"), Choice("USD"), Choice("GBP")),
+)
 PRED = Question("predicate", "is it a date?", name="is_date")
-SCORE = Question("score", "how urgent?", name="urgency", levels=(Level("low"), Level("mid"), Level("high")))
+SCORE = Question(
+    "score",
+    "how urgent?",
+    name="urgency",
+    levels=(Level("low"), Level("mid"), Level("high")),
+)
 
 
 def deciders():
     jev = JevDecider(backend=JevLike())
-    hosted = openrouter_with({
-        "unit": {"choice": "USD", "probabilities": {"EUR": 0.2, "USD": 0.7, "GBP": 0.1}},
-        "is_date": {"noul": 0.8},
-        "urgency": {"score": 1.0, "legend": {"0": "low", "1": "mid", "2": "high"}, "probabilities": {"0": 0.2, "1": 0.6, "2": 0.2}},
-    })
+    hosted = openrouter_with(
+        {
+            "unit": {
+                "choice": "USD",
+                "probabilities": {"EUR": 0.2, "USD": 0.7, "GBP": 0.1},
+            },
+            "is_date": {"noul": 0.8},
+            "urgency": {
+                "score": 1.0,
+                "legend": {"0": "low", "1": "mid", "2": "high"},
+                "probabilities": {"0": 0.2, "1": 0.6, "2": 0.2},
+            },
+        }
+    )
     return [("jev", jev, "unit"), ("openrouter", hosted, "unit")]
 
 
 @pytest.mark.parametrize("name, decider, _", deciders())
-def test_choice_raw_scores_name_every_option_and_the_top_one_is_the_answer(name, decider, _):
+def test_choice_raw_scores_name_every_option_and_the_top_one_is_the_answer(
+    name, decider, _
+):
     a = decider.decide("column", [CHOICE]).answers[0]
     assert set(a.raw_scores) == {"EUR", "USD", "GBP"}
     assert max(a.raw_scores, key=a.raw_scores.get) == a.choice

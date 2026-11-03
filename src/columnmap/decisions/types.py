@@ -46,15 +46,17 @@ class Question:
 
 @dataclass
 class Answer:
-    type: str                      # predicate | choice | score | refusal
+    type: str  # predicate | choice | score | refusal
     name: str | None = None
-    probability: float | None = None          # predicate
-    choice: str | None = None                 # choice
-    score: float | None = None                # score
+    probability: float | None = None  # predicate
+    choice: str | None = None  # choice
+    score: float | None = None  # score
     confidence: float | None = None
-    probabilities: dict | None = None         # choice: value -> p ; score: label -> p (level order)
-    message: str | None = None                # refusal
-    raw_scores: dict | None = None            # extension (Jev): logit(yes)-logit(no) per option
+    probabilities: dict | None = (
+        None  # choice: value -> p ; score: label -> p (level order)
+    )
+    message: str | None = None  # refusal
+    raw_scores: dict | None = None  # extension (Jev): logit(yes)-logit(no) per option
 
 
 @dataclass

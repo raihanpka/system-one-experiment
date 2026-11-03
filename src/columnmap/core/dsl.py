@@ -46,11 +46,15 @@ def render(node: dict, name_of) -> str:
         return json.dumps(node["lit"], ensure_ascii=False)
     op, args = node["op"], node.get("args", ())
     if op in _ARITH:
+
         def side(a, right):
             s = render(a, name_of)
-            if a.get("op") in _PREC and (_PREC[a["op"]] < _PREC[op] or (right and _PREC[a["op"]] == _PREC[op])):
+            if a.get("op") in _PREC and (
+                _PREC[a["op"]] < _PREC[op] or (right and _PREC[a["op"]] == _PREC[op])
+            ):
                 return f"({s})"
             return s
+
         return f"{side(args[0], False)} {_ARITH[op]} {side(args[1], True)}"
     if op == "concat":
         sep = json.dumps(node["sep"], ensure_ascii=False)

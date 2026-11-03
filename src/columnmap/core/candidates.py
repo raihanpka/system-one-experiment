@@ -58,12 +58,24 @@ def _pair(a: dict, b: dict, ta: str, tb: str) -> list[dict]:
     out = []
     if ta == tb == "number":
         one = {"lit": 1}
-        out += [_op("add", a, b), _op("sub", a, b), _op("sub", b, a), _op("mul", a, b), _op("div", a, b), _op("div", b, a),
-                _op("mul", a, _op("add", one, b)), _op("mul", a, _op("sub", one, b)),
-                _op("mul", b, _op("add", one, a)), _op("mul", b, _op("sub", one, a))]
+        out += [
+            _op("add", a, b),
+            _op("sub", a, b),
+            _op("sub", b, a),
+            _op("mul", a, b),
+            _op("div", a, b),
+            _op("div", b, a),
+            _op("mul", a, _op("add", one, b)),
+            _op("mul", a, _op("sub", one, b)),
+            _op("mul", b, _op("add", one, a)),
+            _op("mul", b, _op("sub", one, a)),
+        ]
     elif ta == tb == "date":
         out += [_op("days_between", a, b), _op("days_between", b, a)]
-    if "date" not in (ta, tb):                                    # identifiers such as postal codes look numeric but join like text
+    if "date" not in (
+        ta,
+        tb,
+    ):  # identifiers such as postal codes look numeric but join like text
         out += [_concat(sep, x, y) for x, y in ((a, b), (b, a)) for sep in SEPS]
     return out
 
@@ -110,8 +122,13 @@ def candidates(cols, limit: int = LIMIT, out_type: str | None = None) -> list[di
         if key not in seen:
             seen.add(key)
             unique.append((key, c))
-    if out_type in ("date", "number"):                             # a date or number field must receive a date or number
+    if out_type in (
+        "date",
+        "number",
+    ):  # a date or number field must receive a date or number
         types_by_name = {name: t for (name, _), t in zip(cols, types)}
-        unique = [(k, c) for k, c in unique if result_type(c, types_by_name) == out_type]
+        unique = [
+            (k, c) for k, c in unique if result_type(c, types_by_name) == out_type
+        ]
     unique.sort(key=lambda kc: (_size(kc[1]), kc[0]))
     return [c for _, c in unique[:limit]]

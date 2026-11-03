@@ -33,10 +33,17 @@ def pool_state(names: list[str], rows: list[dict]) -> str:
 
 
 def pick_question(field: str, options: list[str]) -> Question:
-    return Question("choice", f"Which expression produces the output field '{field}' from these input columns?", name="pick",
-                    choices=tuple(Choice(o) for o in options))
+    return Question(
+        "choice",
+        f"Which expression produces the output field '{field}' from these input columns?",
+        name="pick",
+        choices=tuple(Choice(o) for o in options),
+    )
 
 
 def check_question(field: str, ast: dict, rows: list[dict], name: str) -> Question:
-    return Question("predicate", f"The output field '{field}' is computed as: {expression_text(ast)} (for example {'; '.join(examples(ast, rows))}).",
-                    name=name)
+    return Question(
+        "predicate",
+        f"The output field '{field}' is computed as: {expression_text(ast)} (for example {'; '.join(examples(ast, rows))}).",
+        name=name,
+    )

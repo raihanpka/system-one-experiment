@@ -27,21 +27,32 @@ def load_dotenv(path=ENV_FILE, environ=None) -> dict:
         if not line or line.startswith("#") or "=" not in line:
             continue
         if line.startswith("export "):
-            line = line[len("export "):].lstrip()
+            line = line[len("export ") :].lstrip()
         key, _, value = line.partition("=")
         key, value = key.strip(), value.strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
         else:
-            value = value.split(" #", 1)[0].rstrip()          # inline comment after a bare value
+            value = value.split(" #", 1)[
+                0
+            ].rstrip()  # inline comment after a bare value
         if key and key not in environ:
             environ[key] = value
             loaded[key] = value
     return loaded
-BACKENDS = ("openrouter", "local")          # openrouter is the default (hosted); local runs the Jev GGUF model on this machine
+
+
+BACKENDS = (
+    "openrouter",
+    "local",
+)  # openrouter is the default (hosted); local runs the Jev GGUF model on this machine
 QUANTS = ("F16", "Q8_0", "Q4_K_M")
 RUN_MODES = ("options", "pairs", "both")
-REQUIRED_OPENROUTER = {"model": "Model", "base_url": "BaseUrl", "api_key_env": "ApiKeyEnv"}
+REQUIRED_OPENROUTER = {
+    "model": "Model",
+    "base_url": "BaseUrl",
+    "api_key_env": "ApiKeyEnv",
+}
 
 
 def snake(name: str) -> str:
@@ -57,7 +68,11 @@ def normalize(obj):
 def merge(base: dict, over: dict) -> dict:
     out = dict(base)
     for k, v in over.items():
-        out[k] = merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+        out[k] = (
+            merge(out[k], v)
+            if isinstance(v, dict) and isinstance(out.get(k), dict)
+            else v
+        )
     return out
 
 
@@ -66,12 +81,12 @@ def env_overrides(env) -> dict:
     for name, value in env.items():
         if not name.startswith(PREFIX):
             continue
-        parts = [snake(p) for p in name[len(PREFIX):].split("__")]
+        parts = [snake(p) for p in name[len(PREFIX) :].split("__")]
         node = out
         for p in parts[:-1]:
             node = node.setdefault(p, {})
         try:
-            node[parts[-1]] = json.loads(value)            # numbers, lists, true/false, null
+            node[parts[-1]] = json.loads(value)  # numbers, lists, true/false, null
         except ValueError:
             node[parts[-1]] = value
     return out
@@ -81,7 +96,9 @@ def validate(cfg: dict) -> dict:
     backend = cfg.setdefault("backend", {})
     kind = str(backend.get("type", "openrouter")).lower()
     if kind not in BACKENDS:
-        raise ValueError(f"Backend:Type must be one of {', '.join(BACKENDS)}, got {backend.get('type')!r}")
+        raise ValueError(
+            f"Backend:Type must be one of {', '.join(BACKENDS)}, got {backend.get('type')!r}"
+        )
     backend["type"] = kind
     if kind == "openrouter":
         section = cfg.get("open_router", {})
@@ -100,7 +117,9 @@ def validate(cfg: dict) -> dict:
         raise ValueError("Run:TargetPrecision must be in (0, 1]")
     if "seed" not in run:
         raise ValueError("Run:Seed is required")
-    resolve_device(cfg.get("device", {}).get("mode", "auto"))          # raises on an unknown mode
+    resolve_device(
+        cfg.get("device", {}).get("mode", "auto")
+    )  # raises on an unknown mode
     for split in ("dev", "calibration", "test"):
         if not isinstance(cfg.get("splits", {}).get(split), list):
             raise ValueError(f"Splits:{split.capitalize()} must be a list of seeds")
@@ -132,5 +151,7 @@ def openrouter_settings(cfg: dict, env=None) -> dict:
     name = section["api_key_env"]
     key = env.get(name, "").strip()
     if not key:
-        raise ValueError(f"{name} is not set: export it or put it in .env (copy .env.example)")
+        raise ValueError(
+            f"{name} is not set: export it or put it in .env (copy .env.example)"
+        )
     return {"model": section["model"], "base_url": section["base_url"], "api_key": key}

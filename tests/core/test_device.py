@@ -3,12 +3,15 @@ import pytest
 from columnmap.core.device import resolve_device
 
 
-@pytest.mark.parametrize("system, machine, expected", [
-    ("Darwin", "arm64", "metal"),
-    ("Darwin", "x86_64", "cpu"),
-    ("Linux", "x86_64", "cpu"),
-    ("Linux", "aarch64", "cpu"),
-])
+@pytest.mark.parametrize(
+    "system, machine, expected",
+    [
+        ("Darwin", "arm64", "metal"),
+        ("Darwin", "x86_64", "cpu"),
+        ("Linux", "x86_64", "cpu"),
+        ("Linux", "aarch64", "cpu"),
+    ],
+)
 def test_auto_picks_metal_on_apple_silicon_and_cpu_elsewhere(system, machine, expected):
     assert resolve_device("auto", system=system, machine=machine) == expected
 

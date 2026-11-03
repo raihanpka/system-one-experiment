@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 
-MIN_SUPPORT = 15            # a cutoff backed by fewer fields than this is not trusted
-CONF = 0.95                 # confidence of the precision lower bound used to choose a cutoff
+MIN_SUPPORT = 15  # a cutoff backed by fewer fields than this is not trusted
+CONF = 0.95  # confidence of the precision lower bound used to choose a cutoff
 
 
 # for each confidence cutoff: precision of the fields at or above it and how many there are; ascending cutoff
@@ -35,7 +35,13 @@ def _binom_tail(k: int, n: int, p: float) -> float:
     lp, lq = math.log(p), math.log1p(-p)
     total = 0.0
     for i in range(k, n + 1):
-        total += math.exp(math.lgamma(n + 1) - math.lgamma(i + 1) - math.lgamma(n - i + 1) + i * lp + (n - i) * lq)
+        total += math.exp(
+            math.lgamma(n + 1)
+            - math.lgamma(i + 1)
+            - math.lgamma(n - i + 1)
+            + i * lp
+            + (n - i) * lq
+        )
     return min(total, 1.0)
 
 
@@ -58,7 +64,13 @@ def precision_lower_bound(correct: int, n: int, conf: float = CONF) -> float:
 
 # the loosest cutoff whose precision lower bound meets the target with enough fields behind it; None when no cutoff does.
 # A target of 1.0 is never met: a lower bound is below 1 for any finite number of fields.
-def choose_tau(curve, target: float, min_support: int = MIN_SUPPORT, conf: float = CONF) -> float | None:
-    ok = [c[0] for c in curve
-          if c[2] >= min_support and precision_lower_bound(round(c[1] * c[2]), int(c[2]), conf) >= target]
+def choose_tau(
+    curve, target: float, min_support: int = MIN_SUPPORT, conf: float = CONF
+) -> float | None:
+    ok = [
+        c[0]
+        for c in curve
+        if c[2] >= min_support
+        and precision_lower_bound(round(c[1] * c[2]), int(c[2]), conf) >= target
+    ]
     return min(ok) if ok else None

@@ -14,5 +14,7 @@ def new_run_dir(root: Path, names: str, now: datetime | None = None) -> Path:
 
 # the newest run folder, found from the timestamp at the end of the folder name
 def newest_run(root: Path) -> Path | None:
-    runs = [p for p in Path(root).glob("*_*") if p.is_dir()] if Path(root).exists() else []
+    runs = (
+        [p for p in Path(root).glob("*_*") if p.is_dir()] if Path(root).exists() else []
+    )
     return max(runs, key=lambda p: p.name.rsplit("_", 1)[-1], default=None)

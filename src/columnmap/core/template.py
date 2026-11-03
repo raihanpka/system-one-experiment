@@ -13,7 +13,13 @@ OPS = {"concat", "add", "sub", "mul", "div", "year", "days_between", "lookup"}
 GENS = {"id", "pick", "date", "money", "rate"}
 KINDS = {"pass", "concat", "arith", "format", "lookup"}
 # how a template output kind is named when the model is asked about it, and what each name means
-KIND_LABEL = {"pass": "passthrough", "concat": "concat", "arith": "arithmetic", "format": "format", "lookup": "lookup"}
+KIND_LABEL = {
+    "pass": "passthrough",
+    "concat": "concat",
+    "arith": "arithmetic",
+    "format": "format",
+    "lookup": "lookup",
+}
 KIND_DESC = {
     "passthrough": "the value is copied unchanged from one input column",
     "concat": "text from several input columns is joined together",
@@ -41,7 +47,9 @@ def rule_sources(rule) -> list[str]:
 
 def _rule_problems(rule, where, ids):
     if "src" in rule:
-        return [] if rule["src"] in ids else [f"{where}: unknown source {rule['src']!r}"]
+        return (
+            [] if rule["src"] in ids else [f"{where}: unknown source {rule['src']!r}"]
+        )
     if "lit" in rule:
         return []
     if rule.get("op") not in OPS:
@@ -73,7 +81,9 @@ def check(t: dict) -> list[str]:
         if o.get("kind") not in KINDS:
             probs.append(f"output {o['name']}: bad kind {o.get('kind')!r}")
         if (o.get("kind") == "pass") != ("src" in o["rule"]):
-            probs.append(f"output {o['name']}: kind pass must be exactly a bare src rule")
+            probs.append(
+                f"output {o['name']}: kind pass must be exactly a bare src rule"
+            )
     probs += [f"source {i} feeds no output" for i in ids if i not in used]
     return probs
 

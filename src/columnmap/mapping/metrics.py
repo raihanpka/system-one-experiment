@@ -7,7 +7,12 @@ from difflib import SequenceMatcher
 
 from ..core.scoring import T0, TS, ece, pair_p, rate, safe_div as _div
 
-OUTCOMES = ["Correct column", "Wrong column", "Left empty (no source)", "False match (no source)"]
+OUTCOMES = [
+    "Correct column",
+    "Wrong column",
+    "Left empty (no source)",
+    "False match (no source)",
+]
 
 
 def mapping_metrics(rows, cases, T: float = T0) -> dict:
@@ -23,7 +28,7 @@ def mapping_metrics(rows, cases, T: float = T0) -> dict:
                 rk = sorted(cols, key=lambda x: (-sc[x], x))
                 n += 1
                 top1 += rk[0] in src
-                exact += set(rk[:len(src)]) == src
+                exact += set(rk[: len(src)]) == src
                 top3 += bool(set(rk[:3]) & src)
             else:
                 nun += 1
@@ -38,20 +43,42 @@ def mapping_metrics(rows, cases, T: float = T0) -> dict:
         for k in c["columns"]:
             if k["decoy"]:
                 decoys += 1
-                flag += any(pair_p(mat[k["name"]][o["name"]], T) >= 0.5 for o in c["outputs"])
+                flag += any(
+                    pair_p(mat[k["name"]][o["name"]], T) >= 0.5 for o in c["outputs"]
+                )
     prec, rec = _div(tp, tp + fp), _div(tp, tp + fn)
-    return {"cases": len(rows), "n_outputs": n, "n_unavailable": nun, "top1": _div(top1, n), "exact": _div(exact, n),
-            "top3": _div(top3, n), "reject_unavailable": rate(rej, nun), "decoy_flag": rate(flag, decoys),
-            "precision": prec, "recall": rec, "f1": _div(2 * prec * rec, prec + rec), "ece": ece(ps, ys),
-            "brier": _div(sum((p - y) ** 2 for p, y in zip(ps, ys)), len(ps))}
+    return {
+        "cases": len(rows),
+        "n_outputs": n,
+        "n_unavailable": nun,
+        "top1": _div(top1, n),
+        "exact": _div(exact, n),
+        "top3": _div(top3, n),
+        "reject_unavailable": rate(rej, nun),
+        "decoy_flag": rate(flag, decoys),
+        "precision": prec,
+        "recall": rec,
+        "f1": _div(2 * prec * rec, prec + rec),
+        "ece": ece(ps, ys),
+        "brier": _div(sum((p - y) ** 2 for p, y in zip(ps, ys)), len(ps)),
+    }
 
 
 def sweep(rows, cases, temps=TS) -> list[dict]:
     out = []
     for T in temps:
         m = mapping_metrics(rows, cases, T)
-        out.append({"T": T, "ece": m["ece"], "brier": m["brier"], "f1": m["f1"], "precision": m["precision"],
-                    "recall": m["recall"], "top1": m["top1"]})
+        out.append(
+            {
+                "T": T,
+                "ece": m["ece"],
+                "brier": m["brier"],
+                "f1": m["f1"],
+                "precision": m["precision"],
+                "recall": m["recall"],
+                "top1": m["top1"],
+            }
+        )
     return out
 
 
@@ -79,14 +106,22 @@ def lexical_mapping(cases) -> dict:
         for o in c["outputs"]:
             if not o["available"]:
                 continue
-            sc = {col: SequenceMatcher(None, _norm(col), _norm(o["name"])).ratio() for col in cols}
+            sc = {
+                col: SequenceMatcher(None, _norm(col), _norm(o["name"])).ratio()
+                for col in cols
+            }
             rk = sorted(cols, key=lambda x: (-sc[x], x))
             src = set(o["sources"])
             n += 1
             top1 += rk[0] in src
-            exact += set(rk[:len(src)]) == src
+            exact += set(rk[: len(src)]) == src
             top3 += bool(set(rk[:3]) & src)
-    return {"n_outputs": n, "top1": _div(top1, n), "exact": _div(exact, n), "top3": _div(top3, n)}
+    return {
+        "n_outputs": n,
+        "top1": _div(top1, n),
+        "exact": _div(exact, n),
+        "top3": _div(top3, n),
+    }
 
 
 def outcomes(rs, cases) -> dict:

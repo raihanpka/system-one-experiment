@@ -12,10 +12,22 @@ def field_scores(rows, cases) -> list[dict]:
         c = cases[r["case_id"]]
         decoys = {k["name"] for k in c["columns"] if k["decoy"]}
         for o in c["outputs"]:
-            sc = sorted(((r["matrix"][col][o["name"]]["d"], col) for col in r["matrix"]), reverse=True)
+            sc = sorted(
+                ((r["matrix"][col][o["name"]]["d"], col) for col in r["matrix"]),
+                reverse=True,
+            )
             d1, c1 = sc[0]
-            out.append({"case_id": r["case_id"], "output": o["name"], "has_source": o["available"], "d1": d1,
-                        "top": c1, "top_ok": c1 in o["sources"], "top_is_decoy": c1 in decoys})
+            out.append(
+                {
+                    "case_id": r["case_id"],
+                    "output": o["name"],
+                    "has_source": o["available"],
+                    "d1": d1,
+                    "top": c1,
+                    "top_ok": c1 in o["sources"],
+                    "top_is_decoy": c1 in decoys,
+                }
+            )
     return out
 
 
@@ -29,7 +41,10 @@ def fit_cut(values, labels) -> float | None:
     neg = [v for v, y in zip(values, labels) if not y]
     best, best_bal = cands[0], -1.0
     for c in cands:
-        bal = (safe_div(sum(v >= c for v in pos), len(pos)) + safe_div(sum(v < c for v in neg), len(neg))) / 2
+        bal = (
+            safe_div(sum(v >= c for v in pos), len(pos))
+            + safe_div(sum(v < c for v in neg), len(neg))
+        ) / 2
         if bal > best_bal:
             best, best_bal = c, bal
     return best
@@ -49,6 +64,11 @@ def reject_metrics(feats, accept) -> dict:
     rej = rate(sum(not k for _, k in without), len(without))
     kept_src = [f for f, k in with_src if k]
     known = [x for x in (rec, rej) if x is not None]
-    return {"fields": len(feats), "kept": rec, "rejected": rej, "balanced": sum(known) / len(known) if known else None,
-            "top1_when_kept": rate(sum(f["top_ok"] for f in kept_src), len(kept_src)),
-            "decoys_picked": sum(k and f["top_is_decoy"] for f, k in zip(feats, kept))}
+    return {
+        "fields": len(feats),
+        "kept": rec,
+        "rejected": rej,
+        "balanced": sum(known) / len(known) if known else None,
+        "top1_when_kept": rate(sum(f["top_ok"] for f in kept_src), len(kept_src)),
+        "decoys_picked": sum(k and f["top_is_decoy"] for f, k in zip(feats, kept)),
+    }

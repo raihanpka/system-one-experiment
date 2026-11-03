@@ -9,16 +9,22 @@ from ..core.dsl import safe_evaluate
 from ..core.template import rule_sources
 from .samples import LEVEL_WORDS
 
-ROWS = (15, 30)                                            # rows per input file
+ROWS = (15, 30)  # rows per input file
 STYLES = ("snake", "camel", "pascal", "upper", "kebab", "space", "title")
 ARITH = ("add", "sub", "mul", "div")
 
 
 def style(name: str, how: str) -> str:
     w = name.lower().split("_")
-    return {"snake": "_".join(w), "camel": w[0] + "".join(x.capitalize() for x in w[1:]),
-            "pascal": "".join(x.capitalize() for x in w), "upper": "_".join(w).upper(),
-            "kebab": "-".join(w), "space": " ".join(w), "title": " ".join(x.capitalize() for x in w)}[how]
+    return {
+        "snake": "_".join(w),
+        "camel": w[0] + "".join(x.capitalize() for x in w[1:]),
+        "pascal": "".join(x.capitalize() for x in w),
+        "upper": "_".join(w).upper(),
+        "kebab": "-".join(w),
+        "space": " ".join(w),
+        "title": " ".join(x.capitalize() for x in w),
+    }[how]
 
 
 def sample(rng: random.Random, gen: list):
@@ -33,7 +39,7 @@ def sample(rng: random.Random, gen: list):
     if k == "money":
         step = gen[3] if len(gen) > 3 else 1000
         return gen[1] + rng.randrange((gen[2] - gen[1]) // step + 1) * step
-    return round(rng.uniform(gen[1], gen[2]), gen[3])          # rate
+    return round(rng.uniform(gen[1], gen[2]), gen[3])  # rate
 
 
 def _paths(node, path=()):
@@ -57,7 +63,12 @@ def mutations(rule: dict, types: dict, present: list[str]):
             for o in ARITH:
                 if o != n["op"]:
                     yield _replace(rule, path, {**n, "op": o})
-        if len(n.get("args", ())) == 2 and n.get("op") in ("sub", "div", "days_between", "concat"):
+        if len(n.get("args", ())) == 2 and n.get("op") in (
+            "sub",
+            "div",
+            "days_between",
+            "concat",
+        ):
             yield _replace(rule, path, {**n, "args": n["args"][::-1]})
         if "src" in n:
             for s in present:
@@ -66,7 +77,7 @@ def mutations(rule: dict, types: dict, present: list[str]):
         if "lit" in n:
             yield _replace(rule, path, {"lit": n["lit"] + 1})
         if n.get("op") in ("year", "lookup"):
-            yield _replace(rule, path, n["args"][0])                      # drop the transform
+            yield _replace(rule, path, n["args"][0])  # drop the transform
         if n.get("op") == "lookup":
             v = list(n["map"].values())
             yield _replace(rule, path, {**n, "map": dict(zip(n["map"], v[1:] + v[:1]))})
@@ -83,7 +94,13 @@ def _anomalies(rng, cols, rows):
         used.add((c["name"], r))
         v = rows[r][c["name"]]
         kind, new = {
-            "number": lambda: rng.choice([("zero", 0), ("negative", -abs(v) if v else -1), ("huge", v * 1000 + 1)]),
+            "number": lambda: rng.choice(
+                [
+                    ("zero", 0),
+                    ("negative", -abs(v) if v else -1),
+                    ("huge", v * 1000 + 1),
+                ]
+            ),
             "string": lambda: rng.choice([("empty", ""), ("na", "N/A")]),
             "date": lambda: ("sentinel", "1900-01-01"),
         }[c["type"]]()
@@ -103,17 +120,42 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
     for sid in present:
         lv = rng.randint(0, 5) if level == 6 else level
         base = sid if lv < 2 else srcs[sid]["names"][str(lv)]
-        how = "snake" if lv == 0 else (rng.choice(STYLES[1:]) if lv == 1 else case_style)
+        how = (
+            "snake" if lv == 0 else (rng.choice(STYLES[1:]) if lv == 1 else case_style)
+        )
         if lv == 5:
-            how = "snake" if case_style == "snake" else "upper"   # unusual technical terms: OBJ_INFO_ADDR or obj_info_addr, never camelCase
-        cols.append({"name": style(base, how), "src": sid, "level": lv, "decoy": None, "gen": srcs[sid]["gen"], "type": srcs[sid]["type"]})
+            how = (
+                "snake" if case_style == "snake" else "upper"
+            )  # unusual technical terms: OBJ_INFO_ADDR or obj_info_addr, never camelCase
+        cols.append(
+            {
+                "name": style(base, how),
+                "src": sid,
+                "level": lv,
+                "decoy": None,
+                "gen": srcs[sid]["gen"],
+                "type": srcs[sid]["type"],
+            }
+        )
     if level == 6:
         for d in rng.sample(t["decoys"], rng.randint(3, len(t["decoys"]))):
-            cols.append({"name": style(d["id"], case_style), "src": None, "level": 6, "decoy": d["id"], "gen": d["gen"], "type": d["type"]})
+            cols.append(
+                {
+                    "name": style(d["id"], case_style),
+                    "src": None,
+                    "level": 6,
+                    "decoy": d["id"],
+                    "gen": d["gen"],
+                    "type": d["type"],
+                }
+            )
     rng.shuffle(cols)
     assert len({c["name"] for c in cols}) == len(cols), "column name collision"
 
-    rows = [{c["name"]: sample(rng, c["gen"]) for c in cols} for _ in range(rng.randint(*ROWS))]
+    rows = [
+        {c["name"]: sample(rng, c["gen"]) for c in cols}
+        for _ in range(rng.randint(*ROWS))
+    ]
     anomalies = _anomalies(rng, cols, rows)
     name_of = {c["src"]: c["name"] for c in cols if c["src"]}
     by_id = [{s: row[n] for s, n in name_of.items()} for row in rows]
@@ -122,8 +164,17 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
     for o in t["outputs"]:
         ids = rule_sources(o["rule"])
         avail = set(ids) <= set(name_of)
-        out = {"name": o["name"], "kind": o["kind"], "rule": o["rule"], "source_ids": ids, "type": o["type"], "available": avail,
-               "sources": [name_of[s] for s in ids] if avail else [], "expected": None, "candidates": []}
+        out = {
+            "name": o["name"],
+            "kind": o["kind"],
+            "rule": o["rule"],
+            "source_ids": ids,
+            "type": o["type"],
+            "available": avail,
+            "sources": [name_of[s] for s in ids] if avail else [],
+            "expected": None,
+            "candidates": [],
+        }
         if avail:
             out["expected"] = [safe_evaluate(o["rule"], r) for r in by_id]
             if o["kind"] != "pass":
@@ -141,9 +192,17 @@ def _case(t: dict, level: int, i: int, seed: int) -> dict:
         outputs.append(out)
     for c in cols:
         del c["gen"], c["type"]
-    return {"case_id": f"{LEVEL_WORDS[level]}-{i:03d}", "level": level, "columns": cols, "rows": rows, "anomalies": anomalies,
-            "outputs": outputs}
+    return {
+        "case_id": f"{LEVEL_WORDS[level]}-{i:03d}",
+        "level": level,
+        "columns": cols,
+        "rows": rows,
+        "anomalies": anomalies,
+        "outputs": outputs,
+    }
 
 
 def generate(t: dict, n_per_level: int = 50, seed: int = 1234) -> list[dict]:
-    return [_case(t, lv, i, seed) for lv in sorted(LEVEL_WORDS) for i in range(n_per_level)]
+    return [
+        _case(t, lv, i, seed) for lv in sorted(LEVEL_WORDS) for i in range(n_per_level)
+    ]

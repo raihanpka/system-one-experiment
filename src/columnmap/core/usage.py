@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-OPTIONS_Q_SECONDS = 0.45      # one question with all output fields as options (measured, Q8_0 on an M3)
-PAIR_Q_SECONDS = 0.1          # one yes/no question
-HONEST_FILE_SECONDS = 12      # candidate ranking per file, measured
+OPTIONS_Q_SECONDS = (
+    0.45  # one question with all output fields as options (measured, Q8_0 on an M3)
+)
+PAIR_Q_SECONDS = 0.1  # one yes/no question
+HONEST_FILE_SECONDS = 12  # candidate ranking per file, measured
 
 
 # wraps a decider and counts what it is asked
@@ -40,6 +42,10 @@ def estimate_minutes(cases, conds, modes) -> float:
         cols, outs = len(c["columns"]), len(c["outputs"])
         for _ in conds:
             for m in modes:
-                secs += cols * OPTIONS_Q_SECONDS if m == "options" else cols * outs * PAIR_Q_SECONDS
+                secs += (
+                    cols * OPTIONS_Q_SECONDS
+                    if m == "options"
+                    else cols * outs * PAIR_Q_SECONDS
+                )
             secs += HONEST_FILE_SECONDS
     return secs / 60

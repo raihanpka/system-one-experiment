@@ -26,8 +26,12 @@ def cell_match(case: dict, rows: list[list]) -> dict:
             else:
                 expected_cells += 1
                 correct += got is not None and _same(got, want)
-    return {"expected_cells": expected_cells, "correct": correct, "wrong_fill": wrong_fill,
-            "correct_rate": safe_div(correct, expected_cells)}
+    return {
+        "expected_cells": expected_cells,
+        "correct": correct,
+        "wrong_fill": wrong_fill,
+        "correct_rate": safe_div(correct, expected_cells),
+    }
 
 
 # per field: all cells equal the expected cells (a field without a source is correct when it stays empty)
@@ -38,6 +42,8 @@ def field_correct(case: dict, rows: list[list]) -> dict:
         if not o["available"]:
             out[o["name"]] = all(v is None for v in col)
         else:
-            out[o["name"]] = all(v is not None and _same(v, w) if w is not None else v is None for v, w in zip(col, o["expected"]))
+            out[o["name"]] = all(
+                v is not None and _same(v, w) if w is not None else v is None
+                for v, w in zip(col, o["expected"])
+            )
     return out
-

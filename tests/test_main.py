@@ -8,99 +8,212 @@ from columnmap.main import main
 from tests.fakes import Generic
 
 
-
 def test_run_folder_layout_files_and_resume(tmp_path, capsys):
     root, data = tmp_path / "results", tmp_path / "data"
     args = ["--root", str(root), "--data", str(data)]
     assert main(["--samples", "abcd", *args], decider_factory=Generic) == 0
     runs = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()]
-    assert len(runs) == 1 and re.fullmatch(r"all_\d{8}-\d{6}", runs[0].name)   # <samples>_<timestamp>
+    assert len(runs) == 1 and re.fullmatch(
+        r"all_\d{8}-\d{6}", runs[0].name
+    )  # <samples>_<timestamp>
     run = runs[0]
-    assert not (root / "latest").exists()                                                          # no extra link next to the runs
+    assert not (root / "latest").exists()  # no extra link next to the runs
 
-    for f in ("input_technical_terms.csv", "expected_technical_terms.csv", "ground_truth_technical_terms.csv"):              # single source of truth
+    for f in (
+        "input_technical_terms.csv",
+        "expected_technical_terms.csv",
+        "ground_truth_technical_terms.csv",
+    ):  # single source of truth
         assert (data / "samples" / "c_technical_terms" / f).exists(), f
     assert (data / "template_header.csv").exists()
-    assert not list(run.rglob("input_*.csv")) and not list(run.rglob("expected_*.csv"))              # not copied into the run
+    assert not list(run.rglob("input_*.csv")) and not list(
+        run.rglob("expected_*.csv")
+    )  # not copied into the run
 
-    data_json = json.loads((run / "result.json").read_text())                                    # this run's raw output
-    assert set(data_json) == {"meta", "mapping", "mapping_pairs", "honest"} and data_json["meta"]["mode"] == "options"
+    data_json = json.loads((run / "result.json").read_text())  # this run's raw output
+    assert (
+        set(data_json) == {"meta", "mapping", "mapping_pairs", "honest"}
+        and data_json["meta"]["mode"] == "options"
+    )
     assert data_json["meta"]["samples"] == "abcd"
-    assert [r["case_id"] for r in data_json["mapping"]["name"]] == ["easy_identical-000", "medium_synonym-000", "technical_terms-000", "hardest_noisy-000"]
+    assert [r["case_id"] for r in data_json["mapping"]["name"]] == [
+        "easy_identical-000",
+        "medium_synonym-000",
+        "technical_terms-000",
+        "hardest_noisy-000",
+    ]
     assert set(data_json["mapping"]) == {"name", "samples"}
 
-    for letter, word in (("a", "easy_identical"), ("b", "medium_synonym"), ("c", "technical_terms"), ("d", "hardest_noisy")):
+    for letter, word in (
+        ("a", "easy_identical"),
+        ("b", "medium_synonym"),
+        ("c", "technical_terms"),
+        ("d", "hardest_noisy"),
+    ):
         d = run / f"{letter}_{word}"
-        for f in (f"converted_{word}_name.csv", f"converted_{word}_samples.csv", f"decisions_{word}_name.csv",
-                  f"probabilities_{word}_samples.csv"):
+        for f in (
+            f"converted_{word}_name.csv",
+            f"converted_{word}_samples.csv",
+            f"decisions_{word}_name.csv",
+            f"probabilities_{word}_samples.csv",
+        ):
             assert (d / f).exists(), f"{d.name}/{f}"
-    converted = (run / "a_easy_identical" / "converted_easy_identical_name.csv").read_text().splitlines()
-    assert converted[0].startswith("policy_number,insured_full_name") and len(converted) > 10
-    assert len((run / "c_technical_terms" / "decisions_technical_terms_name.csv").read_text().splitlines()) == 32   # header + 31 fields
+    converted = (
+        (run / "a_easy_identical" / "converted_easy_identical_name.csv")
+        .read_text()
+        .splitlines()
+    )
+    assert (
+        converted[0].startswith("policy_number,insured_full_name")
+        and len(converted) > 10
+    )
+    assert (
+        len(
+            (run / "c_technical_terms" / "decisions_technical_terms_name.csv")
+            .read_text()
+            .splitlines()
+        )
+        == 32
+    )  # header + 31 fields
 
     rep = run / "report"
-    for f in ("summary.md", "figures/accuracy.svg", "figures/outcomes.svg", "figures/drift.svg", "figures/calibration.svg",
-              "figures/heatmap_a_easy_identical_name.svg", "figures/heatmap_d_hardest_noisy_samples.svg"):
+    for f in (
+        "summary.md",
+        "figures/accuracy.svg",
+        "figures/outcomes.svg",
+        "figures/drift.svg",
+        "figures/calibration.svg",
+        "figures/heatmap_a_easy_identical_name.svg",
+        "figures/heatmap_d_hardest_noisy_samples.svg",
+    ):
         assert (rep / f).exists(), f
     svg = (rep / "figures/accuracy.svg").read_text()
-    assert svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
+    assert (
+        svg.lstrip().startswith("<?xml") and "<svg" in svg and "Times New Roman" in svg
+    )
     md = (rep / "summary.md").read_text()
-    assert "![accuracy](figures/accuracy.svg)" in md and "data/samples/c_technical_terms/" in md
+    assert (
+        "![accuracy](figures/accuracy.svg)" in md
+        and "data/samples/c_technical_terms/" in md
+    )
     assert "## Mapping" in md and "## Converted File Without Ground Truth Help" in md
     assert "## At a Glance" in md and "## Rejecting Fields Without a Source" in md
 
     capsys.readouterr()
-    main(["--out", str(run), "--samples", "abcd", *args], decider_factory=Generic)              # same folder again: nothing recomputed
+    main(
+        ["--out", str(run), "--samples", "abcd", *args], decider_factory=Generic
+    )  # same folder again: nothing recomputed
     assert "0 new, 4 resumed" in capsys.readouterr().out
-    main(["--root", str(root), "--data", str(data), "--report-only"])                            # newest run, no model, samples from meta
+    main(
+        ["--root", str(root), "--data", str(data), "--report-only"]
+    )  # newest run, no model, samples from meta
     assert "d_hardest_noisy" in (rep / "summary.md").read_text()
 
 
 def test_each_run_gets_its_own_folder_and_report_only_takes_the_newest(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    main(["--samples", "a", "--root", str(root), "--data", str(data), "--conds", "name"], decider_factory=Generic)
-    time.sleep(1.1)                                                                              # names carry seconds
-    main(["--samples", "b", "--root", str(root), "--data", str(data), "--conds", "name"], decider_factory=Generic)
-    runs = sorted((p.name for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda n: n.rsplit("_", 1)[-1])
-    assert len(runs) == 2 and runs[0].startswith("easy_identical_") and runs[1].startswith("medium_synonym_")
-    assert all((root / r / "result.json").exists() for r in runs)                                # one result.json per run
-    main(["--root", str(root), "--data", str(data), "--report-only"])                            # rebuilds the newest run only
-    assert (root / runs[1] / "report" / "summary.md").stat().st_mtime > (root / runs[0] / "report" / "summary.md").stat().st_mtime
+    main(
+        ["--samples", "a", "--root", str(root), "--data", str(data), "--conds", "name"],
+        decider_factory=Generic,
+    )
+    time.sleep(1.1)  # names carry seconds
+    main(
+        ["--samples", "b", "--root", str(root), "--data", str(data), "--conds", "name"],
+        decider_factory=Generic,
+    )
+    runs = sorted(
+        (p.name for p in root.iterdir() if p.is_dir() and not p.is_symlink()),
+        key=lambda n: n.rsplit("_", 1)[-1],
+    )
+    assert (
+        len(runs) == 2
+        and runs[0].startswith("easy_identical_")
+        and runs[1].startswith("medium_synonym_")
+    )
+    assert all(
+        (root / r / "result.json").exists() for r in runs
+    )  # one result.json per run
+    main(
+        ["--root", str(root), "--data", str(data), "--report-only"]
+    )  # rebuilds the newest run only
+    assert (root / runs[1] / "report" / "summary.md").stat().st_mtime > (
+        root / runs[0] / "report" / "summary.md"
+    ).stat().st_mtime
 
 
 def test_bad_sample_letter_is_rejected(tmp_path):
     with pytest.raises(SystemExit):
-        main(["--samples", "az", "--root", str(tmp_path), "--data", str(tmp_path)], decider_factory=Generic)
+        main(
+            ["--samples", "az", "--root", str(tmp_path), "--data", str(tmp_path)],
+            decider_factory=Generic,
+        )
 
 
 def test_report_only_without_any_run_is_an_error(tmp_path):
     with pytest.raises(SystemExit):
-        main(["--root", str(tmp_path / "empty"), "--data", str(tmp_path), "--report-only"])
+        main(
+            [
+                "--root",
+                str(tmp_path / "empty"),
+                "--data",
+                str(tmp_path),
+                "--report-only",
+            ]
+        )
 
 
 def test_two_modes_and_cutoffs_fitted_on_another_run(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    args = ["--root", str(root), "--data", str(data), "--conds", "name,samples", "--mode", "both"]
+    args = [
+        "--root",
+        str(root),
+        "--data",
+        str(data),
+        "--conds",
+        "name,samples",
+        "--mode",
+        "both",
+    ]
     main(["--samples", "c", *args], decider_factory=Generic)
     time.sleep(1.1)
     first = [p for p in root.iterdir() if p.is_dir() and not p.is_symlink()][0]
-    main(["--samples", "d", "--calibrate-from", str(first), *args], decider_factory=Generic)
-    second = sorted((p for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda p: p.name.rsplit("_", 1)[-1])[-1]
+    main(
+        ["--samples", "d", "--calibrate-from", str(first), *args],
+        decider_factory=Generic,
+    )
+    second = sorted(
+        (p for p in root.iterdir() if p.is_dir() and not p.is_symlink()),
+        key=lambda p: p.name.rsplit("_", 1)[-1],
+    )[-1]
     assert second != first and second.name.startswith("hardest_noisy_")
 
     store = json.loads((second / "result.json").read_text())
-    assert set(store["mapping"]) == {"name", "samples"} and set(store["mapping_pairs"]) == {"name", "samples"}
-    assert set(store["honest"]) == {"name", "samples"}                                      # the honest stage follows every context
+    assert set(store["mapping"]) == {"name", "samples"} and set(
+        store["mapping_pairs"]
+    ) == {"name", "samples"}
+    assert set(store["honest"]) == {
+        "name",
+        "samples",
+    }  # the honest stage follows every context
     assert store["meta"]["mode"] == "options,pairs"
 
     md = (second / "report" / "summary.md").read_text()
     assert "## Options Mode Versus Pairs Mode" in md and "fitted on other run" in md
-    assert "name + values, options mode" in md                                      # readable context labels in the headline
+    assert (
+        "name + values, options mode" in md
+    )  # readable context labels in the headline
     assert (second / "d_hardest_noisy" / "converted_hardest_noisy_name.csv").exists()
-    main(["--report-only", "--out", str(second), "--data", str(data)])                          # contexts are read from the run itself
-    assert "name + values, options mode" in (second / "report" / "summary.md").read_text()
+    main(
+        ["--report-only", "--out", str(second), "--data", str(data)]
+    )  # contexts are read from the run itself
+    assert (
+        "name + values, options mode" in (second / "report" / "summary.md").read_text()
+    )
     first_md = (first / "report" / "summary.md").read_text()
-    assert "fitted on this run, optimistic" in first_md and "fitted on other run" not in first_md
+    assert (
+        "fitted on this run, optimistic" in first_md
+        and "fitted on other run" not in first_md
+    )
 
 
 def _runs(root):
@@ -109,37 +222,75 @@ def _runs(root):
 
 def test_seed_option_builds_other_data_and_is_recorded(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    base = [
+        "--samples",
+        "a",
+        "--conds",
+        "name",
+        "--root",
+        str(root),
+        "--data",
+        str(data),
+    ]
     main([*base, "--seed", "5"], decider_factory=Generic)
     other = _runs(root)[0]
-    assert "-seed5_" in other.name                                                       # the seed is in the folder name
+    assert "-seed5_" in other.name  # the seed is in the folder name
     meta = json.loads((other / "result.json").read_text())["meta"]
     assert meta["seed"] == 5
-    assert not (data / "samples").exists()                                               # only the baseline seed is written to data/
+    assert not (data / "samples").exists()  # only the baseline seed is written to data/
     time.sleep(1.1)
     main(base, decider_factory=Generic)
     default = _runs(root)[-1]
-    assert "seed" not in default.name and json.loads((default / "result.json").read_text())["meta"]["seed"] == 1234
+    assert (
+        "seed" not in default.name
+        and json.loads((default / "result.json").read_text())["meta"]["seed"] == 1234
+    )
     assert (data / "samples" / "a_easy_identical").exists()
-    cols = lambda run: list(json.loads((run / "result.json").read_text())["mapping"]["name"][0]["matrix"])      # noqa: E731
-    assert cols(other) != cols(default)                                                  # another seed gives another file
+    cols = lambda run: list(
+        json.loads((run / "result.json").read_text())["mapping"]["name"][0]["matrix"]
+    )  # noqa: E731
+    assert cols(other) != cols(default)  # another seed gives another file
 
 
 def test_splits_run_one_folder_per_seed_and_the_test_split_needs_final(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    base = [
+        "--samples",
+        "a",
+        "--conds",
+        "name",
+        "--root",
+        str(root),
+        "--data",
+        str(data),
+    ]
     main([*base, "--split", "calibration"], decider_factory=Generic)
     names = [p.name for p in _runs(root)]
-    assert len(names) == 2 and any("-seed12_" in n for n in names) and any("-seed13_" in n for n in names)
+    assert (
+        len(names) == 2
+        and any("-seed12_" in n for n in names)
+        and any("-seed13_" in n for n in names)
+    )
     with pytest.raises(SystemExit):
-        main([*base, "--split", "test"], decider_factory=Generic)                        # the test split is looked at once
+        main(
+            [*base, "--split", "test"], decider_factory=Generic
+        )  # the test split is looked at once
     main([*base, "--split", "test", "--final"], decider_factory=Generic)
     assert len(_runs(root)) == 4
 
 
 def test_calibrate_from_a_run_with_another_seed_is_refused(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    base = [
+        "--samples",
+        "a",
+        "--conds",
+        "name",
+        "--root",
+        str(root),
+        "--data",
+        str(data),
+    ]
     main([*base, "--seed", "5"], decider_factory=Generic)
     other = _runs(root)[0]
     with pytest.raises(SystemExit):
@@ -148,7 +299,16 @@ def test_calibrate_from_a_run_with_another_seed_is_refused(tmp_path):
 
 def test_keep_option_decides_how_many_columns_are_chosen_and_is_recorded(tmp_path):
     root, data = tmp_path / "r", tmp_path / "d"
-    base = ["--samples", "a", "--conds", "name", "--root", str(root), "--data", str(data)]
+    base = [
+        "--samples",
+        "a",
+        "--conds",
+        "name",
+        "--root",
+        str(root),
+        "--data",
+        str(data),
+    ]
     main([*base, "--keep", "50"], decider_factory=Generic)
     time.sleep(1.1)
     main([*base, "--keep", "-50"], decider_factory=Generic)
@@ -156,6 +316,12 @@ def test_keep_option_decides_how_many_columns_are_chosen_and_is_recorded(tmp_pat
 
     def chosen(run):
         d = json.loads((run / "result.json").read_text())
-        return sum(len(f["cols"]) for f in d["honest"]["name"][0]["fields"].values()), d["meta"]["keep_d"]
+        return sum(
+            len(f["cols"]) for f in d["honest"]["name"][0]["fields"].values()
+        ), d["meta"]["keep_d"]
 
-    assert chosen(strict) == (0, 50.0) and chosen(loose)[0] > 0 and chosen(loose)[1] == -50.0
+    assert (
+        chosen(strict) == (0, 50.0)
+        and chosen(loose)[0] > 0
+        and chosen(loose)[1] == -50.0
+    )

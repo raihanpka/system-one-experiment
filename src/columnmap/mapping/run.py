@@ -21,18 +21,44 @@ def run_case(decider, case: dict, cond: str, mode: str = "options") -> dict:
     if mode == "pairs":
         qs = [mapping_question(o) for o in outs]
     else:
-        qs = [Question("choice", "Which output fields does this input column provide data for?", name="field",
-                       choices=tuple(Choice(o) for o in outs))]
+        qs = [
+            Question(
+                "choice",
+                "Which output fields does this input column provide data for?",
+                name="field",
+                choices=tuple(Choice(o) for o in outs),
+            )
+        ]
     matrix, raw = {}, {}
     for c in case["columns"]:
         res = decider.decide(input_state(c, cond, sample[c["name"]]), qs)
-        raw[c["name"]] = {"model": res.model, "input": input_state(c, cond, sample[c["name"]]),
-                          "answers": [asdict(a) for a in res.answers], "usage": res.usage}
+        raw[c["name"]] = {
+            "model": res.model,
+            "input": input_state(c, cond, sample[c["name"]]),
+            "answers": [asdict(a) for a in res.answers],
+            "usage": res.usage,
+        }
         if mode == "pairs":
-            matrix[c["name"]] = {a.name: {"p": a.probability, "d": a.raw_scores["true"] - a.raw_scores["false"]} for a in res.answers}
+            matrix[c["name"]] = {
+                a.name: {
+                    "p": a.probability,
+                    "d": a.raw_scores["true"] - a.raw_scores["false"],
+                }
+                for a in res.answers
+            }
         else:
-            matrix[c["name"]] = {k: {"p": pair_p({"d": d}, T0), "d": d} for k, d in res.answers[0].raw_scores.items()}
-    return {"case_id": case["case_id"], "level": case["level"], "cond": cond, "mode": mode, "matrix": matrix, "raw": raw}
+            matrix[c["name"]] = {
+                k: {"p": pair_p({"d": d}, T0), "d": d}
+                for k, d in res.answers[0].raw_scores.items()
+            }
+    return {
+        "case_id": case["case_id"],
+        "level": case["level"],
+        "cond": cond,
+        "mode": mode,
+        "matrix": matrix,
+        "raw": raw,
+    }
 
 
 def run(decider: Decider, cases, cond: str, store, mode: str = "options") -> int:

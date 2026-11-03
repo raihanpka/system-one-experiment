@@ -6,13 +6,20 @@ from columnmap.core.paths import ROOT
 
 
 def load():
-    return yaml.safe_load((ROOT / "ontology" / "insurance.yaml").read_text(encoding="utf-8"))
+    return yaml.safe_load(
+        (ROOT / "ontology" / "insurance.yaml").read_text(encoding="utf-8")
+    )
 
 
 def test_every_output_field_has_a_kind_a_type_and_a_description():
     fields = load()["fields"]
-    assert len(fields) == len(json.loads((ROOT / "data" / "template.json").read_text())["outputs"])
-    assert all(f["kind"] and f["type"] in ("date", "number", "string") and f["description"] for f in fields)
+    assert len(fields) == len(
+        json.loads((ROOT / "data" / "template.json").read_text())["outputs"]
+    )
+    assert all(
+        f["kind"] and f["type"] in ("date", "number", "string") and f["description"]
+        for f in fields
+    )
 
 
 def test_relations_point_only_to_declared_source_concepts():

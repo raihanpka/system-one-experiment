@@ -25,8 +25,15 @@ def test_ground_truth_expressions_execute_to_expected_values():
                 assert o["expected"] is None and o["sources"] == []
                 continue
             assert o["sources"] == [col_of[s] for s in o["source_ids"]]
-            got = [safe_evaluate(o["rule"], {s: row[col_of[s]] for s in col_of}) for row in c["rows"]]
-            assert got == pytest.approx(o["expected"]) if o["kind"] in ("arith",) else got == o["expected"]
+            got = [
+                safe_evaluate(o["rule"], {s: row[col_of[s]] for s in col_of})
+                for row in c["rows"]
+            ]
+            assert (
+                got == pytest.approx(o["expected"])
+                if o["kind"] in ("arith",)
+                else got == o["expected"]
+            )
 
 
 def test_availability_means_all_sources_present():
@@ -48,9 +55,15 @@ def test_hard_cases_have_decoys_and_missing_outputs_and_fanout():
     assert all(any(k["decoy"] for k in c["columns"]) for c in hard)
     assert not any(k["decoy"] for c in CASES if c["level"] < 6 for k in c["columns"])
     assert any(not o["available"] for c in CASES for o in c["outputs"])
-    fan = [c for c in CASES for k in c["columns"] if k["src"]
-           and sum(k["src"] in o["source_ids"] and o["available"] for o in c["outputs"]) >= 2]
-    assert fan                                         # one input feeds 2+ outputs
+    fan = [
+        c
+        for c in CASES
+        for k in c["columns"]
+        if k["src"]
+        and sum(k["src"] in o["source_ids"] and o["available"] for o in c["outputs"])
+        >= 2
+    ]
+    assert fan  # one input feeds 2+ outputs
 
 
 def test_candidates_have_one_truth_and_distinct_distractors():
@@ -67,7 +80,10 @@ def test_candidates_have_one_truth_and_distinct_distractors():
             for cand in cands:
                 if cand == o["rule"]:
                     continue
-                vals = [safe_evaluate(cand, {s: row[col_of[s]] for s in col_of}) for row in c["rows"]]
+                vals = [
+                    safe_evaluate(cand, {s: row[col_of[s]] for s in col_of})
+                    for row in c["rows"]
+                ]
                 assert vals != truth and any(v is not None for v in vals)
             seen += 1
     assert seen > 0
@@ -82,7 +98,9 @@ def test_rows_are_many_and_diverse_with_one_or_two_anomalies():
     big = [c for c in CASES if c["level"] == 0][0]
     cities = {r["insured_city"] for r in big["rows"] if "insured_city" in r}
     assert len(cities) >= 3 or "insured_city" not in big["rows"][0]
-    kinds = {a["kind"] for c in generate(T, n_per_level=12, seed=7) for a in c["anomalies"]}
+    kinds = {
+        a["kind"] for c in generate(T, n_per_level=12, seed=7) for a in c["anomalies"]
+    }
     assert {"zero", "empty", "na"} <= kinds
     zeros = [a for c in CASES for a in c["anomalies"] if a["kind"] == "zero"]
     assert all(a["value"] == 0 for a in zeros)

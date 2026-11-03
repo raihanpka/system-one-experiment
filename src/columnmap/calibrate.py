@@ -6,7 +6,13 @@ from pathlib import Path
 
 from .convert.honest import convert_fields
 from .convert.metrics import field_correct
-from .core.calibration import Calibration, apply_platt, fit_platt, make_key, reliability_bins
+from .core.calibration import (
+    Calibration,
+    apply_platt,
+    fit_platt,
+    make_key,
+    reliability_bins,
+)
 from .core.scoring import T0, ece, logit, pair_p
 from .core.selective import precision_curve
 from .core.store import Store
@@ -17,7 +23,6 @@ SECTIONS = {"options": "mapping", "pairs": "mapping_pairs"}
 
 # bump when the column cutoff rule or the candidate catalogue changes: a fit made under another policy is refused
 POLICY_VERSION = "p1"
-
 
 
 # the score of every (input column, output field) pair and whether the column is a true source
@@ -55,8 +60,14 @@ def load_run(run_dir) -> tuple[Store, dict, dict]:
 
 # the key holds everything that changes what a score means: model, quantization, mode, context, prompt version and column cutoff
 def setup_key(meta: dict, mode: str, cond: str, level: str) -> str:
-    return make_key(meta["model"], meta["quant"], mode, cond,
-                    f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}/{POLICY_VERSION}", level)
+    return make_key(
+        meta["model"],
+        meta["quant"],
+        mode,
+        cond,
+        f"{meta.get('prompt_version', 'v1')}/keep{meta.get('keep_d', 0.0)}/{POLICY_VERSION}",
+        level,
+    )
 
 
 # every run named here must be a dev or calibration run: a test run is never used for fitting
@@ -65,7 +76,9 @@ def fit(run_dirs, calibration: Calibration) -> list[str]:
     for run in run_dirs:
         store, meta, cases = load_run(run)
         if meta.get("split") == "test":
-            raise ValueError(f"{run} is a test run; the test split is never used for fitting")
+            raise ValueError(
+                f"{run} is a test run; the test split is never used for fitting"
+            )
         for mode, section in SECTIONS.items():
             for cond in store.data.get(section, {}):
                 xs, ys = pair_xy(store.rows(section, cond), cases)
@@ -84,24 +97,60 @@ def fit(run_dirs, calibration: Calibration) -> list[str]:
         if fitted is None:
             log.append(f"skipped {key}: only one class in {len(xs)} points")
             continue
-        curve = precision_curve([apply_platt(x, *fitted) for x in xs], ys) if key.endswith("|field") else None
-        calibration.set(key, *fitted, n=len(xs), positives=int(sum(ys)), seeds=sorted(seeds), curve=curve)
-        log.append(f"{key}: a={fitted[0]:.2f} b={fitted[1]:.2f} on {len(xs)} points ({int(sum(ys))} positive), seeds {sorted(seeds)}")
+        curve = (
+            precision_curve([apply_platt(x, *fitted) for x in xs], ys)
+            if key.endswith("|field")
+            else None
+        )
+        calibration.set(
+            key,
+            *fitted,
+            n=len(xs),
+            positives=int(sum(ys)),
+            seeds=sorted(seeds),
+            curve=curve,
+        )
+        log.append(
+            f"{key}: a={fitted[0]:.2f} b={fitted[1]:.2f} on {len(xs)} points ({int(sum(ys))} positive), seeds {sorted(seeds)}"
+        )
     return log
 
 
 # uncalibrated and calibrated reliability of one context, per level; None when no entry matches the setup
-def evaluate(store, meta: dict, cases: dict, calibration: Calibration, mode: str, cond: str, only=None) -> list[dict]:
+def evaluate(
+    store,
+    meta: dict,
+    cases: dict,
+    calibration: Calibration,
+    mode: str,
+    cond: str,
+    only=None,
+) -> list[dict]:
     out = []
     section = SECTIONS[mode]
-    for level, xy in (("pair", lambda: pair_xy(store.rows(section, cond, only), cases)),
-                      ("field", lambda: field_xy(store.rows("honest", cond, only), cases))):
+    for level, xy in (
+        ("pair", lambda: pair_xy(store.rows(section, cond, only), cases)),
+        ("field", lambda: field_xy(store.rows("honest", cond, only), cases)),
+    ):
         entry = calibration.get(setup_key(meta, mode, cond, level), missing_ok=True)
         xs, ys = xy()
         if entry is None or not xs:
             continue
-        raw = [pair_p({"d": x}, T0) if level == "pair" else apply_platt(x, 1.0, 0.0) for x in xs]
+        raw = [
+            pair_p({"d": x}, T0) if level == "pair" else apply_platt(x, 1.0, 0.0)
+            for x in xs
+        ]
         cal = [apply_platt(x, entry["a"], entry["b"]) for x in xs]
-        out.append({"level": level, "n": len(xs), "ece_raw": ece(raw, ys), "ece_cal": ece(cal, ys), "bins_raw": reliability_bins(raw, ys),
-                    "bins_cal": reliability_bins(cal, ys), "held_out": meta["seed"] not in entry["seeds"], "cond": cond})
+        out.append(
+            {
+                "level": level,
+                "n": len(xs),
+                "ece_raw": ece(raw, ys),
+                "ece_cal": ece(cal, ys),
+                "bins_raw": reliability_bins(raw, ys),
+                "bins_cal": reliability_bins(cal, ys),
+                "held_out": meta["seed"] not in entry["seeds"],
+                "cond": cond,
+            }
+        )
     return out

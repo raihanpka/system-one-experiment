@@ -17,7 +17,11 @@ def context_label(cond: str) -> str:
 # k values of one column from evenly spaced rows (so the odd cell is sometimes visible, not always)
 def samples(rows, name, k=SAMPLE_K):
     n = len(rows)
-    return [rows[i * (n - 1) // (k - 1)][name] for i in range(k)] if n >= k else [r[name] for r in rows]
+    return (
+        [rows[i * (n - 1) // (k - 1)][name] for i in range(k)]
+        if n >= k
+        else [r[name] for r in rows]
+    )
 
 
 def _col_text(name, cond, samples):
@@ -36,7 +40,11 @@ def input_state(col: dict, cond: str, samples=()) -> str:
 
 # output side: the field name only; the model picks the input columns that feed it
 def mapping_question(name: str) -> Question:
-    return Question("predicate", f"This input column provides the data for the output field '{name}'.", name=name)
+    return Question(
+        "predicate",
+        f"This input column provides the data for the output field '{name}'.",
+        name=name,
+    )
 
 
 def kind_state(cols: list[tuple[str, list]], cond: str) -> str:

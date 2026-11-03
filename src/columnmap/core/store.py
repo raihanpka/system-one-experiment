@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 SECTIONS = ("mapping", "mapping_pairs", "honest")
-COMPACT_FROM = 5                                   # nesting depth at which objects are written on a single line
+COMPACT_FROM = 5  # nesting depth at which objects are written on a single line
 
 
 def _round(o, nd: int = 4):
@@ -25,19 +25,34 @@ def _fmt(o, depth: int = 0) -> str:
         return json.dumps(o, ensure_ascii=False, separators=(", ", ": "))
     pad, end = "  " * (depth + 1), "  " * depth
     if isinstance(o, dict):
-        return "{\n" + ",\n".join(f"{pad}{json.dumps(k, ensure_ascii=False)}: {_fmt(v, depth + 1)}" for k, v in o.items()) + f"\n{end}}}"
+        return (
+            "{\n"
+            + ",\n".join(
+                f"{pad}{json.dumps(k, ensure_ascii=False)}: {_fmt(v, depth + 1)}"
+                for k, v in o.items()
+            )
+            + f"\n{end}}}"
+        )
     return "[\n" + ",\n".join(pad + _fmt(v, depth + 1) for v in o) + f"\n{end}]"
 
 
 class Store:
     def __init__(self, path, meta: dict | None = None):
         self.path = Path(path)
-        self.data = json.loads(self.path.read_text()) if self.path.exists() else {"meta": {}, **{s: {} for s in SECTIONS}}
+        self.data = (
+            json.loads(self.path.read_text())
+            if self.path.exists()
+            else {"meta": {}, **{s: {} for s in SECTIONS}}
+        )
         if meta:
             self.data["meta"].update(meta)
 
     def rows(self, section: str, cond: str, only=None) -> list[dict]:
-        return [r for r in self.data.get(section, {}).get(cond, []) if only is None or r["case_id"] in only]
+        return [
+            r
+            for r in self.data.get(section, {}).get(cond, [])
+            if only is None or r["case_id"] in only
+        ]
 
     def has(self, section: str, cond: str, case_id: str) -> bool:
         return any(r["case_id"] == case_id for r in self.rows(section, cond))
@@ -50,4 +65,4 @@ class Store:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(_fmt(self.data) + "\n", encoding="utf-8")
-        os.replace(tmp, self.path)                 # atomic: a killed run never leaves half a file
+        os.replace(tmp, self.path)  # atomic: a killed run never leaves half a file

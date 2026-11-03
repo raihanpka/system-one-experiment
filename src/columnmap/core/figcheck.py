@@ -5,7 +5,26 @@ from __future__ import annotations
 import re
 
 # words kept lower case inside a title (articles, short conjunctions, short prepositions); longer words are capitalised
-SMALL = {"a", "an", "the", "and", "or", "but", "nor", "so", "of", "in", "on", "at", "to", "for", "by", "as", "vs", "per"}
+SMALL = {
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "but",
+    "nor",
+    "so",
+    "of",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "by",
+    "as",
+    "vs",
+    "per",
+}
 MIN_TICK_SIZE = 8
 
 
@@ -66,7 +85,9 @@ def check_figure(fig) -> list[str]:
                 issues.append(f"axis label not in sentence case: {label!r}")
         for t in ax.get_xticklabels() + ax.get_yticklabels():
             if t.get_text() and t.get_fontsize() < MIN_TICK_SIZE:
-                issues.append(f"tick label too small ({t.get_fontsize():.0f} pt): {t.get_text()!r}")
+                issues.append(
+                    f"tick label too small ({t.get_fontsize():.0f} pt): {t.get_text()!r}"
+                )
         leg = ax.get_legend()
         if leg is not None and leg.get_gid() != "legend-outside":
             issues.append("legend placed inside the axes (may hide data)")

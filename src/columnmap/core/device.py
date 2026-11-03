@@ -7,7 +7,9 @@ import platform
 MODES = ("auto", "metal", "cpu")
 
 
-def resolve_device(mode: str, system: str | None = None, machine: str | None = None) -> str:
+def resolve_device(
+    mode: str, system: str | None = None, machine: str | None = None
+) -> str:
     if mode not in MODES:
         raise ValueError(f"device mode must be auto, metal or cpu, got {mode!r}")
     if mode != "auto":

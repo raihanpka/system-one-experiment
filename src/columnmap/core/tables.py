@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 
-
 def by_level(rows) -> dict:
     g: dict = {}
     for r in sorted(rows, key=lambda r: r["level"]):
@@ -16,5 +15,7 @@ def pct(x) -> str:
 
 
 def md_table(header, rows) -> str:
-    return "\n".join(["| " + " | ".join(header) + " |", "|" + "|".join("---" for _ in header) + "|"]
-                     + ["| " + " | ".join(map(str, r)) + " |" for r in rows])
+    return "\n".join(
+        ["| " + " | ".join(header) + " |", "|" + "|".join("---" for _ in header) + "|"]
+        + ["| " + " | ".join(map(str, r)) + " |" for r in rows]
+    )
