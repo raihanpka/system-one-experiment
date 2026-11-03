@@ -5,8 +5,8 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 ## Commands
 
 - Build: `uv build`
-- Run: `make run SAMPLES=a` (calls the model, run only when the user orders it)
-- Format: `uvx ruff@0.15.0 format src tests scripts` (check only: `uvx ruff@0.15.0 format --check src tests scripts`)
+- Run: `make run SAMPLES=a` (calls OpenRouter, run only when the user orders it)
+- Format: `uvx ruff@0.15.0 format src tests` (check only: `uvx ruff@0.15.0 format --check src tests`)
 - Lint: `make lint`
 - Test: `make test` (one file: `uv run pytest -q tests/core/test_selective.py`)
 - One module: not used, the repo is one package.
@@ -19,8 +19,8 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 ## Modules
 
 - `src/columnmap/core/`: shared helpers (settings, paths, scoring, calibration, selective cutoff, validation, prompts, template). Import the module, there is no single public file.
-- `src/columnmap/decisions/`: decider interface, types, and the factory that picks the backend. May depend on `core/paths`.
-- `src/columnmap/backends/`: OpenRouter adapter (default) and the local Jev GGUF adapter. May depend on `core` and `decisions`.
+- `src/columnmap/decisions/`: decider interface and question and answer types. Imports nothing from the repo.
+- `src/columnmap/backends/`: OpenRouter adapter, the only backend. May depend on `core` and `decisions`.
 - `src/columnmap/dataset/`: writes the template and sample CSV files (`make data`).
 - `src/columnmap/mapping/`: scores each input column against each output field.
 - `src/columnmap/honest/`: the honest run, which picks the fields from the scores.

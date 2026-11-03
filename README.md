@@ -2,12 +2,11 @@
 
 # Decision Mapper
 
-[Notes](./NOTES.md) &nbsp;&middot;&nbsp; [Model](https://huggingface.co/chaoliangUNSW/Jev-Style-2B-Decision-v3-GGUF) &nbsp;&middot;&nbsp; [llama.cpp](https://github.com/ggml-org/llama.cpp)
+[Notes](./NOTES.md) &nbsp;&middot;&nbsp; [Model](https://openrouter.ai/liquid/d1-ultra) &nbsp;&middot;&nbsp; [OpenRouter](https://openrouter.ai)
 
 ![python](https://img.shields.io/static/v1?logo=python&label=&message=python&color=36465D&logoColor=AAA&style=flat-square)
 ![uv](https://img.shields.io/static/v1?logo=uv&label=&message=uv&color=36465D&logoColor=AAA&style=flat-square)
-![llama.cpp](https://img.shields.io/static/v1?label=&message=llama.cpp&color=36465D&style=flat-square)
-![huggingface](https://img.shields.io/static/v1?logo=huggingface&label=&message=huggingface&color=36465D&logoColor=AAA&style=flat-square)
+![openrouter](https://img.shields.io/static/v1?label=&message=OpenRouter&color=36465D&style=flat-square)
 
 </div>
 
@@ -15,7 +14,7 @@
 
 Maps messy input columns onto a fixed output template with a decision model. Each output field gets a probability per input column. Confident fields are filled, the rest go to a review list with three candidates.
 
-- **Decision Model**: Jev-Style-2B-Decision-v3 (Q8_0) through llama.cpp, local only.
+- **Decision Model**: `~liquid/d1-ultra-latest` through the OpenRouter Decisions API, hosted only.
 - **Calibrated Output**: Platt scaling fitted on calibration data, stored per setup.
 - **Review First**: Fields below the precision target stay empty and go to a person.
 
@@ -24,13 +23,13 @@ Maps messy input columns onto a fixed output template with a decision model. Eac
 ### Getting Started
 
 ```bash
-make setup     # once: Python dependencies, model download, scorer build
-make run       # asks: a, b, c, d, or all (or make run SAMPLES=c)
-make sample    # run samples a, b, c, d
-make help      # all commands
+cp .env.example .env   # then put the OpenRouter key in .env
+make test              # unit tests, no model call
+make run               # asks: a, b, c, d, or all (or make run SAMPLES=c)
+make help              # all commands
 ```
 
-Settings live in `appsettings.json` (defaults; every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both. `Backend:Type` is `openrouter` (hosted, default) or `local` (Jev GGUF on this machine). The OpenRouter key goes in `.env` (copy `.env.example`); `.env` is loaded automatically at start.
+Settings live in `appsettings.json` (defaults; every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both. The OpenRouter key goes in `.env`; `.env` is loaded automatically at start.
 
 ---
 
@@ -39,7 +38,7 @@ Settings live in `appsettings.json` (defaults; every option is listed in `appset
 ```bash
 uv run columnmap                 # samples a, b, c, d
 uv run columnmap --samples ac    # only a and c
-uv run columnmap --all           # all four samples
+uv run columnmap --all           # all seven samples
 uv run columnmap --report-only   # rebuild the newest run, no model
 uv run columnmap --help          # all options
 ```
@@ -63,8 +62,9 @@ results/<samples>_<timestamp>/
 
 ```text
 src/columnmap/
-  core/        config, device, calibration (Platt, temperature), scoring, store, paths
-  decisions/   question types and the Decider protocol; JevDecider is the local adapter
+  core/        settings, calibration (Platt), scoring, store, paths
+  decisions/   question types and the Decider protocol
+  backends/    OpenRouterDecider, the hosted adapter
   honest/      stage without ground truth: candidate expressions ranked by the model
   mapping/     column to field scoring (options and pairs modes), reject rules
   convert/     converts files from decisions; metrics against ground truth (eval only)
@@ -73,12 +73,12 @@ src/columnmap/
   calibrate.py fits Platt parameters per setup; the key holds model, quant, mode, context, prompt, cutoff, and policy version
 ```
 
-To change the model, add an adapter in `decisions/` that implements `decide`, then choose it in `main.py`. Calibration keys refuse fits made for another model, quantization, or policy version.
+To change the model, change `OpenRouter:Model` in the settings. Calibration keys refuse fits made for another model, quantization, or policy version.
 
 ### Tech Stack
 
 - **Language**: [Python](https://www.python.org) 3.12, [uv](https://docs.astral.sh/uv)
-- **Model**: [Jev-Style-2B-Decision-v3](https://huggingface.co/chaoliangUNSW/Jev-Style-2B-Decision-v3-GGUF), [llama.cpp](https://github.com/ggml-org/llama.cpp)
+- **Model**: [Liquid D1 Ultra](https://openrouter.ai/liquid/d1-ultra) through [OpenRouter](https://openrouter.ai)
 - **Data and Figures**: [pandas](https://pandas.pydata.org), [seaborn](https://seaborn.pydata.org), [Matplotlib](https://matplotlib.org)
 
 <div align="center">
