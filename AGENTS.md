@@ -9,6 +9,7 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 - Format: `uvx ruff@0.15.0 format src tests` (check only: `uvx ruff@0.15.0 format --check src tests`)
 - Lint: `make lint`
 - Test: `make test` (one file: `uv run pytest -q tests/core/test_selective.py`)
+- DeepEval check of a finished run, no model call: `uv run columnmap --deepeval results/<run folder>`
 - One module: not used, the repo is one package.
 
 ## Architecture
@@ -26,12 +27,13 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 - `src/columnmap/honest/`: the honest run, which picks the fields from the scores.
 - `src/columnmap/convert/`: fills the output file with the calibrated cutoff.
 - `src/columnmap/report/`: builds files, figures, and tables from all stages.
+- `src/columnmap/evaluate/`: DeepEval metrics on a finished run against the ground truth. Top-level, may use `calibrate` and `core`. DeepEval is imported only there.
 - `src/columnmap/main.py`, `calibrate.py`, `experiment.py`: entry points, may use any stage.
 
 ## Rules
 
 - Branch from `main`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: calibration, convert, core, dataset, decisions, honest, mapping, report, settings, ontology, results, gitignore, deps, docs, test, format, cli.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: calibration, convert, core, dataset, decisions, honest, mapping, report, settings, ontology, results, gitignore, deps, docs, test, format, cli, evaluate.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
 - Never edit generated files: `data/` (regenerate with `make data`), `results/` (run output), `calibration.json` (refit with `uv run columnmap --fit-calibration <run folders>`).

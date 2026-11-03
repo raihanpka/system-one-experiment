@@ -17,6 +17,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "deepeval==4.3.1",
     "linkml>=1.12.1",
     "pytest>=9.2.0",
 ]

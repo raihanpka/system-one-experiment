@@ -1,0 +1,14 @@
+{
+  "metrics": {
+    "Source accuracy": {
+      "name": 1.0,
+      "samples": 1.0
+    },
+    "Fill precision": {
+      "name": 0.8667,
+      "samples": 0.8667
+    }
+  },
+  "cases": 2,
+  "fill_threshold": 0.9
+}
