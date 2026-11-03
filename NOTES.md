@@ -152,3 +152,5 @@ Pair level is fine: ECE 0.008 and 0.011 after Platt.
 2. `Backend` settings removed. There is one backend, so the switch had no effect. `OpenRouterDecider` is built directly in `main.py`; the factory is gone.
 3. Report labels name the model from the run record instead of the local runtime name. Figures and tables are not rerun here.
 4. Calibration keys keep their format. Hosted runs record quant `api`, so `calibration.json` needs no refit.
+5. `appsettings.json.examples` now shows `Run:TargetPrecision` 0.9, the committed value, and not the old 1.0.
+6. The format and lint commands in `.githooks/` and `ci-pr.yml` check `src tests` only, since `scripts/` is gone.
