@@ -35,7 +35,7 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
 - Never edit generated files: `data/` (regenerate with `make data`), `results/` (run output), `calibration.json` (refit with `uv run columnmap --fit-calibration <run folders>`).
-- Never call the model (`make run`, `make sample`, `make full`, `make pairs`, `make bench`) without the user's explicit order.
+- Never call the model (`make run`, `make sample`, `make full`, `make pairs`) without the user's explicit order.
 - Seeds: 11 for dev tuning only; 12 and 13 for calibration; 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
 - The API key goes in `.env` as `OPENROUTER_API_KEY` only. Never print it, log it, or commit it.
 - A PR stays reviewable in one sitting, a few hundred changed lines is typical.

@@ -38,7 +38,7 @@ Settings live in `appsettings.json` (defaults; every option is listed in `appset
 ```bash
 uv run columnmap                 # samples a, b, c, d
 uv run columnmap --samples ac    # only a and c
-uv run columnmap --all           # all seven samples
+uv run columnmap --all           # all four samples
 uv run columnmap --report-only   # rebuild the newest run, no model
 uv run columnmap --help          # all options
 ```
