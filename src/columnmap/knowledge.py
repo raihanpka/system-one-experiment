@@ -1,0 +1,55 @@
+# What the mapping needs to know about the target: the output fields and the reference tables (code lists).
+# Switch the data by pointing to another folder:
+#   <folder>/outputs.json     [{"name": ..., "type": "string" | "number" | "date", "description": ...}, ...]
+#   <folder>/reference/*.csv  columns code,label (optional; one file per code list)
+
+from __future__ import annotations
+
+import csv
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class Output:
+    name: str
+    type: str  # string | number | date
+    description: str
+
+
+@dataclass(frozen=True)
+class Knowledge:
+    outputs: tuple[Output, ...]
+    tables: tuple[dict, ...] = ()  # code -> label
+
+    @classmethod
+    def load(cls, folder) -> Knowledge:
+        folder = Path(folder)
+        outputs = tuple(
+            Output(o["name"], o["type"], o["description"])
+            for o in json.loads((folder / "outputs.json").read_text(encoding="utf-8"))
+        )
+        tables = []
+        for f in sorted((folder / "reference").glob("*.csv")):
+            with f.open(encoding="utf-8", newline="") as fh:
+                tables.append({r["code"]: r["label"] for r in csv.DictReader(fh)})
+        return cls(outputs, tuple(tables))
+
+    def save(self, folder) -> None:
+        folder = Path(folder)
+        (folder / "reference").mkdir(parents=True, exist_ok=True)
+        rows = [
+            {"name": o.name, "type": o.type, "description": o.description}
+            for o in self.outputs
+        ]
+        (folder / "outputs.json").write_text(
+            json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        for n, table in enumerate(self.tables, 1):
+            with (folder / "reference" / f"table_{n}.csv").open(
+                "w", encoding="utf-8", newline=""
+            ) as fh:
+                w = csv.writer(fh)
+                w.writerow(["code", "label"])
+                w.writerows(table.items())

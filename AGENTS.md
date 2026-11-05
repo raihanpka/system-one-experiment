@@ -1,6 +1,6 @@
 # columnmap
 
-Maps messy input columns to a fixed insurance/finance output template. A field is filled automatically only when calibrated confidence and precision justify it, otherwise it goes to human review. Generic working rules come from the dotagent, the facts below are this repo's.
+Maps messy input columns to a fixed insurance/finance output template. Each output field is filled with the best expression over the input columns when its score reaches the fill score; otherwise it stays empty. The goal is a converted file equal to the expected file. Generic working rules come from the dotagent, the facts below are this repo's.
 
 ## Commands
 
@@ -8,36 +8,25 @@ Maps messy input columns to a fixed insurance/finance output template. A field i
 - Run: `make run SAMPLES=a` (calls OpenRouter, run only when the user orders it)
 - Format: `uvx ruff@0.15.0 format src tests` (check only: `uvx ruff@0.15.0 format --check src tests`)
 - Lint: `make lint`
-- Test: `make test` (one file: `uv run pytest -q tests/core/test_selective.py`)
+- Test: `make test` (one file: `uv run pytest -q tests/test_mapper.py`)
 - DeepEval check of a finished run, no model call: `uv run columnmap --deepeval results/<run folder>`
-- One module: not used, the repo is one package.
+- Rebuild a report with another fill score, no model call: `uv run columnmap --report-only --fill-score 0.8`
 
 ## Architecture
 
-- Style: layered pipeline in one Python package, because one command runs every stage. Structure: horizontal layers by stage.
-- Coupling: `core` and `decisions` import no stage. A stage imports `core`, `decisions`, and earlier stages only, in this order: `dataset`, `mapping`, `honest`, `convert`, `report`. Enforced by none yet, see `docs/DOTAGENT-SETUP.md`.
-
-## Modules
-
-- `src/columnmap/core/`: shared helpers (settings, paths, scoring, calibration, selective cutoff, validation, prompts, template). Import the module, there is no single public file.
-- `src/columnmap/decisions/`: decider interface and question and answer types. Imports nothing from the repo.
-- `src/columnmap/backends/`: OpenRouter adapter, the only backend. May depend on `core` and `decisions`.
-- `src/columnmap/dataset/`: writes the template and sample CSV files (`make data`).
-- `src/columnmap/mapping/`: scores each input column against each output field.
-- `src/columnmap/honest/`: the honest run, which picks the fields from the scores.
-- `src/columnmap/convert/`: fills the output file with the calibrated cutoff.
-- `src/columnmap/report/`: builds files, figures, and tables from all stages.
-- `src/columnmap/evaluate/`: DeepEval metrics on a finished run against the ground truth. Top-level, may use `calibrate` and `core`. DeepEval is imported only there.
-- `src/columnmap/main.py`, `calibrate.py`, `experiment.py`: entry points, may use any stage.
+- Style: one small package, no third-party dependency. Library files at `src/columnmap/`: `knowledge.py`, `decider.py`, `prompts.py`, `expressions.py`, `mapper.py`, `config.py`. Evaluation only in `src/columnmap/bench/` (synthetic data, ground truth, report, DeepEval, CLI).
+- Coupling: library files never import `bench`. Details in `docs/ARCHITECTURE.md`.
 
 ## Rules
 
 - Branch from `main`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: calibration, convert, core, dataset, decisions, honest, mapping, report, settings, ontology, results, gitignore, deps, docs, test, format, cli, evaluate.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: mapper, knowledge, decider, prompts, expressions, config, bench, cli, deps, docs, test, results, gitignore, format.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
-- Never edit generated files: `data/` (regenerate with `make data`), `results/` (run output), `calibration.json` (refit with `uv run columnmap --fit-calibration <run folders>`).
-- Never call the model (`make run`, `make sample`, `make full`, `make pairs`) without the user's explicit order.
-- Seeds: 11 for dev tuning only; 12 and 13 for calibration; 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
+- Never edit generated files: `data/` (regenerate with `make data`) and `results/` (run output).
+- Never call the model (`make run`, `make sample`, `make full`) without the user's explicit order.
+- Seeds: 11 for dev tuning only; 12 and 13 are the holdout (never tune on them); 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
+- Report every mapping result as `x / y` (fields right out of the fields counted), per sample and context, and say which seed.
+- The model gets no ground truth: no rule, kind, or source id of the synthetic template. Reference tables and field descriptions are task input.
 - The API key goes in `.env` as `OPENROUTER_API_KEY` only. Never print it, log it, or commit it.
 - A PR stays reviewable in one sitting, a few hundred changed lines is typical.

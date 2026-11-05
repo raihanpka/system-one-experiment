@@ -2,45 +2,35 @@
 
 ## Style
 
-- System: layered pipeline inside one Python package, because one command runs every stage and the stages share one set of helpers.
-- Structure: horizontal layers by pipeline stage. Shared packages `core` and `decisions` sit below the stages.
-- Coupling rule: `core` and `decisions` import no stage. A stage imports `core`, `decisions`, and earlier stages only, in the order `dataset`, `mapping`, `honest`, `convert`, `report`.
+- One small Python package, `columnmap`, that other projects import. It has no third-party dependency (standard library only).
+- Two parts: the library (the mapping itself) and `columnmap.bench` (synthetic data, ground truth, reports, DeepEval). A project that only maps tables imports the library and never touches `bench`.
+- Coupling rule: the library files never import `bench`. `bench` imports the library.
 
-## Shape
+## Library
 
-One package, `src/columnmap`. `main.py`, `calibrate.py`, and `experiment.py` are entry points that run the stages in order. Backends (`backends/`) sit behind the interface in `decisions/`, so the stages never import a model.
+| File | Owns |
+|---|---|
+| `knowledge.py` | `Knowledge`: the output fields (name, type, description) and the reference tables (code lists), loaded from a folder. Switching data means pointing to another folder. |
+| `decider.py` | The Decisions interface: `Question`, `Answer`, `Response`, the `Decider` protocol, and `OpenRouterDecider`. |
+| `prompts.py` | All prompt text. The model sees column names and sample values, field names and descriptions, and candidate expressions with what they compute. |
+| `expressions.py` | The expression AST (evaluate, render) and the catalog of candidate expressions, including lookups from reference tables. Deterministic, no model. |
+| `mapper.py` | `score_columns` (stage 1), `choose_expressions` (stage 2), `convert`, and `Mapper`, which runs both. |
+| `config.py` | Paths and the `appsettings.json` / `.env` settings used by the CLI. The library itself takes plain arguments. |
 
-## Modules
+```python
+knowledge = Knowledge.load("my_knowledge/")        # outputs.json + reference/*.csv
+mapping = Mapper(OpenRouterDecider(key, model, url), knowledge).map(rows)
+header, converted = mapping.convert(rows)          # fields below the fill score stay empty
+```
 
-Each module owns one thing. Import the module, there is no single public file.
+## Bench (evaluation only)
 
-| Module | Owns | May depend on | Public interface |
-|---|---|---|---|
-| `core/` | settings, paths, scoring, calibration, selective cutoff, validation, prompts, template | none of the stages | the module itself |
-| `decisions/` | decider interface and question and answer types | none | `base.py`, `types.py` |
-| `backends/` | OpenRouter adapter, the only backend | `core`, `decisions` | `openrouter.py` |
-| `dataset/` | template and sample CSV files (`make data`) | `core` | `export.py`, `samples.py` |
-| `mapping/` | score of each input column for each output field | `core`, `decisions`, `dataset` | `run.py`, `metrics.py` |
-| `honest/` | the honest run that picks fields from the scores | `core`, `decisions` | `run.py` |
-| `convert/` | fills the output file with the calibrated cutoff | `core`, `decisions`, `mapping`, `honest` | `auto.py`, `metrics.py` |
-| `report/` | files, figures, and tables from all stages | every stage above it | `build.py` |
+`bench/` holds the synthetic template and generator (`template.py`, `generate.py`, `samples.py`), the CSV export (`export.py`, which also writes `data/knowledge/`), the resumable run store (`store.py`, `run.py`, `runs.py`, `usage.py`), grading against the ground truth (`metrics.py`), the report (`summary.py`, `report.py`), DeepEval (`deepeval.py`), and the CLI (`cli.py`).
 
 ## Current violations
 
-None. Checked with:
-
-```
-grep -rnE "from \.\.?(dataset|mapping|honest|convert|report)" src/columnmap/core src/columnmap/decisions src/columnmap/backends
-grep -rnE "from \.\.(honest|convert|report)" src/columnmap/mapping src/columnmap/honest src/columnmap/dataset
-grep -rnE "from \.\.report" src/columnmap/convert
-```
-
-All three print nothing.
-
-## Boundary check
-
-None yet. The rule holds today by grep, not by a tool. See `docs/DOTAGENT-SETUP.md`, open items.
+None. Check: `grep -rn "bench" src/columnmap/*.py` prints only `__init__.py` and `__main__.py` comments or imports of `bench.cli`.
 
 ## Flow
 
-The dataset stage writes the template and the sample inputs. The mapping stage asks the decider to score each input column against each output field and keeps the raw scores. The honest stage picks the fields from those scores. The convert stage fills the output file: a field is filled automatically only when its score passes the calibrated cutoff and its values pass the template type, otherwise it goes to review. The report stage writes the files, figures, and tables from all of these.
+Stage 1 asks the model one question per input column: which output fields does it provide data for, given the field names and descriptions. Stage 2 takes the four best columns of each field, builds candidate expressions from every subset (copy, year, date difference, arithmetic, concat, lookup in a reference table), lets the model pick a shortlist and check each candidate against the field description, and keeps the simplest expression whose score is close to the best. A field is filled when that score reaches the fill score; converting is deterministic.

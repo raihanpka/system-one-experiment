@@ -1,22 +1,27 @@
 <div align="center">
 
-# Decision Mapper
+# Column Mapper
 
-[Notes](./NOTES.md) &nbsp;&middot;&nbsp; [Model](https://openrouter.ai/liquid/d1-ultra) &nbsp;&middot;&nbsp; [OpenRouter](https://openrouter.ai)
-
-![python](https://img.shields.io/static/v1?logo=python&label=&message=python&color=36465D&logoColor=AAA&style=flat-square)
-![uv](https://img.shields.io/static/v1?logo=uv&label=&message=uv&color=36465D&logoColor=AAA&style=flat-square)
-![openrouter](https://img.shields.io/static/v1?label=&message=OpenRouter&color=36465D&style=flat-square)
+[Architecture](./docs/ARCHITECTURE.md) &nbsp;&middot;&nbsp; [Model](https://openrouter.ai/liquid/d1-ultra) &nbsp;&middot;&nbsp; [OpenRouter](https://openrouter.ai)
 
 </div>
 
-### About This Repo
+### About
 
-Maps messy input columns onto a fixed output template with a decision model. Each output field gets a probability per input column. Confident fields are filled, the rest go to a review list with three candidates.
+Maps the columns of an input table onto the output fields of a target and gives a converted table. The Decisions model (`~liquid/d1-ultra-latest` through OpenRouter) scores which columns feed which field and checks candidate expressions (copy, year, date difference, arithmetic, concat, reference-table lookup). Everything else is deterministic. A field is filled when its best expression reaches the fill score.
 
-- **Decision Model**: `~liquid/d1-ultra-latest` through the OpenRouter Decisions API, hosted only.
-- **Calibrated Output**: Platt scaling fitted on calibration data, stored per setup.
-- **Review First**: Fields below the precision target stay empty and go to a person.
+The library is one small package with no third-party dependency. To use it in another project, give it your own knowledge folder (output fields and reference tables):
+
+```python
+from columnmap import Knowledge, Mapper, OpenRouterDecider
+
+knowledge = Knowledge.load("my_knowledge/")   # outputs.json + reference/*.csv, see data/knowledge/ for the format
+decider = OpenRouterDecider(api_key, "~liquid/d1-ultra-latest", "https://openrouter.ai/api/alpha/decisions")
+mapping = Mapper(decider, knowledge).map(rows)        # rows: list of dicts
+header, converted = mapping.convert(rows)             # fields below the fill score stay empty
+```
+
+`columnmap.bench` evaluates the mapper on synthetic samples with a ground truth; a project that only maps tables never imports it.
 
 ---
 
@@ -29,59 +34,19 @@ make run               # asks: a, b, c, d, or all (or make run SAMPLES=c)
 make help              # all commands
 ```
 
-Settings live in `appsettings.json` (defaults; every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both. The OpenRouter key goes in `.env`; `.env` is loaded automatically at start.
+Settings live in `appsettings.json` (every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both.
 
----
-
-### Running
+### Running the bench
 
 ```bash
 uv run columnmap                 # samples a, b, c, d
 uv run columnmap --samples ac    # only a and c
-uv run columnmap --all           # all four samples
-uv run columnmap --report-only   # rebuild the newest run, no model
-uv run columnmap --deepeval results/<run>   # DeepEval metrics on a finished run, no model
-uv run columnmap --help          # all options
+uv run columnmap --split holdout # seeds 12 and 13, never tuned on
+uv run columnmap --report-only --fill-score 0.8   # rebuild the newest run, no model
+uv run columnmap --deepeval results/<run>          # DeepEval metrics, no model
 ```
 
-Samples: `a` identical names, `b` synonyms, `c` unusual technical terms, `d` mixed styles with extra columns.
-
----
-
-### Output
-
-```text
-results/<samples>_<timestamp>/
-  result.json       raw model output
-  <sample>/         converted file, decisions, review list, probabilities
-  report/           summary.md and figures
-```
-
----
-
-### Layout
-
-```text
-src/columnmap/
-  core/        settings, calibration (Platt), scoring, store, paths
-  decisions/   question types and the Decider protocol
-  backends/    OpenRouterDecider, the hosted adapter
-  honest/      stage without ground truth: candidate expressions ranked by the model
-  mapping/     column to field scoring (options and pairs modes), reject rules
-  convert/     converts files from decisions; metrics against ground truth (eval only)
-  dataset/     synthetic samples and expected files (ground truth, eval only)
-  report/      summary, figures, tables
-  evaluate/    DeepEval metrics on a finished run against ground truth (eval only)
-  calibrate.py fits Platt parameters per setup; the key holds model, quant, mode, context, prompt, cutoff, and policy version
-```
-
-To change the model, change `OpenRouter:Model` in the settings. Calibration keys refuse fits made for another model, quantization, or policy version.
-
-### Tech Stack
-
-- **Language**: [Python](https://www.python.org) 3.12, [uv](https://docs.astral.sh/uv)
-- **Model**: [Liquid D1 Ultra](https://openrouter.ai/liquid/d1-ultra) through [OpenRouter](https://openrouter.ai)
-- **Data and Figures**: [pandas](https://pandas.pydata.org), [seaborn](https://seaborn.pydata.org), [Matplotlib](https://matplotlib.org)
+Samples: `a` identical names, `b` synonyms, `c` unusual technical terms, `d` mixed styles with extra columns. Every run writes `results/<run>/report/summary.md` with each count as x / y against the ground truth, and per sample the converted file, the decisions, and the column scores.
 
 <div align="center">
 <sub>Copyright &copy; 2026 Raihan Putra Kirana. All rights reserved.</sub>

@@ -7,14 +7,8 @@
     "ApiKeyEnv_Note": "name of the env var that holds the key (set it in .env). The key itself never goes in this file."
   },
   "Run": {
-    "KeepD": 0.0,
-    "KeepD_Note": "score a column needs to be chosen for a field; 0.0 = probability 0.5",
-    "TargetPrecision": 0.9,
-    "TargetPrecision_Note": "precision a field must reach to be filled automatically, in (0, 1]; 0.9 = 90 percent, checked on the 95 percent lower bound",
-    "PromptVersion": "v1",
-    "PromptVersion_Note": "part of the calibration key; change it when the prompt changes",
-    "Mode": "options",
-    "Mode_Options": ["options (one question per input column, fast)", "pairs (one yes/no per column and field, slow, calibrated)", "both"],
+    "FillScore": 0.9,
+    "FillScore_Note": "score (0 to 1) the best expression of a field needs to fill it; below it the field stays empty. Can be changed with --report-only --fill-score.",
     "Seed": 1234,
     "Seed_Note": "seed used when neither --seed nor --split is given",
     "Conds": ["name", "samples"],
@@ -22,9 +16,9 @@
   },
   "Splits": {
     "Dev": [11],
-    "Dev_Note": "tuning: prompts, contexts, cutoffs. Can be looked at many times.",
-    "Calibration": [12, 13],
-    "Calibration_Note": "fit calibration on one seed, check it on the other.",
+    "Dev_Note": "tuning: prompts, expressions, the fill score. Can be looked at many times.",
+    "Holdout": [12, 13],
+    "Holdout_Note": "never tuned on; checks that a dev result holds on other data.",
     "Test": [21, 22],
     "Test_Note": "final evaluation, looked at once, needs --final. Already used; do not reuse."
   }
