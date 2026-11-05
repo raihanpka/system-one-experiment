@@ -13,6 +13,13 @@ def _day(x):
     return date.fromisoformat(str(x))
 
 
+# arithmetic takes numbers only: a text value must not repeat ("12" * 5) or join ("1" + "2") by accident
+def _num(x):
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        raise TypeError(f"not a number: {x!r}")
+    return x
+
+
 def evaluate(node: dict, row: dict):
     if "src" in node:
         return row[node["src"]]
@@ -22,13 +29,13 @@ def evaluate(node: dict, row: dict):
     if op == "concat":
         return node["sep"].join(str(a) for a in args)
     if op == "add":
-        return args[0] + args[1]
+        return _num(args[0]) + _num(args[1])
     if op == "sub":
-        return args[0] - args[1]
+        return _num(args[0]) - _num(args[1])
     if op == "mul":
-        return args[0] * args[1]
+        return _num(args[0]) * _num(args[1])
     if op == "div":
-        return args[0] / args[1]
+        return _num(args[0]) / _num(args[1])
     if op == "year":
         return _day(args[0]).year
     if op == "days_between":

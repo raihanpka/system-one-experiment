@@ -77,3 +77,12 @@ def test_safe_evaluate_returns_none_instead_of_raising():
     )
     assert safe_evaluate({"op": "year", "args": [S("d")]}, row) is None
     assert safe_evaluate({"op": "add", "args": [S("a"), S("a")]}, row) == 2
+
+
+def test_arithmetic_refuses_text_instead_of_repeating_or_joining_it():
+    row = {"id": "8532422441", "amount": 19281179, "a": "1", "b": "2"}
+    mul = {"op": "mul", "args": [{"src": "id"}, {"src": "amount"}]}
+    add = {"op": "add", "args": [{"src": "a"}, {"src": "b"}]}
+    assert safe_evaluate(mul, row) is None  # was a 1.7 GB string
+    assert safe_evaluate(add, row) is None  # was "12"
+    assert safe_evaluate({"op": "add", "args": [{"lit": 1}, {"lit": 2}]}, row) == 3
