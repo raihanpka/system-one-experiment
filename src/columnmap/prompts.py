@@ -66,23 +66,60 @@ def option_text(ast: dict, rows: list[dict]) -> str:
     return f"{expression_text(ast)} => " + "; ".join(examples(ast, rows))
 
 
-def pick_question(field: str, options: list[str]) -> Question:
+# what kind of value an output field is, decided from its name and description alone
+KINDS = {
+    "copy": "the value is copied unchanged from one input column",
+    "join": "text from several input columns is joined into one value",
+    "arithmetic": "the value is calculated from number columns with + - * /",
+    "date_difference": "the value is the number of days between two date columns",
+    "year": "the value is the year taken from one date column",
+    "lookup": "a code in one input column is translated into a label with a code table",
+}
+NONE = "none: the field cannot be built from the input columns"
+
+
+def kind_question() -> Question:
     return Question(
         "choice",
-        f"Which expression produces the output field '{field}' from these input columns?",
-        name="pick",
-        choices=tuple(Choice(o) for o in options),
+        "What kind of value is this output field? Decide from its name and description only.",
+        name="kind",
+        choices=tuple(Choice(k, v) for k, v in KINDS.items()),
     )
 
 
-# the description of the field is part of the question; the check asks for the complete value, no extra or missing column
-def check_question(
-    field: str, description: str, ast: dict, rows: list[dict], name: str
-) -> Question:
+def kind_state(out: Output) -> str:
+    return f"Output field: {out.name}\nDescription: {out.description}\nType: {out.type}"
+
+
+# the state for the column-set and expression questions: the field, every input column name, and the best columns with values
+def field_state(
+    out: Output, all_columns: list[str], names: list[str], rows: list[dict]
+) -> str:
+    return (
+        kind_state(out)
+        + f"\nAll input columns: {', '.join(all_columns)}\n"
+        + pool_state(names, rows)
+    )
+
+
+def set_label(columns) -> str:
+    return " & ".join(columns)
+
+
+def set_question(out: Output, labels: list[str]) -> Question:
     return Question(
-        "predicate",
-        f"The output field '{field}' means: {description}. It is computed as: {expression_text(ast)} "
-        f"(for example {'; '.join(examples(ast, rows))}). Is this the complete and correct value of the field, "
-        "built from exactly the columns that are needed, with no extra column and no missing column?",
-        name=name,
+        "choice",
+        f"Which input columns does the output field '{out.name}' need? Choose the set that has exactly the inputs its "
+        f"description names or implies, no more and no fewer. Choose '{NONE}' if they are not all among the input columns.",
+        name="set",
+        choices=tuple(Choice(x) for x in [*labels, NONE]),
+    )
+
+
+def expression_question(out: Output, options: list[str]) -> Question:
+    return Question(
+        "choice",
+        f"Which expression gives the value of the output field '{out.name}' ({out.description})?",
+        name="expr",
+        choices=tuple(Choice(o) for o in options),
     )

@@ -3,37 +3,56 @@ import json
 
 from columnmap import Knowledge, Mapper, Output
 from columnmap.decider import Answer, Response
-from columnmap.mapper import choose_expressions, convert, score_columns, top_columns
+from columnmap.mapper import (
+    convert,
+    infer_kinds,
+    score_columns,
+    set_candidates,
+    top_columns,
+)
 
 ROWS = [
-    {"born": "1981-01-09", "code": "A", "first": "Budi", "last": "Halim"},
-    {"born": "1953-05-25", "code": "R", "first": "Siti", "last": "Wijaya"},
-    {"born": "2005-11-23", "code": "P", "first": "Rina", "last": "Setiawan"},
+    {"born": "1981-01-09", "code": "A", "first": "Budi", "last": "Halim", "sex": "M"},
+    {"born": "1953-05-25", "code": "R", "first": "Siti", "last": "Wijaya", "sex": "F"},
+    {
+        "born": "2005-11-23",
+        "code": "P",
+        "first": "Rina",
+        "last": "Setiawan",
+        "sex": "F",
+    },
 ]
 KNOWLEDGE = Knowledge(
     (
         Output("birth_year", "number", "Year of birth"),
         Output("status", "string", "Status in words"),
         Output("full_name", "string", "Given name then family name"),
+        Output("gender", "string", "Gender of the insured"),
+        Output("tax_id", "string", "Tax number of the insured"),
     ),
     ({"A": "Approved", "R": "Rejected", "P": "Pending"},),
 )
+# what the scripted model "knows": the kind of every field, the column set it needs, and the column scores of stage 1
+KINDS = {
+    "birth_year": "year",
+    "status": "lookup",
+    "full_name": "join",
+    "gender": "lookup",
+    "tax_id": "copy",
+}
+SETS = {
+    "birth_year": "born",
+    "status": "code",
+    "full_name": "first & last",
+    "gender": "sex",
+}  # tax_id has no source
+SCORES = {c: {f: -3.0 for f in KINDS} for c in ROWS[0]}
+for f, s in SETS.items():
+    for c in s.split(" & "):
+        SCORES[c][f] = 3.0
 
 
 class Scripted:
-    # column scores come from the table below; an expression is approved when its text says what it should
-    SCORES = {
-        "born": {"birth_year": 3.0, "status": -3.0, "full_name": -4.0},
-        "code": {"birth_year": -4.0, "status": 3.0, "full_name": -3.0},
-        "first": {"birth_year": -4.0, "status": -3.0, "full_name": 2.0},
-        "last": {"birth_year": -4.0, "status": -3.0, "full_name": 1.0},
-    }
-    GOOD = {
-        "birth_year": "year(born)",
-        "status": "lookup(code",
-        "full_name": 'concat(first, " ", last)',
-    }
-
     def __init__(self):
         self.questions = []
 
@@ -41,57 +60,57 @@ class Scripted:
         self.questions += questions
         out = []
         for q in questions:
-            if q.type == "choice" and q.name == "field":
+            names = [c.value for c in q.choices]
+            field = next(
+                (
+                    f
+                    for f in KINDS
+                    if f"'{f}'" in q.instructions or f"field: {f}" in text
+                ),
+                None,
+            )
+            if q.name == "field":
                 col = text.split("\n")[0].removeprefix("Input column: ")
-                raw = self.SCORES[col]
                 out.append(
                     Answer(
                         "choice",
                         q.name,
-                        choice=max(raw, key=raw.get),
-                        probabilities={k: 0.3 for k in raw},
-                        raw_scores=raw,
+                        probabilities={n: 0.2 for n in names},
+                        raw_scores=SCORES[col],
                     )
                 )
-            elif (
-                q.type == "choice"
-            ):  # pick: the option with the good expression of the asked field first, then the option order
-                names = [c.value for c in q.choices]
-                want = next(
-                    (
-                        e
-                        for f, e in self.GOOD.items()
-                        if f"output field '{f}'" in q.instructions
-                    ),
-                    "",
-                )
+            elif q.name == "kind":
+                f = text.split("\n")[0].removeprefix("Output field: ")
+                p = {n: (0.9 if n == KINDS[f] else 0.02) for n in names}
+                out.append(Answer("choice", q.name, probabilities=p))
+            elif q.name == "set":
+                p = {n: (0.9 if n == SETS.get(field) else 0.01) for n in names}
+                if field not in SETS:
+                    p = {n: (0.8 if n.startswith("none") else 0.01) for n in names}
+                out.append(Answer("choice", q.name, probabilities=p))
+            else:  # expr: prefer the lookup/year/concat over a plain copy
                 p = {
-                    n: (1.0 if want in n else 1 / (2 + i)) for i, n in enumerate(names)
+                    n: (0.9 if ("lookup" in n or "year" in n or "concat" in n) else 0.1)
+                    for n in names
                 }
-                out.append(
-                    Answer("choice", q.name, choice=max(p, key=p.get), probabilities=p)
-                )
-            else:
-                good = any(
-                    f"output field '{f}'" in q.instructions and e in q.instructions
-                    for f, e in self.GOOD.items()
-                )
-                out.append(
-                    Answer("predicate", q.name, probability=0.97 if good else 0.1)
-                )
+                out.append(Answer("choice", q.name, probabilities=p))
         return Response("scripted", out, {})
+
+
+def test_kinds_are_read_from_the_descriptions_once_per_field():
+    d = Scripted()
+    assert infer_kinds(d, KNOWLEDGE) == KINDS
+    assert [q.name for q in d.questions] == ["kind"] * 5
 
 
 def test_scores_come_from_one_question_per_column_that_lists_the_field_descriptions():
     d = Scripted()
     matrix, raw = score_columns(d, ROWS, KNOWLEDGE)
-    assert (
-        set(matrix) == {"born", "code", "first", "last"}
-        and matrix["born"]["birth_year"] == 3.0
-    )
+    assert set(matrix) == set(ROWS[0]) and matrix["born"]["birth_year"] == 3.0
     q = d.questions[0]
-    assert [c.value for c in q.choices] == ["birth_year", "status", "full_name"]
-    assert [c.description for c in q.choices][0] == "Year of birth"
+    assert [c.value for c in q.choices][0] == "birth_year" and q.choices[
+        0
+    ].description == "Year of birth"
     assert "Sample values" in raw["born"]["input"]
 
 
@@ -100,43 +119,59 @@ def test_top_columns_rank_by_score_and_break_ties_by_name():
     assert top_columns(m, "f", 2) == ["c", "a"]
 
 
-def test_the_mapper_finds_a_year_a_lookup_and_a_concat_and_converts_deterministically():
+def test_the_mapper_chooses_the_set_then_the_expression_and_converts_deterministically():
     mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
-    texts = {f: r["best_text"] for f, r in mapping.fields.items()}
+    f = mapping.fields
     assert (
-        texts["birth_year"] == "year(born)"
-        and texts["full_name"] == 'concat(first, " ", last)'
+        f["birth_year"]["cols"] == ["born"]
+        and f["birth_year"]["best_text"] == "year(born)"
     )
-    assert texts["status"].startswith("lookup(code")
-    header, converted = mapping.convert(ROWS)
-    assert header == ["birth_year", "status", "full_name"]
     assert (
-        converted[0] == [1981, "Approved", "Budi Halim"]
+        f["full_name"]["cols"] == ["first", "last"]
+        and f["full_name"]["best_text"] == 'concat(first, " ", last)'
+    )
+    assert (
+        f["status"]["best_text"].startswith("lookup(code")
+        and f["status"]["score"] == 0.9
+    )
+    header, converted = mapping.convert(ROWS)
+    assert header == list(KINDS)
+    assert (
+        converted[0][:3] == [1981, "Approved", "Budi Halim"]
         and converted[2][1] == "Pending"
     )
 
 
-def test_a_field_below_the_fill_score_stays_empty():
+def test_a_kind_without_candidates_falls_back_to_a_plain_copy():
+    # the model calls gender a lookup, but no code table covers it: the column is copied
     mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
-    _, converted = mapping.convert(ROWS, fill_score=0.99)
+    assert mapping.fields["gender"]["best_text"] == "sex"
+    assert mapping.convert(ROWS)[1][1][3] == "F"
+
+
+def test_a_field_whose_columns_are_not_there_says_none_and_stays_empty():
+    mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
+    rec = mapping.fields["tax_id"]
+    assert rec["p_none"] == 0.8 and rec["score"] < 0.1
+    assert mapping.convert(ROWS)[1][0][4] is None  # below the fill score
+
+
+def test_a_higher_fill_score_leaves_more_fields_empty():
+    mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
+    _, converted = mapping.convert(ROWS, fill_score=0.95)
     assert all(v is None for row in converted for v in row)
 
 
-def test_the_simplest_expression_wins_when_scores_are_close():
-    class AllApprove(Scripted):
-        def decide(self, text, questions):
-            res = super().decide(text, questions)
-            for a in res.answers:
-                if a.type == "predicate":
-                    a.probability = 0.95
-            return res
-
-    rec = choose_expressions(
-        AllApprove(), ROWS, score_columns(AllApprove(), ROWS, KNOWLEDGE)[0], KNOWLEDGE
-    )
-    assert (
-        rec["full_name"]["method"] == "copy"
-    )  # a plain copy of a column, not a longer concat
+def test_set_candidates_use_exactly_the_chosen_columns():
+    out = KNOWLEDGE.outputs[2]
+    texts = {
+        c["op"] if "op" in c else "src"
+        for c in set_candidates(("first", "last"), ROWS, out, "join", ())
+    }
+    assert texts == {"concat"}
+    assert set_candidates(("first",), ROWS, out, "join", ()) == [
+        {"src": "first"}
+    ]  # no join of one column: copy
 
 
 def test_knowledge_round_trips_through_a_folder_and_is_all_a_project_needs_to_switch_data(

@@ -1,6 +1,9 @@
-# The mapping. Stage 1 scores every input column against every output field with the Decisions model.
-# Stage 2 builds candidate expressions from the best columns and lets the model rank them; no ground truth goes in.
-# Converting is deterministic. The stage functions keep no state, so a caller can log or resume them; Mapper runs both.
+# The mapping, in the order the Decisions model is asked:
+#   kind     what kind of value each output field is (copy, join, arithmetic, ...), from its description alone, once
+#   stage 1  which input columns feed which output field (one question per input column)
+#   stage 2  per field: which SET of columns it needs (or none), then which expression of that kind builds it
+# A field is filled when the probability of its column set reaches the fill score. Candidate expressions and converting
+# are deterministic. No ground truth goes in. The stage functions keep no state, so a caller can log or resume them.
 
 from __future__ import annotations
 
@@ -11,25 +14,36 @@ from .decider import Decider
 from .expressions import candidates, safe_evaluate, size, src_names
 from .knowledge import Knowledge, Output
 from .prompts import (
-    check_question,
+    NONE,
+    expression_question,
     expression_text,
+    field_state,
     input_state,
+    kind_question,
+    kind_state,
     mapping_question,
     option_text,
-    pick_question,
     pool_state,
     samples,
+    set_label,
+    set_question,
 )
 
-FILL_SCORE = 0.9  # score the best expression of a field needs to fill it
-TOP_COLUMNS = 4  # columns with the best mapping scores; candidates use every subset of up to three of them
+FILL_SCORE = (
+    0.7  # probability the column set of a field needs to fill it (set on the dev split)
+)
+TOP_COLUMNS = 5  # columns with the best mapping scores; the column set of a field is chosen among their subsets
 MAX_CANDIDATES = (
-    24  # options in one pick question; more made the server drop the connection
+    24  # options in one expression question; more made the server drop the connection
 )
-SHORTLIST = 5  # candidates the model checks one by one
-MARGIN = (
-    0.2  # a simpler expression wins when its score is within this margin of the best
-)
+SIZES = {
+    "copy": (1,),
+    "year": (1,),
+    "lookup": (1,),
+    "date_difference": (2,),
+    "arithmetic": (2, 3),
+    "join": (2, 3),
+}
 
 
 # stage 1: matrix[column][field] = raw score; raw keeps the model's own answer per column for logging
@@ -55,33 +69,41 @@ def top_columns(matrix: dict, field: str, k: int = TOP_COLUMNS) -> list[str]:
     return [c for _, c in sorted((-m[field], c) for c, m in matrix.items())[:k]]
 
 
-# the candidate expressions of one field: every subset of the top columns, simplest first
-def field_candidates(names, rows, out_type, tables) -> list[dict]:
-    seen, out = set(), []
-    for r in (1, 2, 3):
-        for sub in combinations(names, r):
-            for c in candidates(
-                [(n, [row[n] for row in rows]) for n in sub],
-                out_type=out_type,
-                tables=tables,
-            ):
-                key = expression_text(c)
-                if key not in seen:
-                    seen.add(key)
-                    out.append(c)
-    out.sort(
-        key=lambda c: (size(c), expression_text(c))
-    )  # by nodes, not text: a lookup is long to print but simple
-    return out[:MAX_CANDIDATES]
+# which family an expression belongs to, as named in KINDS
+def family(ast: dict) -> str:
+    if "src" in ast:
+        return "copy"
+    return {
+        "concat": "join",
+        "add": "arithmetic",
+        "sub": "arithmetic",
+        "mul": "arithmetic",
+        "div": "arithmetic",
+        "days_between": "date_difference",
+        "year": "year",
+        "lookup": "lookup",
+    }[ast["op"]]
+
+
+# the kind of every output field, read from its description (once per knowledge, not per file)
+def infer_kinds(decider: Decider, knowledge: Knowledge) -> dict:
+    q = kind_question()
+    out = {}
+    for o in knowledge.outputs:
+        p = decider.decide(kind_state(o), [q]).answers[0].probabilities
+        out[o.name] = max(p, key=p.get)
+    return out
 
 
 def _empty() -> dict:
     return {
+        "kind": None,
         "cols": [],
         "top_cols": [],
+        "set_scores": {},
+        "p_none": None,
         "cands": [],
-        "shortlist": [],
-        "scores": [],
+        "p_expr": None,
         "best": None,
         "best_text": None,
         "score": None,
@@ -89,55 +111,79 @@ def _empty() -> dict:
     }
 
 
-def _field(decider, out: Output, rows, matrix, tables) -> dict:
+# the expressions that build a field from exactly this column set, of the field's kind (a plain copy when there is no other)
+def set_candidates(chosen, rows, out: Output, kind: str, tables) -> list[dict]:
+    cols = [(n, [r[n] for r in rows]) for n in chosen]
+    found = [
+        c
+        for c in candidates(cols, out_type=out.type, tables=tables)
+        if set(src_names(c)) == set(chosen)
+    ]
+    own = [c for c in found if family(c) == kind]
+    if not own and len(chosen) == 1:
+        own = [c for c in found if family(c) == "copy"]
+    return sorted(own, key=lambda c: (size(c), expression_text(c)))[:MAX_CANDIDATES]
+
+
+def _field(decider, out: Output, kind, rows, matrix, all_columns, tables) -> dict:
     names = top_columns(matrix, out.name)
-    rec = {**_empty(), "top_cols": names}
-    cands = field_candidates(names, rows, out.type, tables)
+    sets = [s for n in SIZES[kind] for s in combinations(names, n)]
+    labels = [set_label(s) for s in sets]
+    state = field_state(out, all_columns, names, rows)
+    probs = decider.decide(state, [set_question(out, labels)]).answers[0].probabilities
+    best_i = max(range(len(sets)), key=lambda i: probs[labels[i]])
+    chosen = sets[best_i]
+    rec = {
+        **_empty(),
+        "kind": kind,
+        "top_cols": names,
+        "cols": list(chosen),
+        "set_scores": {x: probs[x] for x in labels},
+        "p_none": probs[NONE],
+        "score": probs[labels[best_i]],
+    }
+    cands = set_candidates(chosen, rows, out, kind, tables)
     if not cands:
-        return rec  # no rule in the catalog fits these columns
-    state = pool_state(names, rows)
-    if len(cands) > SHORTLIST:
+        return rec  # no rule in the catalog builds this field from these columns
+    if len(cands) > 1:
         options = [option_text(c, rows) for c in cands]
-        probs = (
-            decider.decide(state, [pick_question(out.name, options)])
+        pe = (
+            decider.decide(
+                pool_state(list(chosen), rows), [expression_question(out, options)]
+            )
             .answers[0]
             .probabilities
         )
-        shortlist = sorted(range(len(cands)), key=lambda i: -probs[options[i]])[
-            :SHORTLIST
-        ]
+        k = max(range(len(cands)), key=lambda i: pe[options[i]])
+        rec["p_expr"] = pe[options[k]]
     else:
-        shortlist = list(range(len(cands)))
-    checks = [
-        check_question(out.name, out.description, cands[i], rows, f"c{k}")
-        for k, i in enumerate(shortlist)
-    ]
-    scores = [a.probability for a in decider.decide(state, checks).answers]
-    top = max(scores)
-    near = [k for k, s in enumerate(scores) if s >= top - MARGIN]
-    k = min(near, key=lambda k: (size(cands[shortlist[k]]), -scores[k]))
-    best = cands[shortlist[k]]
+        k = 0
+    best = cands[k]
     rec.update(
         {
-            "cols": src_names(best),
             "cands": [expression_text(c) for c in cands],
-            "shortlist": shortlist,
-            "scores": scores,
             "best": best,
             "best_text": expression_text(best),
-            "score": scores[k],
             "method": "copy" if "src" in best else "expression",
         }
     )
     return rec
 
 
-# stage 2: one record per output field
+# stage 2: one record per output field; `kinds` comes from infer_kinds (pass it in to reuse it across files)
 def choose_expressions(
-    decider: Decider, rows: list[dict], matrix: dict, knowledge: Knowledge
+    decider: Decider,
+    rows: list[dict],
+    matrix: dict,
+    knowledge: Knowledge,
+    kinds: dict | None = None,
 ) -> dict:
+    kinds = kinds or infer_kinds(decider, knowledge)
+    all_columns = list(matrix)
     return {
-        o.name: _field(decider, o, rows, matrix, knowledge.tables)
+        o.name: _field(
+            decider, o, kinds[o.name], rows, matrix, all_columns, knowledge.tables
+        )
         for o in knowledge.outputs
     }
 
@@ -172,8 +218,15 @@ class Mapping:
 class Mapper:
     def __init__(self, decider: Decider, knowledge: Knowledge):
         self.decider, self.knowledge = decider, knowledge
+        self.kinds: dict | None = (
+            None  # read from the descriptions on first use, then reused for every table
+        )
 
     def map(self, rows: list[dict]) -> Mapping:
+        if self.kinds is None:
+            self.kinds = infer_kinds(self.decider, self.knowledge)
         matrix, _ = score_columns(self.decider, rows, self.knowledge)
-        fields = choose_expressions(self.decider, rows, matrix, self.knowledge)
+        fields = choose_expressions(
+            self.decider, rows, matrix, self.knowledge, self.kinds
+        )
         return Mapping(matrix, fields, [o.name for o in self.knowledge.outputs])

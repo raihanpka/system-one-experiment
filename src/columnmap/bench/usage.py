@@ -5,7 +5,9 @@ from __future__ import annotations
 OPTIONS_Q_SECONDS = (
     0.8  # one question with all output fields as options (hosted, measured)
 )
-HONEST_FILE_SECONDS = 70  # candidate ranking per file (hosted, measured)
+HONEST_FILE_SECONDS = (
+    45  # kind, column set and expression per field, per file (hosted, measured)
+)
 
 
 # wraps a decider and counts what it is asked

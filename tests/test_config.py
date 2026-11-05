@@ -12,7 +12,7 @@ BASE = {
         "BaseUrl": "https://openrouter.ai/api/alpha/decisions",
         "ApiKeyEnv": "OPENROUTER_API_KEY",
     },
-    "Run": {"FillScore": 0.9, "Seed": 1234, "Conds": ["name", "samples"]},
+    "Run": {"FillScore": 0.7, "Seed": 1234},
     "Splits": {"Dev": [11], "Holdout": [12, 13], "Test": [21, 22]},
 }
 
@@ -116,4 +116,4 @@ def test_example_settings_file_lists_every_option_and_stays_valid():
     )
     cfg = parse(example, env={})
     assert set(cfg) >= {"open_router", "run", "splits"}
-    assert cfg["run"]["fill_score"] == 0.9
+    assert cfg["run"]["fill_score"] == 0.7

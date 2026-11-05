@@ -95,7 +95,9 @@ def test_report_only_rebuilds_the_newest_run_with_another_fill_score_and_no_mode
         with dec.open() as fh:
             return sum(r["filled"] == "True" for r in csv.DictReader(fh))
 
-    assert filled() > 0  # every expression is approved with 0.95, above the default 0.9
+    assert (
+        filled() > 0
+    )  # the first column set of every field gets 0.95, above the default fill score
     main(
         ["--report-only", "--fill-score", "0.99", *paths(tmp_path)],
         decider_factory=Forbidden,

@@ -7,6 +7,7 @@ from columnmap.decider import Answer, Response
 
 class Generic:
     p = 0.3  # probability every predicate gets
+    top = None  # probability of the first option of every choice; None = equal shares
     run_meta = {
         "model": "~liquid/d1-ultra-latest",
         "backend": "openrouter",
@@ -18,6 +19,14 @@ class Generic:
 
     def __exit__(self, *a):
         pass
+
+    def shares(self, names):
+        if self.top is None:
+            return {n: 1 / len(names) for n in names}
+        return {
+            n: self.top if i == 0 else (1 - self.top) / (len(names) - 1)
+            for i, n in enumerate(names)
+        }
 
     def decide(self, text, questions):
         out = []
@@ -40,7 +49,7 @@ class Generic:
                         q.name,
                         choice=names[0],
                         confidence=0.5,
-                        probabilities={n: 1 / len(names) for n in names},
+                        probabilities=self.shares(names),
                         raw_scores=raw,
                     )
                 )
@@ -48,4 +57,4 @@ class Generic:
 
 
 class Approves(Generic):
-    p = 0.95  # every candidate expression is approved
+    top = 0.95  # the first option of every question gets 0.95, so every field is filled
