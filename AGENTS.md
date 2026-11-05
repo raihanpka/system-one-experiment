@@ -25,7 +25,7 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
 - Never edit generated files: `data/` (regenerate with `make data`) and `results/` (run output).
 - Never call the model (`make run`, `make sample`, `make full`) without the user's explicit order.
-- Seeds: 11 for dev tuning. 12 and 13 (holdout) and 14 and 15 were used once to check a frozen pipeline and then to pick the double-claim rule, so a new claim needs a seed nobody has looked at. 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
+- Seeds: 11 for dev tuning. 12 and 13 (holdout) were used to choose the double-claim rule and the copy fill score, so they are no longer clean. 14 and 15 checked the frozen pipeline once. A new claim needs a seed nobody has looked at. 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
 - Report every mapping result as `x / y` (fields right out of the fields counted), per sample and context, and say which seed.
 - The model gets no ground truth: no rule, kind, or source id of the synthetic template. Reference tables and field descriptions are task input.
 - The API key goes in `.env` as `OPENROUTER_API_KEY` only. Never print it, log it, or commit it.
