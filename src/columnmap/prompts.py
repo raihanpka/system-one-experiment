@@ -7,13 +7,7 @@ from .decider import Choice, Question
 from .expressions import render, safe_evaluate
 from .knowledge import Output
 
-CONTEXTS = ("name", "samples")
 SAMPLE_K = 5
-CONTEXT_LABEL = {"name": "name only", "samples": "name + values"}
-
-
-def context_label(context: str) -> str:
-    return CONTEXT_LABEL.get(context, context)
 
 
 # k values of one column from evenly spaced rows (so the odd cell is sometimes visible, not always)
@@ -26,9 +20,10 @@ def samples(rows, name, k=SAMPLE_K):
     )
 
 
-def input_state(name: str, context: str, values=()) -> str:
+# the model always sees the column name and sample values; the name alone proved too weak
+def input_state(name: str, values=()) -> str:
     lines = [f"Input column: {name}"]
-    if context == "samples" and values:
+    if values:
         lines.append("Sample values: " + ", ".join(map(str, values)))
     return "\n".join(lines)
 

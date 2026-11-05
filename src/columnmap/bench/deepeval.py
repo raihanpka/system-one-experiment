@@ -31,36 +31,34 @@ def load_run(run_dir) -> tuple[Store, dict, dict]:
 
 
 def cases_from_run(run_dir, fill_score: float) -> list[dict]:
-    store, meta, cases = load_run(run_dir)
+    store, _, cases = load_run(run_dir)
+    honest = {r["case_id"]: r for r in store.rows("honest")}
     out = []
-    for cond in meta["contexts"]:
-        honest = {r["case_id"]: r for r in store.rows("honest", cond)}
-        for row in store.rows("mapping", cond):
-            rec = honest.get(row["case_id"])
-            if rec is None:
-                continue
-            case = cases[row["case_id"]]
-            names = [o["name"] for o in case["outputs"]]
-            _, conv = convert(rec["fields"], case["rows"], names, fill_score)
-            right = field_correct(case, conv)
-            actual, expected = {}, {}
-            for o in case["outputs"]:
-                f = o["name"]
-                actual[f] = {
-                    "column": top_column(row["matrix"], f),
-                    "filled": is_filled(rec["fields"][f], fill_score),
-                    "right": right[f],
-                }
-                expected[f] = sorted(o["sources"]) if o["available"] else []
-            out.append(
-                {
-                    "context": cond,
-                    "name": f"{row['case_id']} / {cond}",
-                    "input": f"{row['case_id']} context={cond} columns={len(case['columns'])}",
-                    "actual_output": json.dumps(actual, sort_keys=True),
-                    "expected_output": json.dumps(expected, sort_keys=True),
-                }
-            )
+    for row in store.rows("mapping"):
+        rec = honest.get(row["case_id"])
+        if rec is None:
+            continue
+        case = cases[row["case_id"]]
+        names = [o["name"] for o in case["outputs"]]
+        _, conv = convert(rec["fields"], case["rows"], names, fill_score)
+        right = field_correct(case, conv)
+        actual, expected = {}, {}
+        for o in case["outputs"]:
+            f = o["name"]
+            actual[f] = {
+                "column": top_column(row["matrix"], f),
+                "filled": is_filled(rec["fields"][f], fill_score),
+                "right": right[f],
+            }
+            expected[f] = sorted(o["sources"]) if o["available"] else []
+        out.append(
+            {
+                "name": row["case_id"],
+                "input": f"{row['case_id']} columns={len(case['columns'])}",
+                "actual_output": json.dumps(actual, sort_keys=True),
+                "expected_output": json.dumps(expected, sort_keys=True),
+            }
+        )
     return out
 
 
@@ -127,22 +125,16 @@ def evaluate_run(run_dir, fill_score: float | None = None) -> dict:
     rows = cases_from_run(run_dir, fill_score)
     summary: dict = {}
     for m in metrics:
-        per_ctx: dict[str, list[float]] = {}
+        scores = []
         for row in rows:
             tc = LLMTestCase(
                 input=row["input"],
                 actual_output=row["actual_output"],
                 expected_output=row["expected_output"],
             )
-            per_ctx.setdefault(row["context"], []).append(m.measure(tc))
-        summary[m.__name__] = {
-            ctx: round(sum(v) / len(v), 4) for ctx, v in per_ctx.items()
-        }
-        shown = ", ".join(
-            f"{ctx} {s:.3f} (n={len(per_ctx[ctx])})"
-            for ctx, s in summary[m.__name__].items()
-        )
-        print(f"{m.__name__}: {shown}")
+            scores.append(m.measure(tc))
+        summary[m.__name__] = round(sum(scores) / len(scores), 4) if scores else None
+        print(f"{m.__name__}: {summary[m.__name__]} (mean over {len(scores)} samples)")
     out = Path(run_dir) / "report" / "deepeval.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(

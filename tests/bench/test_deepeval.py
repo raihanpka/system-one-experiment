@@ -65,8 +65,6 @@ def _run(tmp_path):
         [
             "--samples",
             "ac",
-            "--conds",
-            "name",
             "--root",
             str(root),
             "--data",
@@ -83,8 +81,8 @@ def test_test_cases_match_the_run_record(tmp_path):
     run = _run(tmp_path)
     store, _, cases = load_run(run)
     rows = cases_from_run(run, 0.9)
-    records = store.rows("mapping", "name")
-    honest = {r["case_id"]: r for r in store.rows("honest", "name")}
+    records = store.rows("mapping")
+    honest = {r["case_id"]: r for r in store.rows("honest")}
     assert len(rows) == len(records) > 0
     for rec, row in zip(records, rows):
         case = cases[rec["case_id"]]
@@ -107,6 +105,9 @@ def test_deepeval_flag_scores_a_run_folder_and_writes_the_report(tmp_path, capsy
     run = _run(tmp_path)
     assert main(["--deepeval", str(run)]) == 0
     saved = json.loads((run / "report" / "deepeval.json").read_text())
-    assert set(saved["metrics"]) == {"Source accuracy", "Fields right"}
-    assert "Source accuracy: name" in capsys.readouterr().out
+    assert (
+        set(saved["metrics"]) == {"Source accuracy", "Fields right"}
+        and saved["cases"] == 2
+    )
+    assert "Source accuracy:" in capsys.readouterr().out
     assert evaluate_run(run) == saved["metrics"]

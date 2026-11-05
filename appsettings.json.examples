@@ -10,9 +10,7 @@
     "FillScore": 0.9,
     "FillScore_Note": "score (0 to 1) the best expression of a field needs to fill it; below it the field stays empty. Can be changed with --report-only --fill-score.",
     "Seed": 1234,
-    "Seed_Note": "seed used when neither --seed nor --split is given",
-    "Conds": ["name", "samples"],
-    "Conds_Options": ["name", "samples"]
+    "Seed_Note": "seed used when neither --seed nor --split is given"
   },
   "Splits": {
     "Dev": [11],

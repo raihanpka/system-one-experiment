@@ -35,10 +35,8 @@ def mark(decider) -> tuple[int, int, int]:
 
 
 # rough minutes for a run: seconds per mapping question times the columns, plus the honest stage once per file
-def estimate_minutes(cases, conds) -> float:
+def estimate_minutes(cases) -> float:
     secs = sum(
-        len(c["columns"]) * OPTIONS_Q_SECONDS + HONEST_FILE_SECONDS
-        for c in cases
-        for _ in conds
+        len(c["columns"]) * OPTIONS_Q_SECONDS + HONEST_FILE_SECONDS for c in cases
     )
     return secs / 60

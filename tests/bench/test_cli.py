@@ -43,11 +43,8 @@ def test_run_folder_layout_files_and_summary(tmp_path):
         tmp_path / "data" / "knowledge" / "outputs.json"
     ).exists()  # the format another project fills in
     raw = json.loads((run / "result.json").read_text())
-    assert set(raw) == {"meta", "mapping", "honest"} and set(raw["mapping"]) == {
-        "name",
-        "samples",
-    }
-    assert [r["case_id"] for r in raw["mapping"]["name"]][0] == "easy_identical-000"
+    assert set(raw) == {"meta", "mapping", "honest"}
+    assert [r["case_id"] for r in raw["mapping"]][0] == "easy_identical-000"
     for letter, word in (
         ("a", "easy_identical"),
         ("b", "medium_synonym"),
@@ -55,14 +52,12 @@ def test_run_folder_layout_files_and_summary(tmp_path):
         ("d", "hardest_noisy"),
     ):
         for f in (
-            f"converted_{word}_name.csv",
-            f"decisions_{word}_samples.csv",
-            f"scores_{word}_name.csv",
+            f"converted_{word}.csv",
+            f"decisions_{word}.csv",
+            f"scores_{word}.csv",
         ):
             assert (run / f"{letter}_{word}" / f).exists(), f
-    with (
-        run / "c_technical_terms" / "decisions_technical_terms_name.csv"
-    ).open() as fh:
+    with (run / "c_technical_terms" / "decisions_technical_terms.csv").open() as fh:
         assert len(list(csv.reader(fh))) == 32  # header + 31 fields
     md = (run / "report" / "summary.md").read_text()
     assert (
@@ -74,13 +69,13 @@ def test_run_folder_layout_files_and_summary(tmp_path):
 
 def test_a_finished_run_resumes_without_calling_the_model_again(tmp_path):
     main(
-        ["--samples", "ac", "--conds", "name", *paths(tmp_path)],
+        ["--samples", "ac", *paths(tmp_path)],
         decider_factory=Counting,
     )
     (run,) = runs(tmp_path)
     Counting.calls = 0
     main(
-        ["--samples", "ac", "--conds", "name", "--out", str(run), *paths(tmp_path)],
+        ["--samples", "ac", "--out", str(run), *paths(tmp_path)],
         decider_factory=Counting,
     )
     assert Counting.calls == 0
@@ -90,11 +85,11 @@ def test_report_only_rebuilds_the_newest_run_with_another_fill_score_and_no_mode
     tmp_path,
 ):
     main(
-        ["--samples", "a", "--conds", "name", *paths(tmp_path)],
+        ["--samples", "a", *paths(tmp_path)],
         decider_factory=Approves,
     )
     (run,) = runs(tmp_path)
-    dec = run / "a_easy_identical" / "decisions_easy_identical_name.csv"
+    dec = run / "a_easy_identical" / "decisions_easy_identical.csv"
 
     def filled():
         with dec.open() as fh:
@@ -111,19 +106,15 @@ def test_report_only_rebuilds_the_newest_run_with_another_fill_score_and_no_mode
 def test_each_run_gets_its_own_folder(tmp_path):
     import time
 
-    main(
-        ["--samples", "a", "--conds", "name", *paths(tmp_path)], decider_factory=Generic
-    )
+    main(["--samples", "a", *paths(tmp_path)], decider_factory=Generic)
     time.sleep(1.1)
-    main(
-        ["--samples", "a", "--conds", "name", *paths(tmp_path)], decider_factory=Generic
-    )
+    main(["--samples", "a", *paths(tmp_path)], decider_factory=Generic)
     assert len(runs(tmp_path)) == 2
 
 
 def test_seed_option_builds_other_data_and_is_recorded(tmp_path):
     main(
-        ["--samples", "a", "--conds", "name", "--seed", "5", *paths(tmp_path)],
+        ["--samples", "a", "--seed", "5", *paths(tmp_path)],
         decider_factory=Generic,
     )
     (run,) = runs(tmp_path)
@@ -136,7 +127,7 @@ def test_seed_option_builds_other_data_and_is_recorded(tmp_path):
 
 def test_splits_run_one_folder_per_seed_and_the_test_split_needs_final(tmp_path):
     main(
-        ["--samples", "a", "--conds", "name", "--split", "holdout", *paths(tmp_path)],
+        ["--samples", "a", "--split", "holdout", *paths(tmp_path)],
         decider_factory=Generic,
     )
     assert sorted(r.name.rsplit("_", 1)[0] for r in runs(tmp_path)) == [

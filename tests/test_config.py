@@ -116,4 +116,4 @@ def test_example_settings_file_lists_every_option_and_stays_valid():
     )
     cfg = parse(example, env={})
     assert set(cfg) >= {"open_router", "run", "splits"}
-    assert cfg["run"]["conds"] == ["name", "samples"]
+    assert cfg["run"]["fill_score"] == 0.9

@@ -15,8 +15,6 @@ def test_second_backend_runs_end_to_end_and_records_its_own_identity(tmp_path):
         [
             "--samples",
             "ac",
-            "--conds",
-            "name",
             "--root",
             str(root),
             "--data",

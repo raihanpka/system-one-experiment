@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 SECTIONS = ("mapping", "honest")
-COMPACT_FROM = 5  # nesting depth at which objects are written on a single line
+COMPACT_FROM = 4  # nesting depth at which objects are written on a single line
 
 
 def _round(o, nd: int = 4):
@@ -42,23 +42,23 @@ class Store:
         self.data = (
             json.loads(self.path.read_text())
             if self.path.exists()
-            else {"meta": {}, **{s: {} for s in SECTIONS}}
+            else {"meta": {}, **{s: [] for s in SECTIONS}}
         )
         if meta:
             self.data["meta"].update(meta)
 
-    def rows(self, section: str, cond: str, only=None) -> list[dict]:
+    def rows(self, section: str, only=None) -> list[dict]:
         return [
             r
-            for r in self.data.get(section, {}).get(cond, [])
+            for r in self.data.get(section, [])
             if only is None or r["case_id"] in only
         ]
 
-    def has(self, section: str, cond: str, case_id: str) -> bool:
-        return any(r["case_id"] == case_id for r in self.rows(section, cond))
+    def has(self, section: str, case_id: str) -> bool:
+        return any(r["case_id"] == case_id for r in self.rows(section))
 
-    def add(self, section: str, cond: str, rec: dict) -> None:
-        self.data.setdefault(section, {}).setdefault(cond, []).append(_round(rec))
+    def add(self, section: str, rec: dict) -> None:
+        self.data.setdefault(section, []).append(_round(rec))
         self.save()
 
     def save(self) -> None:

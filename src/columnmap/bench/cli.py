@@ -21,7 +21,6 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap                       run samples a, b, c, d into a new folder results/<samples>_<timestamp>/
   columnmap --samples ac          run only samples a and c
   columnmap --all                 run all four samples
-  columnmap --conds name          show the model only the column names (no sample values)
   columnmap --seed 5              build the samples from another seed (not written to data/)
   columnmap --split holdout       one run per seed of a split from appsettings.json: dev, holdout, or test (test needs --final)
   columnmap --out results/X       continue (or extend) the existing run folder X
@@ -49,12 +48,6 @@ def main(argv=None, decider_factory=None) -> int:
         + ", ".join(f"{k} {v[1]}" for k, v in SAMPLES.items()),
     )
     ap.add_argument("--all", action="store_true", help="all four samples")
-    ap.add_argument(
-        "--conds",
-        default=None,
-        help="what the model sees: name = column name; samples = name + 5 values. "
-        "Default: the contexts already in the run folder, else name,samples",
-    )
     ap.add_argument(
         "--seed",
         type=int,
@@ -155,9 +148,6 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     )
     if not letters or any(x not in SAMPLES for x in letters):
         ap.error(f"samples must be letters from {''.join(SAMPLES)}")
-    conds = (
-        a.conds or ",".join(store.data["meta"].get("contexts") or cfg["run"]["conds"])
-    ).split(",")
     fill_score = a.fill_score if a.fill_score is not None else cfg["run"]["fill_score"]
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, seed)}
@@ -166,7 +156,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
         write_samples(
             t, cases, letters, _abs(a.data)
         )  # data/ holds the baseline seed only
-    print(f"samples {letters}, contexts {conds}, seed {seed}, run folder {run}")
+    print(f"samples {letters}, seed {seed}, run folder {run}")
 
     if not a.report_only:
         if decider_factory is None:
@@ -176,7 +166,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
                 ap.error(str(e))
             decider_factory = lambda: OpenRouterDecider(**opts)
         with decider_factory() as d:
-            run_models(d, sel, conds, store, knowledge_from_template(t))
+            run_models(d, sel, store, knowledge_from_template(t))
             identity = d.run_meta
         store.data["meta"].update(
             {
@@ -184,14 +174,11 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
                 "samples": letters,
                 "seed": seed,
                 "split": a.split or ("baseline" if baseline else "custom"),
-                "contexts": list(
-                    dict.fromkeys([*store.data["meta"].get("contexts", []), *conds])
-                ),
                 "updated": datetime.now().isoformat(timespec="seconds"),
             }
         )
         store.save()
 
-    paths = make_report(store, cases, letters, conds, run, fill_score)
+    paths = make_report(store, cases, letters, run, fill_score)
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")
     print(f"raw model output: {run / 'result.json'}")

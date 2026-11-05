@@ -84,7 +84,7 @@ class Scripted:
 
 def test_scores_come_from_one_question_per_column_that_lists_the_field_descriptions():
     d = Scripted()
-    matrix, raw = score_columns(d, ROWS, KNOWLEDGE, "samples")
+    matrix, raw = score_columns(d, ROWS, KNOWLEDGE)
     assert (
         set(matrix) == {"born", "code", "first", "last"}
         and matrix["born"]["birth_year"] == 3.0

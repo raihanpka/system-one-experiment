@@ -42,9 +42,9 @@ class Tokens:
 
 def test_every_record_carries_seconds_tokens_and_questions(tmp_path):
     store, log = Store(tmp_path / "r.json"), []
-    run_models(Tokens(), [CASE], ["name"], store, K, log=log.append)
-    m = store.rows("mapping", "name")[0]
-    h = store.rows("honest", "name")[0]
+    run_models(Tokens(), [CASE], store, K, log=log.append)
+    m = store.rows("mapping")[0]
+    h = store.rows("honest")[0]
     assert (
         m["questions"] == len(CASE["columns"])
         and m["tokens"] == 7 * m["questions"]
@@ -56,14 +56,7 @@ def test_every_record_carries_seconds_tokens_and_questions(tmp_path):
 
 def test_a_long_run_is_announced_before_it_starts(tmp_path):
     log = []
-    run_models(
-        Tokens(),
-        [CASE] * 60,
-        ["name", "samples"],
-        Store(tmp_path / "r.json"),
-        K,
-        log=log.append,
-    )
+    run_models(Tokens(), [CASE] * 30, Store(tmp_path / "r.json"), K, log=log.append)
     assert (
         log[0].startswith("warning: this run is estimated at") and "minutes" in log[0]
     )

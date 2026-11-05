@@ -34,9 +34,9 @@ def test_counting_wrapper_adds_up_tokens_questions_and_calls():
     assert c.snapshot() == (30, 3, 2)
 
 
-def test_estimate_grows_with_files_and_contexts():
+def test_estimate_grows_with_files():
     cases = [{"columns": [0] * 26, "outputs": [0] * 31}]
-    one = estimate_minutes(cases, ["name"])
-    two = estimate_minutes(cases, ["name", "samples"])
+    one = estimate_minutes(cases)
+    two = estimate_minutes(cases * 2)
     assert 0 < one < two == 2 * one
     assert 0.5 < one < 5  # about one to two minutes for one file with the hosted model

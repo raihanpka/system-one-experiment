@@ -34,12 +34,12 @@ MARGIN = (
 
 # stage 1: matrix[column][field] = raw score; raw keeps the model's own answer per column for logging
 def score_columns(
-    decider: Decider, rows: list[dict], knowledge: Knowledge, context: str = "samples"
+    decider: Decider, rows: list[dict], knowledge: Knowledge
 ) -> tuple[dict, dict]:
     question = mapping_question(knowledge.outputs)
     matrix, raw = {}, {}
     for name in rows[0]:
-        state = input_state(name, context, samples(rows, name))
+        state = input_state(name, samples(rows, name))
         res = decider.decide(state, [question])
         raw[name] = {
             "model": res.model,
@@ -170,12 +170,10 @@ class Mapping:
 
 
 class Mapper:
-    def __init__(
-        self, decider: Decider, knowledge: Knowledge, context: str = "samples"
-    ):
-        self.decider, self.knowledge, self.context = decider, knowledge, context
+    def __init__(self, decider: Decider, knowledge: Knowledge):
+        self.decider, self.knowledge = decider, knowledge
 
     def map(self, rows: list[dict]) -> Mapping:
-        matrix, _ = score_columns(self.decider, rows, self.knowledge, self.context)
+        matrix, _ = score_columns(self.decider, rows, self.knowledge)
         fields = choose_expressions(self.decider, rows, matrix, self.knowledge)
         return Mapping(matrix, fields, [o.name for o in self.knowledge.outputs])
