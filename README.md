@@ -8,7 +8,7 @@
 
 ### About
 
-Maps the columns of an input table onto the output fields of a target and gives a converted table. The Decisions model (`~liquid/d1-ultra-latest` through OpenRouter) scores which columns feed which field and checks candidate expressions (copy, year, date difference, arithmetic, concat, reference-table lookup). Everything else is deterministic. A field is filled when its best expression reaches the fill score.
+Maps the columns of an input table onto the output fields of a target and gives a converted table. The Decisions model (`~liquid/d1-ultra-latest` through OpenRouter) reads the kind of each output field from its description, scores which columns feed which field, chooses the set of columns a field needs (or none), and chooses the expression (copy, year, date difference, arithmetic, concat, reference-table lookup). Everything else is deterministic. A field is filled when the probability of its column set reaches the fill score.
 
 The library is one small package with no third-party dependency. To use it in another project, give it your own knowledge folder (output fields and reference tables):
 
@@ -42,7 +42,7 @@ Settings live in `appsettings.json` (every option is listed in `appsettings.json
 uv run columnmap                 # samples a, b, c, d
 uv run columnmap --samples ac    # only a and c
 uv run columnmap --split holdout # seeds 12 and 13, never tuned on
-uv run columnmap --report-only --fill-score 0.8   # rebuild the newest run, no model
+uv run columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5   # rebuild the newest run, no model
 uv run columnmap --deepeval results/<run>          # DeepEval metrics, no model
 ```
 
