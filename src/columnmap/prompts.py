@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from .decider import Choice, Question
-from .expressions import render, safe_evaluate
+from .expressions import column_type, render, safe_evaluate
 from .knowledge import Output
 
 SAMPLE_K = 5
@@ -38,9 +38,50 @@ def mapping_question(outputs: tuple[Output, ...]) -> Question:
     )
 
 
+def _shape(v) -> str:
+    return "".join(
+        "9" if c.isdigit() else "A" if c.isupper() else "a" if c.isalpha() else c
+        for c in str(v)
+    )
+
+
+# what all the values of a column look like, computed from every row (type, range, distinct values, format)
+def profile(values) -> str:
+    vals = [v for v in values if str(v).strip() != ""]
+    if not vals:
+        return "all empty"
+    distinct = sorted({str(v) for v in vals})
+    parts = [f"{len(vals)} of {len(values)} filled, {len(distinct)} distinct"]
+    kind = column_type(vals)
+    if kind == "date":
+        parts.append(f"dates {distinct[0]} to {distinct[-1]}")
+    elif kind == "number":
+        nums = []
+        for v in vals:
+            try:
+                nums.append(float(str(v)))
+            except ValueError:
+                pass
+        lo, hi = min(nums), max(nums)
+        whole = all(x == int(x) for x in nums)
+        parts.append(
+            f"{'whole numbers' if whole else 'decimals'} {lo:g} to {hi:g}"
+            + (", all between 0 and 1" if 0 <= lo and hi <= 1 else "")
+        )
+    else:
+        shapes = {_shape(v) for v in vals}
+        parts.append(
+            f"text, length {min(len(str(v)) for v in vals)} to {max(len(str(v)) for v in vals)}"
+            + (f", format {next(iter(shapes))}" if len(shapes) == 1 else "")
+        )
+    if len(distinct) <= 6:
+        parts.append("values: " + ", ".join(distinct))
+    return "; ".join(parts)
+
+
 def pool_state(names: list[str], rows: list[dict]) -> str:
     return "Input columns:\n" + "\n".join(
-        f"- {n}\n  Sample values: " + ", ".join(map(str, samples(rows, n)))
+        f"- {n}\n  Sample values: {', '.join(map(str, samples(rows, n)))}\n  Profile: {profile([r[n] for r in rows])}"
         for n in names
     )
 

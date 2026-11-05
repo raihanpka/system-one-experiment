@@ -6,8 +6,9 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-from ..config import DATA, ROOT, load_settings, openrouter_settings
+from ..config import DATA, ROOT, fill_from_settings, load_settings, openrouter_settings
 from ..decider import OpenRouterDecider
+from ..mapper import Fill
 from .export import write_samples
 from .generate import generate
 from .report import make_report
@@ -25,13 +26,21 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --split holdout       one run per seed of a split from appsettings.json: dev, holdout, or test (test needs --final)
   columnmap --out results/X       continue (or extend) the existing run folder X
   columnmap --report-only         rebuild the files and summary of the newest run, no model
-  columnmap --report-only --fill-score 0.8   same, with another score a field needs to be filled
+  columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5   same, with other scores a field needs to be filled
   columnmap --deepeval results/X  DeepEval metrics on a finished run, no model
 """
 
 
 def _abs(p: str) -> Path:
     return Path(p) if Path(p).is_absolute() else ROOT / p
+
+
+def _fill(cfg, a) -> Fill:
+    base = fill_from_settings(cfg)
+    return Fill(
+        a.fill_score if a.fill_score is not None else base.derived,
+        a.copy_fill_score if a.copy_fill_score is not None else base.copy,
+    )
 
 
 def main(argv=None, decider_factory=None) -> int:
@@ -66,7 +75,12 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument(
         "--fill-score",
         type=float,
-        help="score the best expression of a field needs to fill it (default: Run:FillScore in appsettings.json)",
+        help="probability of the column set that fills a derived field (default: Run:FillScore in appsettings.json)",
+    )
+    ap.add_argument(
+        "--copy-fill-score",
+        type=float,
+        help="the same for a field copied from one column (default: Run:CopyFillScore in appsettings.json)",
     )
     ap.add_argument(
         "--deepeval",
@@ -95,7 +109,7 @@ def main(argv=None, decider_factory=None) -> int:
     if a.deepeval:
         from .deepeval import evaluate_run
 
-        evaluate_run(_abs(a.deepeval), a.fill_score)
+        evaluate_run(_abs(a.deepeval), _fill(cfg, a))
         return 0
     seeds = (
         cfg["splits"][a.split]
@@ -148,7 +162,7 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     )
     if not letters or any(x not in SAMPLES for x in letters):
         ap.error(f"samples must be letters from {''.join(SAMPLES)}")
-    fill_score = a.fill_score if a.fill_score is not None else cfg["run"]["fill_score"]
+    fill = _fill(cfg, a)
     t = load_template()
     cases = {c["case_id"]: c for c in generate(t, 1, seed)}
     sel = [cases[SAMPLES[x][0]] for x in letters]
@@ -179,6 +193,6 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
         )
         store.save()
 
-    paths = make_report(store, cases, letters, run, fill_score)
+    paths = make_report(store, cases, letters, run, fill)
     print(f"{len(paths)} files written. Start with: {run / 'report' / 'summary.md'}")
     print(f"raw model output: {run / 'result.json'}")

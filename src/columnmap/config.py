@@ -110,8 +110,12 @@ def validate(cfg: dict) -> dict:
         if not section.get(key):
             raise ValueError(f"OpenRouter:{pascal} is required in appsettings.json")
     run = cfg.get("run", {})
-    if not 0 < float(run.get("fill_score", 0)) <= 1:
-        raise ValueError("Run:FillScore must be in (0, 1]")
+    for key, pascal in (
+        ("fill_score", "FillScore"),
+        ("copy_fill_score", "CopyFillScore"),
+    ):
+        if not 0 < float(run.get(key, 0)) <= 1:
+            raise ValueError(f"Run:{pascal} must be in (0, 1]")
     if "seed" not in run:
         raise ValueError("Run:Seed is required")
     for split in ("dev", "holdout", "test"):
@@ -141,3 +145,10 @@ def openrouter_settings(cfg: dict, env=None) -> dict:
             f"{name} is not set: export it or put it in .env (copy .env.example)"
         )
     return {"model": section["model"], "base_url": section["base_url"], "api_key": key}
+
+
+# the fill scores of the settings (Run:FillScore for derived fields, Run:CopyFillScore for copied fields)
+def fill_from_settings(cfg: dict):
+    from .mapper import Fill
+
+    return Fill(cfg["run"]["fill_score"], cfg["run"]["copy_fill_score"])

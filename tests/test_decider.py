@@ -116,7 +116,7 @@ def test_settings_build_the_hosted_decider(monkeypatch):
                 "BaseUrl": "u",
                 "ApiKeyEnv": "OPENROUTER_API_KEY",
             },
-            "Run": {"FillScore": 0.9, "Seed": 1},
+            "Run": {"FillScore": 0.9, "CopyFillScore": 0.4, "Seed": 1},
             "Splits": {"Dev": [11], "Holdout": [12], "Test": [21]},
         },
         env={},

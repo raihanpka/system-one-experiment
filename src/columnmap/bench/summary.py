@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..mapper import convert, is_filled
+from ..mapper import Fill, convert, is_filled
 from .metrics import cell_match, field_correct
 from .tables import md_table
 
@@ -22,14 +22,14 @@ def top_column(matrix: dict, field: str) -> str:
     return min(matrix, key=lambda c: (-matrix[c][field], c))
 
 
-def sample_counts(case: dict, matrix: dict, rec: dict, fill_score: float) -> dict:
+def sample_counts(case: dict, matrix: dict, rec: dict, fill: Fill) -> dict:
     outs = [o["name"] for o in case["outputs"]]
-    _, conv = convert(rec["fields"], case["rows"], outs, fill_score)
+    _, conv = convert(rec["fields"], case["rows"], outs, fill)
     ok = field_correct(case, conv)
     cells = cell_match(case, conv)
     avail = [o for o in case["outputs"] if o["available"]]
     nosrc = [o for o in case["outputs"] if not o["available"]]
-    filled = {f: is_filled(rec["fields"][f], fill_score) for f in outs}
+    filled = {f: is_filled(rec["fields"][f], fill) for f in outs}
     errors = []
     for o in case["outputs"]:
         f = o["name"]

@@ -1,7 +1,7 @@
 # the library API on a tiny table: knowledge from a folder, a scripted decider, deterministic conversion
 import json
 
-from columnmap import Knowledge, Mapper, Output
+from columnmap import Fill, Knowledge, Mapper, Output
 from columnmap.decider import Answer, Response
 from columnmap.mapper import (
     convert,
@@ -100,7 +100,9 @@ class Scripted:
 def test_kinds_are_read_from_the_descriptions_once_per_field():
     d = Scripted()
     assert infer_kinds(d, KNOWLEDGE) == KINDS
-    assert [q.name for q in d.questions] == ["kind"] * 5
+    assert [q.name for q in d.questions] == [
+        "kind"
+    ] * 15  # three shuffled orders per field
 
 
 def test_scores_come_from_one_question_per_column_that_lists_the_field_descriptions():
@@ -158,7 +160,7 @@ def test_a_field_whose_columns_are_not_there_says_none_and_stays_empty():
 
 def test_a_higher_fill_score_leaves_more_fields_empty():
     mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
-    _, converted = mapping.convert(ROWS, fill_score=0.95)
+    _, converted = mapping.convert(ROWS, Fill(0.95, 0.95))
     assert all(v is None for row in converted for v in row)
 
 
@@ -187,3 +189,35 @@ def test_knowledge_round_trips_through_a_folder_and_is_all_a_project_needs_to_sw
     assert convert({"x": {"best": {"src": "born"}, "score": 1.0}}, ROWS, ["x"])[1][
         0
     ] == ["1981-01-09"]
+
+
+def test_a_column_claimed_by_two_copied_fields_stays_with_the_higher_score():
+    from columnmap.mapper import drop_double_claims
+
+    def rec(score, col, kind="copy"):
+        return {"kind": kind, "best": {"src": col}, "cols": [col], "score": score}
+
+    fields = {
+        "a": rec(0.9, "x"),
+        "b": rec(0.5, "x"),
+        "c": rec(0.6, "y"),
+        "d": rec(0.8, "x", "year"),
+    }
+    out = drop_double_claims(fields)
+    assert (
+        out["a"]["score"] == 0.9
+        and out["b"]["score"] == 0.0
+        and out["b"]["claimed_by"] == "a"
+    )
+    assert (
+        out["c"]["score"] == 0.6 and out["d"]["score"] == 0.8
+    )  # only copied fields compete
+
+
+def test_a_copied_field_needs_a_lower_score_than_a_derived_field_to_be_filled():
+    from columnmap.mapper import Fill, is_filled
+
+    copy = {"kind": "copy", "best": {"src": "x"}, "score": 0.5}
+    derived = {"kind": "join", "best": {"src": "x"}, "score": 0.5}
+    assert is_filled(copy, Fill(0.7, 0.4)) and not is_filled(derived, Fill(0.7, 0.4))
+    assert not is_filled({**copy, "best": None}, Fill(0.1, 0.1))

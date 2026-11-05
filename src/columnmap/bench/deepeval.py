@@ -14,8 +14,8 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = (
 from deepeval.metrics import BaseMetric  # noqa: E402
 from deepeval.test_case import LLMTestCase  # noqa: E402
 
-from ..config import load_settings  # noqa: E402
-from ..mapper import convert, is_filled  # noqa: E402
+from ..config import fill_from_settings, load_settings  # noqa: E402
+from ..mapper import Fill, convert, is_filled  # noqa: E402
 from .metrics import field_correct  # noqa: E402
 from .store import Store  # noqa: E402
 from .summary import top_column  # noqa: E402
@@ -30,7 +30,7 @@ def load_run(run_dir) -> tuple[Store, dict, dict]:
     return store, meta, cases
 
 
-def cases_from_run(run_dir, fill_score: float) -> list[dict]:
+def cases_from_run(run_dir, fill: Fill) -> list[dict]:
     store, _, cases = load_run(run_dir)
     honest = {r["case_id"]: r for r in store.rows("honest")}
     out = []
@@ -40,14 +40,14 @@ def cases_from_run(run_dir, fill_score: float) -> list[dict]:
             continue
         case = cases[row["case_id"]]
         names = [o["name"] for o in case["outputs"]]
-        _, conv = convert(rec["fields"], case["rows"], names, fill_score)
+        _, conv = convert(rec["fields"], case["rows"], names, fill)
         right = field_correct(case, conv)
         actual, expected = {}, {}
         for o in case["outputs"]:
             f = o["name"]
             actual[f] = {
                 "column": top_column(row["matrix"], f),
-                "filled": is_filled(rec["fields"][f], fill_score),
+                "filled": is_filled(rec["fields"][f], fill),
                 "right": right[f],
             }
             expected[f] = sorted(o["sources"]) if o["available"] else []
@@ -117,12 +117,10 @@ class FieldsRight(BaseMetric):
         return "Fields right"
 
 
-def evaluate_run(run_dir, fill_score: float | None = None) -> dict:
-    fill_score = (
-        fill_score if fill_score is not None else load_settings()["run"]["fill_score"]
-    )
+def evaluate_run(run_dir, fill: Fill | None = None) -> dict:
+    fill = fill or fill_from_settings(load_settings())
     metrics = [SourceAccuracy(), FieldsRight()]
-    rows = cases_from_run(run_dir, fill_score)
+    rows = cases_from_run(run_dir, fill)
     summary: dict = {}
     for m in metrics:
         scores = []
@@ -139,7 +137,11 @@ def evaluate_run(run_dir, fill_score: float | None = None) -> dict:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
         json.dumps(
-            {"metrics": summary, "cases": len(rows), "fill_score": fill_score},
+            {
+                "metrics": summary,
+                "cases": len(rows),
+                "fill": {"derived": fill.derived, "copy": fill.copy},
+            },
             indent=2,
         )
         + "\n",

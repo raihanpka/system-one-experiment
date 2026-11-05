@@ -9,11 +9,12 @@
 
 from .decider import Decider, OpenRouterDecider
 from .knowledge import Knowledge, Output
-from .mapper import FILL_SCORE, Mapper, Mapping
+from .mapper import FILL, Fill, Mapper, Mapping
 
 __all__ = [
     "Decider",
-    "FILL_SCORE",
+    "FILL",
+    "Fill",
     "Knowledge",
     "Mapper",
     "Mapping",

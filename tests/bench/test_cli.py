@@ -99,7 +99,14 @@ def test_report_only_rebuilds_the_newest_run_with_another_fill_score_and_no_mode
         filled() > 0
     )  # the first column set of every field gets 0.95, above the default fill score
     main(
-        ["--report-only", "--fill-score", "0.99", *paths(tmp_path)],
+        [
+            "--report-only",
+            "--fill-score",
+            "0.99",
+            "--copy-fill-score",
+            "0.99",
+            *paths(tmp_path),
+        ],
         decider_factory=Forbidden,
     )
     assert filled() == 0

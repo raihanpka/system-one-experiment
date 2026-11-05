@@ -13,7 +13,7 @@ from columnmap.bench.deepeval import (
 )
 from columnmap.bench.metrics import field_correct
 from columnmap.bench.summary import top_column
-from columnmap.mapper import convert
+from columnmap.mapper import Fill, convert
 from tests.bench.fakes import Generic
 
 
@@ -80,14 +80,14 @@ def _run(tmp_path):
 def test_test_cases_match_the_run_record(tmp_path):
     run = _run(tmp_path)
     store, _, cases = load_run(run)
-    rows = cases_from_run(run, 0.9)
+    rows = cases_from_run(run, Fill())
     records = store.rows("mapping")
     honest = {r["case_id"]: r for r in store.rows("honest")}
     assert len(rows) == len(records) > 0
     for rec, row in zip(records, rows):
         case = cases[rec["case_id"]]
         outs = [o["name"] for o in case["outputs"]]
-        _, conv = convert(honest[rec["case_id"]]["fields"], case["rows"], outs, 0.9)
+        _, conv = convert(honest[rec["case_id"]]["fields"], case["rows"], outs, Fill())
         right = field_correct(case, conv)
         actual, expected = (
             json.loads(row["actual_output"]),

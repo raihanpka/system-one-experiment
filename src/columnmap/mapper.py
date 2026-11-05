@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from itertools import combinations
+from random import Random
 
-from .decider import Decider
+from .decider import Decider, Question
 from .expressions import candidates, safe_evaluate, size, src_names
 from .knowledge import Knowledge, Output
 from .prompts import (
@@ -29,8 +30,8 @@ from .prompts import (
     set_question,
 )
 
-FILL_SCORE = (
-    0.7  # probability the column set of a field needs to fill it (set on the dev split)
+KIND_SHUFFLES = (
+    3  # the kind question is asked with the options in this many orders and averaged
 )
 TOP_COLUMNS = 5  # columns with the best mapping scores; the column set of a field is chosen among their subsets
 MAX_CANDIDATES = (
@@ -85,13 +86,26 @@ def family(ast: dict) -> str:
     }[ast["op"]]
 
 
-# the kind of every output field, read from its description (once per knowledge, not per file)
-def infer_kinds(decider: Decider, knowledge: Knowledge) -> dict:
+# the kind of every output field, read from its description (once per knowledge, not per file); the option order is
+# shuffled and the answers averaged, because one fixed order made a field flip between two kinds from run to run
+def infer_kinds(
+    decider: Decider, knowledge: Knowledge, shuffles: int = KIND_SHUFFLES
+) -> dict:
     q = kind_question()
     out = {}
     for o in knowledge.outputs:
-        p = decider.decide(kind_state(o), [q]).answers[0].probabilities
-        out[o.name] = max(p, key=p.get)
+        total: dict[str, float] = {}
+        for i in range(shuffles):
+            choices = list(q.choices)
+            Random(f"{o.name}:{i}").shuffle(choices)
+            asked = Question(
+                q.type, q.instructions, name=q.name, choices=tuple(choices)
+            )
+            for k, p in (
+                decider.decide(kind_state(o), [asked]).answers[0].probabilities.items()
+            ):
+                total[k] = total.get(k, 0.0) + p / shuffles
+        out[o.name] = max(total, key=total.get)
     return out
 
 
@@ -180,25 +194,53 @@ def choose_expressions(
 ) -> dict:
     kinds = kinds or infer_kinds(decider, knowledge)
     all_columns = list(matrix)
-    return {
+    fields = {
         o.name: _field(
             decider, o, kinds[o.name], rows, matrix, all_columns, knowledge.tables
         )
         for o in knowledge.outputs
     }
+    return drop_double_claims(fields)
 
 
-# a field is filled when it has an expression and its score reaches fill_score; the others stay empty
-def is_filled(rec: dict, fill_score: float = FILL_SCORE) -> bool:
-    return rec["best"] is not None and rec["score"] >= fill_score
+# two copied fields rarely take the same column: the field with the lower score loses it (score 0, winner named)
+def drop_double_claims(fields: dict) -> dict:
+    winner: dict[tuple, str] = {}
+    for name, rec in sorted(fields.items(), key=lambda kv: -(kv[1]["score"] or 0)):
+        if rec["kind"] != "copy" or rec["best"] is None:
+            continue
+        key = tuple(rec["cols"])
+        if key in winner:
+            rec["score"], rec["claimed_by"] = 0.0, winner[key]
+        else:
+            winner[key] = name
+    return fields
+
+
+# the probability of the column set that fills a field. Derived fields (year, join, arithmetic, ...) need more than a field
+# copied from one column, because a copied field is also protected by drop_double_claims. Both were set on the dev split.
+@dataclass(frozen=True)
+class Fill:
+    derived: float = 0.7
+    copy: float = 0.4
+
+
+FILL = Fill()
+
+
+# a field is filled when it has an expression and its score reaches the fill score of its kind; the others stay empty
+def is_filled(rec: dict, fill: Fill = FILL) -> bool:
+    if rec["best"] is None:
+        return False
+    return rec["score"] >= (fill.copy if rec.get("kind") == "copy" else fill.derived)
 
 
 def convert(
-    fields: dict, rows: list[dict], order: list[str], fill_score: float = FILL_SCORE
+    fields: dict, rows: list[dict], order: list[str], fill: Fill = FILL
 ) -> tuple[list[str], list[list]]:
     cols = [
         [safe_evaluate(fields[f]["best"], r) for r in rows]
-        if is_filled(fields[f], fill_score)
+        if is_filled(fields[f], fill)
         else [None] * len(rows)
         for f in order
     ]
@@ -211,8 +253,8 @@ class Mapping:
     fields: dict  # field -> record (expression, columns, score)
     order: list[str]
 
-    def convert(self, rows: list[dict], fill_score: float = FILL_SCORE):
-        return convert(self.fields, rows, self.order, fill_score)
+    def convert(self, rows: list[dict], fill: Fill = FILL):
+        return convert(self.fields, rows, self.order, fill)
 
 
 class Mapper:

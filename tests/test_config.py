@@ -12,7 +12,7 @@ BASE = {
         "BaseUrl": "https://openrouter.ai/api/alpha/decisions",
         "ApiKeyEnv": "OPENROUTER_API_KEY",
     },
-    "Run": {"FillScore": 0.7, "Seed": 1234},
+    "Run": {"FillScore": 0.7, "CopyFillScore": 0.4, "Seed": 1234},
     "Splits": {"Dev": [11], "Holdout": [12, 13], "Test": [21, 22]},
 }
 

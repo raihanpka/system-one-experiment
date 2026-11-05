@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..mapper import convert, is_filled
+from ..mapper import Fill, convert, is_filled
 from .csvio import write_csv
 from .export import sample_folder
 from .metrics import field_correct
@@ -25,7 +25,7 @@ DECISION_COLUMNS = [
 
 
 # one row per field for decisions_*.csv; the truth_ columns come from the synthetic ground truth and exist only for evaluation
-def decisions(fields: dict, case: dict, correct: dict, fill_score: float) -> list[dict]:
+def decisions(fields: dict, case: dict, correct: dict, fill: Fill) -> list[dict]:
     out = []
     for o in case["outputs"]:
         r = fields[o["name"]]
@@ -36,7 +36,7 @@ def decisions(fields: dict, case: dict, correct: dict, fill_score: float) -> lis
                 "method": r["method"],
                 "expression": r["best_text"] or "",
                 "score": "" if r["score"] is None else round(r["score"], 4),
-                "filled": is_filled(r, fill_score),
+                "filled": is_filled(r, fill),
                 "truth_available": o["available"],
                 "truth_input": "|".join(o["sources"]),
                 "field_correct": correct[o["name"]],
@@ -45,7 +45,7 @@ def decisions(fields: dict, case: dict, correct: dict, fill_score: float) -> lis
     return out
 
 
-def make_report(store, cases, letters, run_dir, fill_score: float) -> list[Path]:
+def make_report(store, cases, letters, run_dir, fill: Fill) -> list[Path]:
     run = Path(run_dir)
     letter = {SAMPLES[x][0]: x for x in letters}
     paths, per_sample = [], []
@@ -57,9 +57,9 @@ def make_report(store, cases, letters, run_dir, fill_score: float) -> list[Path]
         case, x = cases[r["case_id"]], letter[r["case_id"]]
         d, w = run / sample_folder(x), word(r["case_id"])
         outs = [o["name"] for o in case["outputs"]]
-        header, conv = convert(rec["fields"], case["rows"], outs, fill_score)
+        header, conv = convert(rec["fields"], case["rows"], outs, fill)
         ok = field_correct(case, conv)
-        dec = decisions(rec["fields"], case, ok, fill_score)
+        dec = decisions(rec["fields"], case, ok, fill)
         paths += [
             write_csv(d / f"converted_{w}.csv", header, conv),
             write_csv(
@@ -73,14 +73,14 @@ def make_report(store, cases, letters, run_dir, fill_score: float) -> list[Path]
                 [[c, *[f"{r['matrix'][c][o]:.3f}" for o in outs]] for c in r["matrix"]],
             ),
         ]
-        per_sample.append((x, sample_counts(case, r["matrix"], rec, fill_score)))
+        per_sample.append((x, sample_counts(case, r["matrix"], rec, fill)))
     meta = store.data["meta"]
     md = [
         "# Results",
         "",
         f"Model: {meta['model']} (hosted, OpenRouter). Seed {meta.get('seed')}, split {meta.get('split')}. "
         "The model sees each input column's name and sample values. "
-        f"A field is filled when its best expression scores at least {fill_score}. "
+        f"A field copied from one column is filled when its column set has probability at least {fill.copy}, any other field at least {fill.derived}. "
         "Every count is x / y against the ground truth. Column top-1 only checks the column choice; "
         "fields right checks that the converted column equals the expected column.",
         "",
