@@ -6,6 +6,7 @@ from datetime import date
 from itertools import permutations
 
 from .dsl import render
+from .reference import covering
 
 LIMIT = 24
 SEPS = (" ", ", ", "-", "/", "")
@@ -101,7 +102,9 @@ def result_type(node: dict, types: dict) -> str:
     return "string"
 
 
-def candidates(cols, limit: int = LIMIT, out_type: str | None = None) -> list[dict]:
+def candidates(
+    cols, limit: int = LIMIT, out_type: str | None = None, tables=()
+) -> list[dict]:
     srcs = [{"src": name} for name, _ in cols]
     types = [column_type(v) for _, v in cols]
     if len(cols) == 1:
@@ -115,7 +118,12 @@ def candidates(cols, limit: int = LIMIT, out_type: str | None = None) -> list[di
     # every chosen column also gives its plain copy (and year for dates), so a passthrough field is never missing from the list
     single = [srcs[i] for i in range(len(cols))]
     years = [_op("year", srcs[i]) for i in range(len(cols)) if types[i] == "date"]
-    out = single + years + out
+    lookups = [
+        {"op": "lookup", "map": t, "args": [srcs[i]]}
+        for i, (_, values) in enumerate(cols)
+        for t in covering(values, tables)
+    ]  # a code column that a reference table covers
+    out = single + years + lookups + out
     seen, unique = set(), []
     for c in out:
         key = render(c, lambda s: s)

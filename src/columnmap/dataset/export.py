@@ -30,6 +30,24 @@ def write_template(t: dict, out) -> None:
     )
 
 
+def _lookup_maps(rule: dict):
+    if rule.get("op") == "lookup":
+        yield rule["map"]
+    for a in rule.get("args", ()):
+        yield from _lookup_maps(a)
+
+
+# reference tables for the code columns: data/reference/table_<n>.csv, the same task input a user would supply
+def write_reference(t: dict, out) -> None:
+    maps = [m for o in t["outputs"] for m in _lookup_maps(o["rule"])]
+    for n, m in enumerate(maps, 1):
+        _write(
+            Path(out) / "reference" / f"table_{n}.csv",
+            ["code", "label"],
+            list(m.items()),
+        )
+
+
 def write_case(case: dict, d) -> None:
     d, w = Path(d), word(case["case_id"])
     names = [k["name"] for k in case["columns"]]
@@ -84,6 +102,7 @@ def sample_folder(letter: str) -> str:
 def write_samples(t: dict, cases: dict, letters: str, data_dir) -> None:
     data_dir = Path(data_dir)
     write_template(t, data_dir)
+    write_reference(t, data_dir)
     for x in letters:
         write_case(cases[SAMPLES[x][0]], data_dir / "samples" / sample_folder(x))
 
