@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from .registry import Prompt
 
+_MISSING = ("not found", "does not exist", "resource_does_not_exist", "no prompt")
+
 
 def _load(uri: str):
     import mlflow  # optional dependency: uv sync --extra registry
@@ -34,7 +36,16 @@ class MlflowRegistry:
         return f"{base}/{spec}" if str(spec).isdigit() else f"{base}@{spec}"
 
     def get(self, name: str, version: str | None = None) -> Prompt:
-        prompt = self._loader(self.uri(name, version))
+        try:
+            prompt = self._loader(self.uri(name, version))
+        except KeyError:
+            raise
+        except Exception as error:
+            # MLflow raises MlflowException for an unregistered name. Translate only the missing
+            # case, so ChainRegistry can fall back; a network or auth error still surfaces.
+            if any(marker in str(error).lower() for marker in _MISSING):
+                raise KeyError(name) from None
+            raise
         if not isinstance(prompt.template, str):
             raise ValueError(
                 f"MLflow prompt {name!r} is a chat prompt; columnmap needs text prompts"

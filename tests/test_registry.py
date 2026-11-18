@@ -5,7 +5,7 @@ import json
 import pytest
 
 from columnmap.knowledge import Knowledge
-from columnmap.registry import FileRegistry
+from columnmap.registry import ChainRegistry, FileRegistry
 from columnmap.registry_mlflow import MlflowRegistry
 
 
@@ -55,6 +55,25 @@ def test_mlflow_registry_builds_version_and_alias_uris_and_keeps_the_version():
     latest = MlflowRegistry(prefix="columnmap", loader=loader)
     latest.get("presence")
     assert seen[-1] == "prompts:/columnmap/presence@latest"
+
+
+def test_a_missing_mlflow_prompt_falls_back_and_a_real_error_does_not():
+    class Missing(Exception):
+        pass
+
+    def missing(uri):
+        raise Missing("Prompt with name columnmap/bind not found")
+
+    reg = ChainRegistry(
+        MlflowRegistry(loader=missing), FileRegistry({"bind": "fallback"})
+    )
+    assert reg.get("bind").template == "fallback"
+
+    def broken(uri):
+        raise RuntimeError("connection refused")
+
+    with pytest.raises(RuntimeError):
+        MlflowRegistry(loader=broken).get("bind")
 
 
 def test_mlflow_chat_prompts_are_rejected_with_a_clear_message():
