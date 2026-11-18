@@ -11,7 +11,8 @@
 
 | File | Owns |
 |---|---|
-| `knowledge.py` | `Knowledge`: the output fields, reference tables, and prompt overrides, loaded from one source-controlled folder. `registry(base)` layers the folder over the chosen prompt backend. |
+| `knowledge.py` | `Knowledge`: the output fields, reference tables, prompt overrides, and policy, loaded from one source-controlled folder. `registry(base)` layers the folder over the chosen prompt backend. |
+| `policy.py` | `Policy`: the derived/copy/none ceilings, the model they were calibrated for, and the calibration facts. `knowledge/policy.json` is the source; `appsettings.json` is the fallback. |
 | `decider.py` | The Decisions interface: `Question`, `Answer`, `Response`, the `Decider` protocol, and `OpenRouterDecider`. |
 | `prompts.py` | The built-in prompt book (`DEFAULT_TEMPLATES`) and the question builders. Every text is a `{{variable}}` template; a knowledge folder or MLflow can override any name. |
 | `registry.py` | `Prompt`, `FileRegistry`, `ChainRegistry`: the source-controlled prompt book with double-brace variables. |
@@ -28,9 +29,9 @@
 from columnmap import Knowledge, Mapper, OpenRouterDecider, read_table
 
 rows = read_table("partner.xlsx")                  # CSV/TSV always; XLSX with --extra excel
-knowledge = Knowledge.load("my_knowledge/")        # outputs.json + reference/*.csv + prompts.json
+knowledge = Knowledge.load("my_knowledge/")        # outputs, reference, prompts, policy
 mapping = Mapper(OpenRouterDecider(key, model, url), knowledge).map(rows)
-header, converted = mapping.convert(rows)          # a field without a present source stays empty
+header, converted = mapping.convert(rows)          # uses the dataset policy; empty when not present
 ```
 
 ## Knowledge folder
@@ -42,6 +43,7 @@ my_knowledge/
   outputs.json          the target template: name, type, description (task input)
   reference/*.csv       code -> label tables for lookups (task input)
   prompts.json          editable overrides of any prompt in the built-in book
+  policy.json           fill floors calibrated for this dataset and model
 ```
 
 - `outputs.json` and `reference/` describe the target. They may be complex (`x + y`, a date
@@ -50,6 +52,11 @@ my_knowledge/
   default book is written by `make data` into `data/knowledge/prompts.json` as a starting point.
 - MLflow is the versioned alternative: `MlflowRegistry(prefix="columnmap/", version="production")`.
   The folder overrides win, then the MLflow registry, then the built-in book.
+- `policy.json` is chosen by `columnmap --calibrate <labeled run> --budget 0.02`, not by hand. The
+  command sweeps derived and copy floors, maximizes field accuracy under the false-fill budget, and
+  records the point estimate plus a Wilson 95% upper bound. If the upper bound is above the budget,
+  the label set is too small to certify it; collect more fields. `appsettings.json` is the fallback
+  when a dataset has no policy.
 
 ```python
 from columnmap import MlflowRegistry, Mapper
@@ -60,7 +67,7 @@ mapper = Mapper(decider, knowledge, registry=registry)   # folder overrides -> M
 
 ## Bench (evaluation only)
 
-`bench/` holds the synthetic template and generator (`template.py`, `generate.py`, `samples.py`), the CSV export (`export.py`, which also writes `data/knowledge/`), the resumable run store (`store.py`, `run.py`, `runs.py`, `usage.py`), grading against the ground truth (`metrics.py`), the report (`summary.py`, `report.py`), DeepEval (`deepeval.py`), and the CLI (`cli.py`).
+`bench/` holds the synthetic template and generator (`template.py`, `generate.py`, `samples.py`), the CSV export (`export.py`, which also writes `data/knowledge/`), the resumable run store (`store.py`, `run.py`, `runs.py`, `usage.py`), grading against the ground truth (`metrics.py`), the report (`summary.py`, `report.py`), the run reader shared by evaluation and calibration (`cases.py`), threshold calibration (`calibrate.py`), DeepEval (`deepeval.py`), and the CLI (`cli.py`).
 
 ## Harness (optional)
 
@@ -119,8 +126,8 @@ None in the core. Check: `grep -rn "bench\|harness" src/columnmap/*.py` prints o
    columns, so the model never picks a formula. A rate column is not offered for an amount role, and
    a plain code is not offered for a date role. A description the parser cannot read falls back to
    the column-set question plus a separate presence question.
-5. **Fill.** A field is filled when its source is present: `p_present` (the weakest role, or the
-   presence answer in the fallback) reaches `Fill.copy` (0.4) for a copied field or `Fill.derived`
-   (0.75) for a derived one, and `p_none` stays at or below `Fill.none_ceiling` (0.5). A column
-   claimed by two copied fields stays with the higher score; the other gets score 0 and presence 0.
-   Converting is deterministic.
+5. **Fill.** The dataset `policy.json` (or the `appsettings.json` fallback) sets the floors. A field
+   is filled when its source is present: `p_present` (the weakest role, or the presence answer in
+   the fallback) reaches the copy or derived floor, and `p_none` stays at or below the ceiling. A
+   column claimed by two copied fields stays with the higher score; the other gets score 0 and
+   presence 0. Converting is deterministic.

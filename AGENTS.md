@@ -9,6 +9,7 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 - Map a partner table: `make map TABLE=in.csv KNOWLEDGE=my_knowledge/ OUT=converted.csv`
 - Map through the graph: `make graph TABLE=in.csv REVIEW=empty` (needs `uv sync --extra graph`)
 - Extract the input schema: `make schema TABLE=in.csv`
+- Calibrate the dataset policy from a labeled run: `make calibrate RUN_DIR=results/<run> BUDGET=0.02`
 - Format: `uvx ruff@0.15.0 format src tests` (check only: `uvx ruff@0.15.0 format --check src tests`)
 - Lint: `make lint`
 - Test: `make test` (one file: `uv run pytest -q tests/test_mapper.py`)
@@ -18,7 +19,7 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 
 ## Architecture
 
-- Style: one small package whose core has no third-party dependency. Core files at `src/columnmap/`: `knowledge.py`, `decider.py`, `prompts.py`, `registry.py`, `registry_mlflow.py`, `schema.py`, `table.py`, `expressions.py`, `roles.py`, `pipeline.py`, `mapper.py`, `config.py`. Evaluation only in `src/columnmap/bench/` (synthetic data, ground truth, report, DeepEval, CLI). The optional graph harness in `src/columnmap/harness/` needs the `graph` extra (`uv sync --extra graph`).
+- Style: one small package whose core has no third-party dependency. Core files at `src/columnmap/`: `knowledge.py`, `policy.py`, `decider.py`, `prompts.py`, `registry.py`, `registry_mlflow.py`, `schema.py`, `table.py`, `expressions.py`, `roles.py`, `pipeline.py`, `mapper.py`, `config.py`. Evaluation only in `src/columnmap/bench/` (synthetic data, ground truth, report, cases, calibration, DeepEval, CLI). The optional graph harness in `src/columnmap/harness/` needs the `graph` extra (`uv sync --extra graph`).
 - Optional extras: `graph` (LangGraph harness), `excel` (openpyxl input), `registry` (MLflow Prompt Registry). The core never imports them.
 - Coupling: core files never import `bench` or `harness`; both import the core. Details in `docs/ARCHITECTURE.md`.
 
@@ -29,7 +30,8 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
 - Never edit generated files: `data/` (regenerate with `make data`) and `results/` (run output). `data/knowledge/` is a generated example; copy it into the project to edit prompts for a real dataset.
-- One dataset is one knowledge folder: `outputs.json`, `reference/*.csv`, `prompts.json`. Commit it with the code; MLflow Prompt Registry is the versioned alternative.
+- One dataset is one knowledge folder: `outputs.json`, `reference/*.csv`, `prompts.json`, `policy.json`. Commit it with the code; MLflow Prompt Registry is the versioned alternative.
+- The policy is calibrated, not hand-tuned: `make calibrate RUN_DIR=... BUDGET=0.02` writes `policy.json` and records the point estimate and the 95% upper bound. Do not change floors per batch or per file. `appsettings.json` is the fallback when a dataset has no policy.
 - Never call the model (`make run`, `make sample`, `make full`) without the user's explicit order.
 - Seeds: 11 for dev tuning. 12 and 13 (holdout) were used to choose the double-claim rule and the copy fill score, so they are no longer clean. 14 and 15 checked the frozen pipeline once. A new claim needs a seed nobody has looked at. 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
 - Report every mapping result as `x / y` (fields right out of the fields counted), per sample and context, and say which seed.

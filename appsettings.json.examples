@@ -10,9 +10,9 @@
     "FillScore": 0.75,
     "CopyFillScore": 0.4,
     "NoneCeiling": 0.5,
-    "FillScore_Note": "p_present floor for a derived field (year, join, arithmetic, date difference, lookup); filled when it reaches this, otherwise empty. Can be changed with --report-only --fill-score.",
-    "CopyFillScore_Note": "the same for a field copied from one column; lower because a column claimed by two copied fields is dropped from the lower one",
-    "NoneCeiling_Note": "a field stays empty when p_none is above this ceiling; 0.5 means a coin flip never fills a file with a guess",
+    "FillScore_Note": "default p_present floor for a derived field. A dataset's knowledge/policy.json overrides it; --fill-score overrides both for an experiment.",
+    "CopyFillScore_Note": "default floor for a field copied from one column. A dataset policy overrides it.",
+    "NoneCeiling_Note": "default p_none ceiling. A dataset policy overrides it; 0.5 means a coin flip never fills a file with a guess.",
     "Seed": 1234,
     "Seed_Note": "seed used when neither --seed nor --split is given"
   },

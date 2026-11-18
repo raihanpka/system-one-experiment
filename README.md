@@ -33,6 +33,7 @@ my_knowledge/
   outputs.json          target template: name, type, description
   reference/*.csv       code -> label tables for lookups
   prompts.json          editable overrides of any prompt in the built-in book
+  policy.json           fill floors calibrated for this dataset and model
 ```
 
 `make data` writes a complete example to `data/knowledge/`, including the default prompt book. Copy that folder into your project before editing; `make data` regenerates the example.
@@ -47,6 +48,33 @@ mapper = Mapper(decider, knowledge, registry=registry)
 ```
 
 MLflow uses immutable versions and aliases (`prompts:/columnmap/bind@production`); a numeric version loads `prompts:/columnmap/bind/7`.
+
+### Threshold policy
+
+The floors are a policy, not a per-batch knob. Each dataset carries the policy it was calibrated
+for, so production never edits a global setting per file:
+
+```json
+{
+  "model": "microsoft/microsoft-decision-1.1",
+  "fill": {"derived": 0.75, "copy": 0.4, "none_ceiling": 0.5},
+  "calibration": {"seed": 11, "budget": 0.02, "false_fill_rate": 0.02, "upper_false_fill": 0.105}
+}
+```
+
+```bash
+make calibrate RUN_DIR=results/<labeled run> BUDGET=0.02
+# or: uv run columnmap --calibrate results/<run> --knowledge my_knowledge/ --budget 0.02
+```
+
+Calibration sweeps derived and copy floors, keeps the best field accuracy under the false-fill
+budget, and stays closest to the current policy when a whole plateau ties. It reports the point
+estimate and a Wilson 95% upper bound. On a small labeled set the point estimate can meet the budget
+while the upper bound cannot; that is the signal to collect more labels, not to lower the floor.
+
+`appsettings.json` is the fallback; `--fill-score`/`--copy-fill-score` override the policy for an
+experiment. The output is binary in every mode: a field is filled (yes) or empty (no). Human review
+is optional and only for collecting labels; `review="empty"` is the product mode.
 
 ### Graph harness
 

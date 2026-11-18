@@ -8,6 +8,7 @@ Only rules that differ from the language defaults or that the code cannot tell y
 - The core library has no third-party dependency. DeepEval is a dev dependency and is imported only by `bench/deepeval.py`; LangGraph is the optional `graph` extra and is imported only by `harness/`; MLflow is the optional `registry` extra and is imported lazily by `registry_mlflow.py`; openpyxl is the optional `excel` extra and is imported lazily by `table.py`.
 - Prompt text lives in `prompts.DEFAULT_TEMPLATES` as `{{variable}}` templates, never in an f-string in `mapper.py`. A knowledge folder's `prompts.json` or an MLflow registry may override any name; the built-in book is the fallback.
 - The input schema is extracted from column names and values only (`schema.extract`). A partner table never supplies a schema, and the pipeline never reads a partner's metadata file.
+- Fill floors are a dataset policy (`knowledge/policy.json`), chosen by `--calibrate` from a labeled run and stored with the model version and the calibration facts. Do not hand-tune them per batch. `appsettings.json` is only the fallback when a dataset has no policy.
 - The ground truth never reaches the model or the expression catalog. The model sees column names and values, field names, types and descriptions, and reference tables. Never a rule, a kind, or a source id.
 - Report every result as `x / y` with the denominator named. Tune only on the dev split.
 - The API key is read from the environment only (`OPENROUTER_API_KEY`, loaded from `.env`). Never in a tracked file.
