@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from columnmap.decider import Answer, Response
+from column_mapping.decider import Answer, Response
 
 
 class Generic:

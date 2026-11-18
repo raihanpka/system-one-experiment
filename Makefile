@@ -1,6 +1,6 @@
 UV ?= uv
 PY := $(UV) run python
-RUN := $(UV) run columnmap
+RUN := $(UV) run column-mapping
 TABLE ?=
 KNOWLEDGE ?= data/knowledge
 OUT ?= converted.csv
@@ -39,7 +39,7 @@ report: ## Rebuild files and summary of the newest run, no model
 	$(RUN) --report-only
 
 data: ## Write the template, samples, and the source-controlled knowledge folder under data/
-	$(PY) -m columnmap.bench.export
+	$(PY) -m column_mapping.bench.export
 
 map: ## Map a partner table: make map TABLE=in.csv KNOWLEDGE=data/knowledge OUT=converted.csv
 	$(RUN) --table "$(TABLE)" --knowledge "$(KNOWLEDGE)" --output "$(OUT)"

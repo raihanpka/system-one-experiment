@@ -1,4 +1,4 @@
-# columnmap
+# Column Mapping with System One Model
 
 Maps messy input columns to a fixed insurance/finance output template. Each output field's description is read as named roles, each role is bound to one input column, and code builds the expression. A field is filled when its source is present (`p_present` reaches the fill score and `p_none` stays below the ceiling); otherwise it stays empty. The goal is a converted file equal to the expected file. Generic working rules come from the dotagent, the facts below are this repo's.
 
@@ -14,19 +14,20 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 - Lint: `make lint`
 - Test: `make test` (one file: `uv run pytest -q tests/test_mapper.py`)
 - Full gate: `make check` (format check, lint, test)
-- DeepEval check of a finished run, no model call: `uv run columnmap --deepeval results/<run folder>`
-- Rebuild a report with other fill scores, no model call: `uv run columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5`
+- DeepEval check of a finished run, no model call: `uv run column-mapping --deepeval results/<run folder>`
+- Rebuild a report with other fill scores, no model call: `uv run column-mapping --report-only --fill-score 0.8 --copy-fill-score 0.5`
 
 ## Architecture
 
-- Style: one small package whose core has no third-party dependency. Core files at `src/columnmap/`: `knowledge.py`, `policy.py`, `decider.py`, `prompts.py`, `registry.py`, `registry_mlflow.py`, `schema.py`, `table.py`, `expressions.py`, `roles.py`, `pipeline.py`, `mapper.py`, `config.py`. Evaluation only in `src/columnmap/bench/` (synthetic data, ground truth, report, cases, calibration, DeepEval, CLI). The optional graph harness in `src/columnmap/harness/` needs the `graph` extra (`uv sync --extra graph`).
+- Style: one small package whose core has no third-party dependency. Core files at `src/column_mapping/`: `knowledge.py`, `policy.py`, `decider.py`, `prompts.py`, `registry.py`, `registry_mlflow.py`, `schema.py`, `table.py`, `expressions.py`, `roles.py`, `pipeline.py`, `mapper.py`, `config.py`. Evaluation only in `src/column_mapping/bench/` (synthetic data, ground truth, report, cases, calibration, DeepEval, CLI). The optional graph harness in `src/column_mapping/harness/` needs the `graph` extra (`uv sync --extra graph`).
 - Optional extras: `graph` (LangGraph harness), `excel` (openpyxl input), `registry` (MLflow Prompt Registry). The core never imports them.
 - Coupling: core files never import `bench` or `harness`; both import the core. Details in `docs/ARCHITECTURE.md`.
+- Production: `docs/PRODUCTION.md` (what is ready, calibration/recalibration triggers, monitoring, shadow/canary, rollback).
 
 ## Rules
 
-- Branch from `main`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: mapper, knowledge, decider, prompts, registry, schema, table, expressions, roles, pipeline, config, bench, cli, deps, docs, test, results, gitignore, format.
+- Branch from `refactor/modular-mapping` (the integration base; `main` is far behind). One task is one branch and one PR.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: mapper, knowledge, policy, decider, prompts, registry, schema, table, expressions, roles, pipeline, config, bench, calibrate, cli, deps, docs, test, results, gitignore, format.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
 - Never edit generated files: `data/` (regenerate with `make data`) and `results/` (run output). `data/knowledge/` is a generated example; copy it into the project to edit prompts for a real dataset.

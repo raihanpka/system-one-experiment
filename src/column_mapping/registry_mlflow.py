@@ -1,7 +1,7 @@
 # Optional MLflow Prompt Registry backend. Importing this module does not import mlflow; the loader is
 # resolved on first use, so the core stays standard-library only unless this backend is actually used.
 #
-#   registry = MlflowRegistry(prefix="columnmap/", version="production")
+#   registry = MlflowRegistry(prefix="column_mapping/", version="production")
 #   mapper = Mapper(decider, knowledge, registry=registry)
 #
 # MLflow prompt versions are immutable and aliases are the deployment pointer. A numeric version loads
@@ -22,7 +22,7 @@ def _load(uri: str):
 
 class MlflowRegistry:
     def __init__(
-        self, prefix: str = "columnmap/", version: str | None = None, loader=None
+        self, prefix: str = "column_mapping/", version: str | None = None, loader=None
     ):
         self._prefix = prefix.rstrip("/") + "/"
         self._version = version
@@ -48,7 +48,7 @@ class MlflowRegistry:
             raise
         if not isinstance(prompt.template, str):
             raise ValueError(
-                f"MLflow prompt {name!r} is a chat prompt; columnmap needs text prompts"
+                f"MLflow prompt {name!r} is a chat prompt; column_mapping needs text prompts"
             )
         return Prompt(
             name=name,

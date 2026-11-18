@@ -2,12 +2,12 @@ import re
 
 import pytest
 
-from columnmap.config import ROOT
-from columnmap.bench.template import load_template
-from columnmap.bench.export import sample_folder
-from columnmap.bench.generate import generate
-from columnmap.bench.samples import DEFAULT, SAMPLES, word
-from columnmap.bench.cli import main
+from column_mapping.config import ROOT
+from column_mapping.bench.template import load_template
+from column_mapping.bench.export import sample_folder
+from column_mapping.bench.generate import generate
+from column_mapping.bench.samples import DEFAULT, SAMPLES, word
+from column_mapping.bench.cli import main
 
 
 def _no_model():

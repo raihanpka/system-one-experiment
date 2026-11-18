@@ -1,9 +1,9 @@
 # the library API on a tiny table: knowledge from a folder, a scripted decider, deterministic conversion
 import json
 
-from columnmap import Fill, Knowledge, Mapper, Output
-from columnmap.decider import Answer, Response
-from columnmap.mapper import (
+from column_mapping import Fill, Knowledge, Mapper, Output
+from column_mapping.decider import Answer, Response
+from column_mapping.mapper import (
     convert,
     infer_kinds,
     score_columns,
@@ -188,7 +188,7 @@ def test_a_field_whose_columns_are_not_there_says_none_and_stays_empty():
 
 
 def test_the_knowledge_policy_sets_the_mapping_fill():
-    from columnmap.policy import Policy
+    from column_mapping.policy import Policy
 
     knowledge = Knowledge(
         KNOWLEDGE.outputs,
@@ -235,7 +235,7 @@ def test_knowledge_round_trips_through_a_folder_and_is_all_a_project_needs_to_sw
 
 
 def test_a_column_claimed_by_two_copied_fields_stays_with_the_higher_score():
-    from columnmap.mapper import drop_double_claims
+    from column_mapping.mapper import drop_double_claims
 
     def rec(score, col, kind="copy"):
         return {"kind": kind, "best": {"src": col}, "cols": [col], "score": score}
@@ -258,7 +258,7 @@ def test_a_column_claimed_by_two_copied_fields_stays_with_the_higher_score():
 
 
 def test_a_copied_field_needs_a_lower_score_than_a_derived_field_to_be_filled():
-    from columnmap.mapper import Fill, is_filled
+    from column_mapping.mapper import Fill, is_filled
 
     copy = {"kind": "copy", "best": {"src": "x"}, "score": 0.5}
     derived = {"kind": "join", "best": {"src": "x"}, "score": 0.5}
@@ -267,7 +267,7 @@ def test_a_copied_field_needs_a_lower_score_than_a_derived_field_to_be_filled():
 
 
 def test_presence_and_none_decide_the_fill_not_the_joint_set_score():
-    from columnmap.mapper import Fill, is_filled
+    from column_mapping.mapper import Fill, is_filled
 
     rec = {
         "kind": "copy",
@@ -297,7 +297,7 @@ def test_role_questions_for_a_group_of_fields_share_one_request():
 
 
 def test_a_presence_refusal_fails_closed_in_the_fallback():
-    from columnmap.mapper import _field, is_filled
+    from column_mapping.mapper import _field, is_filled
 
     class PresenceRefused:
         def decide(self, text, questions):
@@ -334,7 +334,7 @@ def test_a_presence_refusal_fails_closed_in_the_fallback():
 
 
 def test_choice_labels_are_safe_and_map_back_to_the_raw_column():
-    from columnmap.mapper import _safe_labels
+    from column_mapping.mapper import _safe_labels
 
     labels = _safe_labels(["a\nb", "a  b", ""])
     assert all("\n" not in label for label in labels)
@@ -352,8 +352,8 @@ def test_a_numeric_id_is_not_offered_for_arithmetic():
 
 
 def test_an_amount_role_is_not_offered_a_rate_column():
-    from columnmap.mapper import _columns_for
-    from columnmap.roles import Role
+    from column_mapping.mapper import _columns_for
+    from column_mapping.roles import Role
 
     rows = [{"fee_pct": "0.05", "fee_amount": "10", "other": "x"}]
     allowed = _columns_for(
@@ -366,8 +366,8 @@ def test_an_amount_role_is_not_offered_a_rate_column():
 
 
 def test_a_rate_field_does_not_take_an_amount_column():
-    from columnmap.mapper import _columns_for
-    from columnmap.roles import Role
+    from column_mapping.mapper import _columns_for
+    from column_mapping.roles import Role
 
     rows = [{"fee_pct": "0.05", "fee_amount": "10"}]
     allowed = _columns_for(

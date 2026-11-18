@@ -15,7 +15,7 @@ Only rules that differ from the language defaults or that the code cannot tell y
 
 ## Tests
 
-- Tests mirror `src/columnmap/`: library tests in `tests/`, bench tests in `tests/bench/`. Fake deciders live in `tests/bench/fakes.py`, so the suite needs no model and no network.
+- Tests mirror `src/column_mapping/`: library tests in `tests/`, bench tests in `tests/bench/`. Fake deciders live in `tests/bench/fakes.py`, so the suite needs no model and no network.
 - Run one file with `uv run pytest -q tests/test_mapper.py`.
 
 ## Generated files

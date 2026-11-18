@@ -1,6 +1,6 @@
 # the input schema is extracted from names and values only; a partner schema is never required
 
-from columnmap.schema import extract
+from column_mapping.schema import extract
 
 
 def test_extract_reads_type_unit_samples_nulls_and_distinct():

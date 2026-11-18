@@ -1,8 +1,8 @@
-from columnmap.bench.store import Store
-from columnmap.bench.template import knowledge_from_template, load_template
-from columnmap.bench.generate import generate
-from columnmap.decider import Answer, Response
-from columnmap.bench.run import run_models
+from column_mapping.bench.store import Store
+from column_mapping.bench.template import knowledge_from_template, load_template
+from column_mapping.bench.generate import generate
+from column_mapping.decider import Answer, Response
+from column_mapping.bench.run import run_models
 
 T = load_template()
 K = knowledge_from_template(T)

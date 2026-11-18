@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from columnmap.config import SETTINGS
-from columnmap.config import (
+from column_mapping.config import SETTINGS
+from column_mapping.config import (
     fill_from_settings,
     load_dotenv,
     load_settings,
@@ -39,7 +39,7 @@ def test_committed_defaults_load_with_the_hosted_model_seed_and_splits():
 
 def test_fill_defaults_come_from_fill_and_can_be_overridden():
     assert fill_from_settings(load_settings(env={})).none_ceiling == 0.5
-    cfg = parse(BASE, env={"COLUMNMAP__Run__NoneCeiling": "0.3"})
+    cfg = parse(BASE, env={"COLUMN_MAPPING__Run__NoneCeiling": "0.3"})
     assert cfg["run"]["none_ceiling"] == 0.3
 
 
@@ -47,9 +47,9 @@ def test_env_override_wins_over_the_file_and_is_parsed_as_json():
     cfg = parse(
         BASE,
         env={
-            "COLUMNMAP__Run__FillScore": "0.95",
-            "COLUMNMAP__Run__Seed": "7",
-            "COLUMNMAP__Run__Conds": '["name"]',
+            "COLUMN_MAPPING__Run__FillScore": "0.95",
+            "COLUMN_MAPPING__Run__Seed": "7",
+            "COLUMN_MAPPING__Run__Conds": '["name"]',
         },
     )
     assert (
@@ -71,7 +71,7 @@ def test_a_leftover_local_setting_is_refused_not_ignored():
     with pytest.raises(ValueError, match="Backend settings were removed"):
         parse(with_(Backend={"Type": "local"}), env={})
     with pytest.raises(ValueError, match="Local settings were removed"):
-        parse(BASE, env={"COLUMNMAP__Local__Quant": "Q8_0"})
+        parse(BASE, env={"COLUMN_MAPPING__Local__Quant": "Q8_0"})
     with pytest.raises(ValueError, match="Device settings were removed"):
         parse(with_(Device={"Mode": "cpu"}), env={})
 
@@ -121,7 +121,7 @@ def test_dotenv_missing_file_is_a_no_op(tmp_path):
 
 
 def test_example_settings_file_lists_every_option_and_stays_valid():
-    from columnmap.config import ROOT
+    from column_mapping.config import ROOT
 
     example = json.loads(
         (ROOT / "appsettings.json.examples").read_text(encoding="utf-8")

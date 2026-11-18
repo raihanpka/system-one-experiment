@@ -1,4 +1,4 @@
-from columnmap.config import env_overrides, merge, normalize, validate
+from column_mapping.config import env_overrides, merge, normalize, validate
 
 
 # the same checks for a dict already in memory (tests only); env overrides apply on top

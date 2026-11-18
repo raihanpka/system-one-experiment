@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from columnmap.knowledge import Knowledge
-from columnmap.registry import ChainRegistry, FileRegistry
-from columnmap.registry_mlflow import MlflowRegistry
+from column_mapping.knowledge import Knowledge
+from column_mapping.registry import ChainRegistry, FileRegistry
+from column_mapping.registry_mlflow import MlflowRegistry
 
 
 def test_file_registry_formats_double_brace_variables_and_overlays():
@@ -30,7 +30,7 @@ def test_a_knowledge_folder_can_override_prompts(tmp_path):
 
 
 class FakePrompt:
-    name = "columnmap/presence"
+    name = "column_mapping/presence"
     template = "Does {{field}} exist?"
     version = 3
 
@@ -42,19 +42,19 @@ def test_mlflow_registry_builds_version_and_alias_uris_and_keeps_the_version():
         seen.append(uri)
         return FakePrompt()
 
-    reg = MlflowRegistry(prefix="columnmap", version="production", loader=loader)
+    reg = MlflowRegistry(prefix="column_mapping", version="production", loader=loader)
     prompt = reg.get("presence")
-    assert seen[-1] == "prompts:/columnmap/presence@production"
+    assert seen[-1] == "prompts:/column_mapping/presence@production"
     assert prompt.template == "Does {{field}} exist?" and prompt.version == "3"
 
     reg.get("presence", version="7")
-    assert seen[-1] == "prompts:/columnmap/presence/7"
+    assert seen[-1] == "prompts:/column_mapping/presence/7"
     reg.get("presence", version="staging")
-    assert seen[-1] == "prompts:/columnmap/presence@staging"
+    assert seen[-1] == "prompts:/column_mapping/presence@staging"
 
-    latest = MlflowRegistry(prefix="columnmap", loader=loader)
+    latest = MlflowRegistry(prefix="column_mapping", loader=loader)
     latest.get("presence")
-    assert seen[-1] == "prompts:/columnmap/presence@latest"
+    assert seen[-1] == "prompts:/column_mapping/presence@latest"
 
 
 def test_a_missing_mlflow_prompt_falls_back_and_a_real_error_does_not():
@@ -62,7 +62,7 @@ def test_a_missing_mlflow_prompt_falls_back_and_a_real_error_does_not():
         pass
 
     def missing(uri):
-        raise Missing("Prompt with name columnmap/bind not found")
+        raise Missing("Prompt with name column_mapping/bind not found")
 
     reg = ChainRegistry(
         MlflowRegistry(loader=missing), FileRegistry({"bind": "fallback"})

@@ -1,9 +1,9 @@
 # the graph runs the same mapper, pauses when a field is close to the fill policy, and resumes with code
 
-from columnmap.decider import Answer, Response
-from columnmap.harness import retry_policy, run_graph
-from columnmap.harness.graph import _repair
-from columnmap.knowledge import Knowledge, Output
+from column_mapping.decider import Answer, Response
+from column_mapping.harness import retry_policy, run_graph
+from column_mapping.harness.graph import _repair
+from column_mapping.knowledge import Knowledge, Output
 
 ROWS = [
     {

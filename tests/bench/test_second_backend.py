@@ -1,7 +1,7 @@
 # a second backend runs the whole pipeline and the run records its identity
 import json
 
-from columnmap.bench.cli import main
+from column_mapping.bench.cli import main
 from tests.bench.fakes import Generic
 
 

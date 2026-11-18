@@ -1,5 +1,5 @@
-from columnmap.bench.usage import Counting, estimate_minutes
-from columnmap.decider import Answer, Question, Response
+from column_mapping.bench.usage import Counting, estimate_minutes
+from column_mapping.decider import Answer, Question, Response
 
 
 class Fake:

@@ -2,14 +2,14 @@ import math
 
 import pytest
 
-from columnmap.expressions import size, candidates, column_type
-from columnmap.expressions import render, safe_evaluate
-from columnmap.bench.template import (
+from column_mapping.expressions import size, candidates, column_type
+from column_mapping.expressions import render, safe_evaluate
+from column_mapping.bench.template import (
     knowledge_from_template,
     load_template,
     rule_sources,
 )
-from columnmap.bench.generate import generate
+from column_mapping.bench.generate import generate
 
 T = load_template()
 TABLES = knowledge_from_template(T).tables

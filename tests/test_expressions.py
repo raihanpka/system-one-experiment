@@ -1,6 +1,6 @@
 import pytest
 
-from columnmap.expressions import (
+from column_mapping.expressions import (
     column_unit,
     compatible,
     evaluate,
@@ -9,7 +9,7 @@ from columnmap.expressions import (
     result_unit,
     safe_evaluate,
 )
-from columnmap.knowledge import Output
+from column_mapping.knowledge import Output
 
 S = lambda x: {"src": x}  # noqa: E731
 L = lambda x: {"lit": x}  # noqa: E731

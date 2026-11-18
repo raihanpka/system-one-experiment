@@ -2,8 +2,8 @@
 
 ## Style
 
-- One small Python package, `columnmap`, that other projects import. The core has no third-party dependency (standard library only).
-- Four parts: the core library (schema, prompts, mapping), `columnmap.bench` (synthetic data, ground truth, reports, DeepEval), the optional `columnmap.harness` (a LangGraph agent around the same mapping), and the optional input/prompt backends (`excel`, `registry`).
+- One small Python package, `column_mapping`, that other projects import. The core has no third-party dependency (standard library only).
+- Four parts: the core library (schema, prompts, mapping), `column_mapping.bench` (synthetic data, ground truth, reports, DeepEval), the optional `column_mapping.harness` (a LangGraph agent around the same mapping), and the optional input/prompt backends (`excel`, `registry`).
 - Optional extras: `uv sync --extra graph` (LangGraph), `--extra excel` (openpyxl), `--extra registry` (MLflow Prompt Registry).
 - Coupling rule: the core files never import `bench` or `harness`. `bench` and `harness` import the core.
 
@@ -26,7 +26,7 @@
 | `config.py` | Paths and the `appsettings.json` / `.env` settings used by the CLI. The library itself takes plain arguments. |
 
 ```python
-from columnmap import Knowledge, Mapper, OpenRouterDecider, read_table
+from column_mapping import Knowledge, Mapper, OpenRouterDecider, read_table
 
 rows = read_table("partner.xlsx")                  # CSV/TSV always; XLSX with --extra excel
 knowledge = Knowledge.load("my_knowledge/")        # outputs, reference, prompts, policy
@@ -50,18 +50,18 @@ my_knowledge/
   difference, a code lookup); the role parser reads the description, never the rule.
 - `prompts.json` lets the user change the wording per dataset without touching Python. A full
   default book is written by `make data` into `data/knowledge/prompts.json` as a starting point.
-- MLflow is the versioned alternative: `MlflowRegistry(prefix="columnmap/", version="production")`.
+- MLflow is the versioned alternative: `MlflowRegistry(prefix="column_mapping/", version="production")`.
   The folder overrides win, then the MLflow registry, then the built-in book.
-- `policy.json` is chosen by `columnmap --calibrate <labeled run> --budget 0.02`, not by hand. The
+- `policy.json` is chosen by `column-mapping --calibrate <labeled run> --budget 0.02`, not by hand. The
   command sweeps derived and copy floors, maximizes field accuracy under the false-fill budget, and
   records the point estimate plus a Wilson 95% upper bound. If the upper bound is above the budget,
   the label set is too small to certify it; collect more fields. `appsettings.json` is the fallback
   when a dataset has no policy.
 
 ```python
-from columnmap import MlflowRegistry, Mapper
+from column_mapping import MlflowRegistry, Mapper
 
-registry = MlflowRegistry(prefix="columnmap/", version="production")
+registry = MlflowRegistry(prefix="column_mapping/", version="production")
 mapper = Mapper(decider, knowledge, registry=registry)   # folder overrides -> MLflow -> built-in
 ```
 
@@ -75,7 +75,7 @@ mapper = Mapper(decider, knowledge, registry=registry)   # folder overrides -> M
 deterministic fallback, and human review. It needs the graph extra; the core never imports it.
 
 ```python
-from columnmap.harness import run_graph
+from column_mapping.harness import run_graph
 
 run = run_graph(rows, decider, knowledge, thread_id="batch-1")
 header, converted = run.header, run.converted
@@ -108,7 +108,7 @@ makes every pause resumable; nodes are idempotent and side effects happen only i
 
 ## Current violations
 
-None in the core. Check: `grep -rn "bench\|harness" src/columnmap/*.py` prints only comments and the CLI import of `bench.cli`. The harness imports LangGraph by design; MLflow and openpyxl are imported lazily by their backends.
+None in the core. Check: `grep -rn "bench\|harness" src/column_mapping/*.py` prints only comments and the CLI import of `bench.cli`. The harness imports LangGraph by design; MLflow and openpyxl are imported lazily by their backends.
 
 ## Flow
 

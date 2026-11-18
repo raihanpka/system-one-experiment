@@ -1,6 +1,6 @@
 import pytest
 
-from columnmap.decider import Choice, Level, Question
+from column_mapping.decider import Choice, Level, Question
 
 
 def test_question_validation():

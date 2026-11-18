@@ -2,9 +2,9 @@
 
 import json
 
-from columnmap.bench.calibrate import calibrate_run, wilson_upper
-from columnmap.bench.cli import main
-from columnmap.policy import Policy
+from column_mapping.bench.calibrate import calibrate_run, wilson_upper
+from column_mapping.bench.cli import main
+from column_mapping.policy import Policy
 from tests.bench.fakes import Approves
 
 

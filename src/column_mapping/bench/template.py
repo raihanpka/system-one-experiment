@@ -1,4 +1,4 @@
-# Validate data/template.json. Run: uv run python -m columnmap.core.template
+# Validate data/template.json. Run: uv run python -m column_mapping.core.template
 
 from __future__ import annotations
 

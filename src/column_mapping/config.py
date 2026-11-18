@@ -1,5 +1,5 @@
 # Settings in the .NET style: appsettings.json (committed defaults, PascalCase), appsettings.local.json (optional, gitignored),
-# then environment variables COLUMNMAP__Section__Key, which win over both. Code reads snake_case keys.
+# then environment variables COLUMN_MAPPING__Section__Key, which win over both. Code reads snake_case keys.
 # Secrets are never in these files: the API key is read from the environment variable that OpenRouter:ApiKeyEnv names.
 
 from __future__ import annotations
@@ -10,14 +10,14 @@ import re
 from pathlib import Path
 
 
-# repository root: src/columnmap/config.py -> two levels up
+# repository root: src/column_mapping/config.py -> two levels up
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
 SETTINGS = ROOT / "appsettings.json"
 SETTINGS_LOCAL = ROOT / "appsettings.local.json"
 ENV_FILE = ROOT / ".env"
 
-PREFIX = "COLUMNMAP__"
+PREFIX = "COLUMN_MAPPING__"
 
 
 # .env in the project root, loaded once at start (stdlib, no dependency). Values already in the shell win; the file never overrides them.
@@ -101,7 +101,7 @@ def validate(cfg: dict) -> dict:
         ):  # refuse, never ignore: a leftover local setting must not send data elsewhere silently
             raise ValueError(
                 f"{pascal} settings were removed with the local model: delete the {pascal} section "
-                "from appsettings.local.json and COLUMNMAP__"
+                "from appsettings.local.json and COLUMN_MAPPING__"
                 + pascal
                 + "__* from the environment"
             )

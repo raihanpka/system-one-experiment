@@ -1,5 +1,5 @@
-from columnmap.knowledge import Output
-from columnmap.prompts import (
+from column_mapping.knowledge import Output
+from column_mapping.prompts import (
     file_state,
     input_state,
     mapping_question,
@@ -7,7 +7,7 @@ from columnmap.prompts import (
     safe_label,
     samples,
 )
-from columnmap.schema import extract
+from column_mapping.schema import extract
 
 
 def rows(n):

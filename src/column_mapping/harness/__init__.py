@@ -15,7 +15,7 @@ try:
 except ModuleNotFoundError as error:  # a clear message instead of a bare ImportError
     if (error.name or "").startswith("langgraph"):
         raise ImportError(
-            "columnmap.harness needs the graph extra: run `uv sync --extra graph`"
+            "column_mapping.harness needs the graph extra: run `uv sync --extra graph`"
         ) from error
     raise
 

@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from columnmap.bench.template import load_template
-from columnmap.expressions import safe_evaluate
-from columnmap.bench.generate import generate
+from column_mapping.bench.template import load_template
+from column_mapping.expressions import safe_evaluate
+from column_mapping.bench.generate import generate
 
 T = load_template()
 CASES = generate(T, n_per_level=6, seed=7)

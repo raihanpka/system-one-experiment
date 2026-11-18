@@ -3,7 +3,7 @@
 import pytest
 from openpyxl import Workbook
 
-from columnmap.table import read_table
+from column_mapping.table import read_table
 
 
 def test_csv_and_tsv_become_rows(tmp_path):

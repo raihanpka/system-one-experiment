@@ -1,7 +1,7 @@
 # the role parser reads the field description, never the rule: operator and named operands, or None for a fallback
 
-from columnmap.knowledge import Output
-from columnmap.roles import shape
+from column_mapping.knowledge import Output
+from column_mapping.roles import shape
 
 
 def roles(out, kind):
@@ -88,7 +88,7 @@ def test_single_column_kinds_get_one_role_and_an_unreadable_description_falls_ba
 
 
 def test_the_shape_builds_the_same_expression_the_rule_would():
-    from columnmap.expressions import render
+    from column_mapping.expressions import render
 
     col = {"src": "x"}
     cases = [

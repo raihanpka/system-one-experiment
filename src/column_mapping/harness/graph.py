@@ -425,7 +425,7 @@ def run_graph(
     decider: Decider,
     knowledge: Knowledge,
     fill: Fill | None = None,
-    thread_id: str = "columnmap",
+    thread_id: str = "column_mapping",
     checkpointer=None,
     retries: int = 2,
     registry=None,

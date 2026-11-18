@@ -3,8 +3,8 @@ import json
 
 from deepeval.test_case import LLMTestCase
 
-from columnmap.bench.cli import main
-from columnmap.bench.deepeval import (
+from column_mapping.bench.cli import main
+from column_mapping.bench.deepeval import (
     FieldsRight,
     FillPrecision,
     NoSourceEmpty,
@@ -13,9 +13,9 @@ from columnmap.bench.deepeval import (
     evaluate_run,
     load_run,
 )
-from columnmap.bench.metrics import field_correct
-from columnmap.bench.summary import top_column
-from columnmap.mapper import Fill, convert
+from column_mapping.bench.metrics import field_correct
+from column_mapping.bench.summary import top_column
+from column_mapping.mapper import Fill, convert
 from tests.bench.fakes import Generic
 
 

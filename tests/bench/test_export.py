@@ -1,9 +1,9 @@
 import csv
 
-from columnmap.bench.template import load_template
-from columnmap.policy import Policy
-from columnmap.bench.export import write_samples, write_template
-from columnmap.bench.generate import generate
+from column_mapping.bench.template import load_template
+from column_mapping.policy import Policy
+from column_mapping.bench.export import write_samples, write_template
+from column_mapping.bench.generate import generate
 
 T = load_template()
 CASES = generate(T, n_per_level=2, seed=5)

@@ -1,4 +1,4 @@
-from columnmap.bench.template import OPS, check, load_template, rule_sources
+from column_mapping.bench.template import OPS, check, load_template, rule_sources
 
 
 def test_template_is_valid():

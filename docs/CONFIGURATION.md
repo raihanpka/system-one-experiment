@@ -6,7 +6,7 @@ Three files and the environment, in this order (later wins):
 |---|---|---|
 | `appsettings.json` | the model endpoint, the default seed, the split seeds | yes |
 | `appsettings.local.json` | your personal overrides | no |
-| `COLUMNMAP__Section__Key` | CI/container overrides; secrets | no |
+| `COLUMN_MAPPING__Section__Key` | CI/container overrides; secrets | no |
 | `knowledge/policy.json` | fill floors for one dataset | yes, with that dataset |
 
 The API key never lives in any of these. It is read from the environment variable named by
@@ -77,14 +77,14 @@ batch. A dataset policy always wins over `appsettings.json`. `--fill-score` and
 
 ```bash
 # map a partner table; the dataset policy in my_knowledge/ wins
-uv run columnmap --table in.xlsx --knowledge my_knowledge/ --output converted.csv
+uv run column-mapping --table in.xlsx --knowledge my_knowledge/ --output converted.csv
 
 # force a different floor for one experiment
-uv run columnmap --table in.csv --knowledge my_knowledge/ --fill-score 0.8 --copy-fill-score 0.5
+uv run column-mapping --table in.csv --knowledge my_knowledge/ --fill-score 0.8 --copy-fill-score 0.5
 
 # rebuild a report with other floors, no model call
-uv run columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5
+uv run column-mapping --report-only --fill-score 0.8 --copy-fill-score 0.5
 
 # replace the appsettings value from the environment
-COLUMNMAP__Run__Seed=11 uv run columnmap --samples a
+COLUMN_MAPPING__Run__Seed=11 uv run column-mapping --samples a
 ```

@@ -1,6 +1,6 @@
 import json
 
-from columnmap.bench.store import Store
+from column_mapping.bench.store import Store
 
 
 def test_roundtrip_resume_rounding_and_readable_layout(tmp_path):
