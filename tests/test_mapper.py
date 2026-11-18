@@ -187,6 +187,20 @@ def test_a_field_whose_columns_are_not_there_says_none_and_stays_empty():
     assert mapping.convert(ROWS)[1][0][4] is None  # below the fill score
 
 
+def test_the_knowledge_policy_sets_the_mapping_fill():
+    from columnmap.policy import Policy
+
+    knowledge = Knowledge(
+        KNOWLEDGE.outputs,
+        KNOWLEDGE.tables,
+        KNOWLEDGE.prompts,
+        Policy(derived=0.95, copy=0.95),
+    )
+    mapping = Mapper(Scripted(), knowledge).map(ROWS)
+    assert mapping.fill == Fill(0.95, 0.95)
+    assert all(v is None for row in mapping.convert(ROWS)[1] for v in row)
+
+
 def test_a_higher_fill_score_leaves_more_fields_empty():
     mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
     _, converted = mapping.convert(ROWS, Fill(0.95, 0.95))

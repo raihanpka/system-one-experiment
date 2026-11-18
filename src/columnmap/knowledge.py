@@ -10,6 +10,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from .policy import Policy
+
 
 @dataclass(frozen=True)
 class Output:
@@ -23,6 +25,7 @@ class Knowledge:
     outputs: tuple[Output, ...]
     tables: tuple[dict, ...] = ()  # code -> label
     prompts: tuple[tuple[str, str], ...] = ()  # prompt name -> template override
+    policy: Policy | None = None  # fill floors calibrated for this dataset and model
 
     @classmethod
     def load(cls, folder) -> Knowledge:
@@ -45,7 +48,7 @@ class Knowledge:
                     for k, v in raw.items()
                 )
             )
-        return cls(outputs, tuple(tables), prompts)
+        return cls(outputs, tuple(tables), prompts, Policy.load(folder))
 
     def save(self, folder) -> None:
         folder = Path(folder)
@@ -69,6 +72,8 @@ class Knowledge:
                 json.dumps(dict(self.prompts), indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
+        if self.policy:
+            self.policy.save(folder)
 
     # the folder's overrides first, then the chosen backend (built-in file registry or MLflow)
     def registry(self, base=None):

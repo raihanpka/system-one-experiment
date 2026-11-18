@@ -434,7 +434,8 @@ def run_graph(
 ) -> Run:
     graph = build_graph(checkpointer, retry)
     wrapped = Retrying(decider, retries) if retries > 1 else decider
-    context = Context(Pipeline(wrapped, knowledge, registry), fill or Fill(), review)
+    pipeline = Pipeline(wrapped, knowledge, registry)
+    context = Context(pipeline, fill or pipeline.fill, review)
     state = {
         "rows": rows,
         "matrix": {},

@@ -523,20 +523,28 @@ class Mapping:
     matrix: dict  # column -> field -> raw score
     fields: dict  # field -> record (expression, columns, score, presence)
     order: list[str]
+    fill: Fill = FILL  # the policy this mapping was built with
 
-    def convert(self, rows: list[dict], fill: Fill = FILL):
-        return convert(self.fields, rows, self.order, fill)
+    def convert(self, rows: list[dict], fill: Fill | None = None):
+        return convert(self.fields, rows, self.order, fill or self.fill)
 
 
 class Mapper:
-    def __init__(self, decider: Decider, knowledge: Knowledge, registry=None):
+    def __init__(
+        self,
+        decider: Decider,
+        knowledge: Knowledge,
+        registry=None,
+        fill: Fill | None = None,
+    ):
         from .pipeline import (
             Pipeline,
         )  # lazy: pipeline imports Mapping from this module
 
         self.decider, self.knowledge = decider, knowledge
-        self.pipeline = Pipeline(decider, knowledge, registry)
+        self.pipeline = Pipeline(decider, knowledge, registry, fill)
         self.registry = self.pipeline.registry
+        self.fill = self.pipeline.fill
 
     @property
     def kinds(self) -> dict:

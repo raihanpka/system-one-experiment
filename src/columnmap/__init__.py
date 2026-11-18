@@ -11,6 +11,7 @@ from .decider import Decider, OpenRouterDecider
 from .knowledge import Knowledge, Output
 from .mapper import FILL, Fill, Mapper, Mapping
 from .pipeline import Pipeline
+from .policy import Policy
 from .registry import FileRegistry, Prompt
 from .registry_mlflow import MlflowRegistry
 from .schema import Column, Schema, extract
@@ -29,6 +30,7 @@ __all__ = [
     "OpenRouterDecider",
     "Output",
     "Pipeline",
+    "Policy",
     "Prompt",
     "Schema",
     "extract",
