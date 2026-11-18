@@ -7,12 +7,22 @@ from __future__ import annotations
 
 import json
 import math
+import random
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Callable, Protocol, Sequence
 
 TYPES = ("predicate", "choice", "score")
+RETRY_STATUS = {429, 500, 502, 503, 504}
+
+
+class TransportError(RuntimeError):
+    def __init__(self, status: int, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.status = status
+        self.retry_after = retry_after
 
 
 @dataclass(frozen=True)
@@ -159,8 +169,15 @@ def _post(url: str, headers: dict, body: dict, timeout: float) -> dict:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
-        raise RuntimeError(
-            f"OpenRouter returned {e.code}: {e.read()[:300].decode('utf-8', 'replace')}"
+        retry_after = e.headers.get("Retry-After") if e.headers else None
+        try:
+            retry_after = float(retry_after)
+        except (TypeError, ValueError):
+            retry_after = None
+        raise TransportError(
+            e.code,
+            f"OpenRouter returned {e.code}: {e.read()[:300].decode('utf-8', 'replace')}",
+            retry_after,
         ) from None
 
 
@@ -172,10 +189,14 @@ class OpenRouterDecider:
         base_url: str,
         transport: Callable | None = None,
         timeout: float = 120.0,
+        attempts: int = 3,
+        backoff: float = 0.5,
     ):
         self._key, self._model, self._url = api_key, model, base_url
         self._transport = transport or _post
         self._timeout = timeout
+        self._attempts = max(1, attempts)
+        self._backoff = max(0.0, backoff)
         self.run_meta = {"model": model, "backend": "openrouter", "quant": "api"}
 
     def decide(self, text: str, questions: Sequence[Question]) -> Response:
@@ -193,7 +214,23 @@ class OpenRouterDecider:
             "Authorization": f"Bearer {self._key}",
             "Content-Type": "application/json",
         }
-        res = self._transport(self._url, headers, body, self._timeout)
+        for attempt in range(self._attempts):
+            try:
+                res = self._transport(self._url, headers, body, self._timeout)
+                break
+            except TransportError as error:
+                if error.status not in RETRY_STATUS or attempt == self._attempts - 1:
+                    raise
+                delay = (
+                    error.retry_after
+                    if error.retry_after is not None
+                    else self._backoff * (2**attempt)
+                )
+                time.sleep(delay + random.uniform(0, self._backoff * 0.1))
+            except OSError:
+                if attempt == self._attempts - 1:
+                    raise
+                time.sleep(self._backoff * (2**attempt))
         answers = res.get("answers", {})
         out = []
         for n, q in zip(names, questions):

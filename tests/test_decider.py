@@ -2,8 +2,8 @@ import math
 
 import pytest
 
-from columnmap.decider import OpenRouterDecider
-from columnmap.decider import Choice, Level, Question
+from column_mapping.decider import OpenRouterDecider, TransportError
+from column_mapping.decider import Choice, Level, Question
 
 
 def fake(answers, model="~liquid/d1-ultra-latest"):
@@ -105,8 +105,55 @@ def test_http_error_is_raised_with_status_and_no_key_in_the_message():
     assert "sk-or-v1-secret" not in str(e.value)
 
 
+def test_a_retryable_transport_error_is_retried_with_backoff():
+    calls = []
+
+    def flaky(url, headers, body, timeout):
+        calls.append(1)
+        if len(calls) < 3:
+            raise TransportError(503, "temporarily unavailable")
+        return {
+            "model": "m",
+            "answers": {"is_date": {"noul": 0.9}},
+        }
+
+    r = OpenRouterDecider("k", "m", "u", transport=flaky, attempts=3, backoff=0).decide(
+        "x", [QS[0]]
+    )
+    assert len(calls) == 3 and r.answers[0].probability == 0.9
+
+
+def test_a_non_retryable_transport_error_fails_immediately():
+    calls = []
+
+    def bad(url, headers, body, timeout):
+        calls.append(1)
+        raise TransportError(400, "bad request")
+
+    with pytest.raises(TransportError) as error:
+        OpenRouterDecider("k", "m", "u", transport=bad, attempts=3, backoff=0).decide(
+            "x", [QS[0]]
+        )
+    assert len(calls) == 1 and error.value.status == 400
+
+
+def test_a_network_oserror_is_retried():
+    calls = []
+
+    def flaky(url, headers, body, timeout):
+        calls.append(1)
+        if len(calls) == 1:
+            raise OSError("connection reset")
+        return {"model": "m", "answers": {"is_date": {"noul": 0.7}}}
+
+    r = OpenRouterDecider("k", "m", "u", transport=flaky, attempts=2, backoff=0).decide(
+        "x", [QS[0]]
+    )
+    assert len(calls) == 2 and r.answers[0].probability == 0.7
+
+
 def test_settings_build_the_hosted_decider(monkeypatch):
-    from columnmap.config import openrouter_settings
+    from column_mapping.config import openrouter_settings
     from tests.settings_helpers import parse
 
     cfg = parse(
