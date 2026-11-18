@@ -50,8 +50,8 @@ class Question:
             raise ValueError("true/false criteria only allowed on predicate questions")
         if self.type == "choice":
             vals = [c.value for c in self.choices]
-            if len(vals) < 2 or len(set(vals)) != len(vals):
-                raise ValueError("choice needs >= 2 unique choices")
+            if len(vals) < 1 or len(set(vals)) != len(vals):
+                raise ValueError("choice needs >= 1 unique choice")
         if self.type == "score" and not 2 <= len(self.levels) <= 10:
             raise ValueError("score needs 2..10 levels")
 
