@@ -1,0 +1,22 @@
+{
+  "model": "microsoft/microsoft-decision-1.1",
+  "fill": {
+    "derived": 0.75,
+    "copy": 0.4,
+    "none_ceiling": 0.5
+  },
+  "calibration": {
+    "run": "all-seed11_20261118-113931",
+    "seed": 11,
+    "budget": 0.02,
+    "false_fill": 1,
+    "no_source": 50,
+    "false_fill_rate": 0.02,
+    "upper_false_fill": 0.105,
+    "budget_met_point": true,
+    "budget_met_upper": false,
+    "right": 122,
+    "fields": 124,
+    "precision": 0.9865
+  }
+}
