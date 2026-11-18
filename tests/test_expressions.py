@@ -109,6 +109,12 @@ def test_column_unit_reads_the_name_before_the_values_and_keeps_codes_out_of_mat
     assert column_unit("ratio", ["0.4", "0.5"]) == "rate"
 
 
+def test_identifier_hints_cover_zip_and_code_suffixes():
+    assert column_unit("Zip", ["54556", "04721"]) == "id"
+    assert column_unit("CaseRef", ["C-1", "C-2"]) == "id"
+    assert column_unit("EVT_PHS_CD", ["A", "R"]) == "id"
+
+
 def test_output_unit_comes_from_name_and_description():
     assert (
         output_unit(Output("total_charge", "number", "Transaction amount plus fee"))

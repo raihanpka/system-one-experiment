@@ -170,6 +170,11 @@ IDENTIFIER_HINTS = (
     "kode",
     "uniq",
     "case",
+    "zip",
+    "postal",
+    "postcode",
+    "plz",
+    "cd",
 )
 DATE_HINTS = (
     "date",
@@ -189,7 +194,8 @@ DATE_HINTS = (
 
 
 def _tokens(text: str) -> list[str]:
-    return [t for t in re.split(r"[^a-z0-9]+", str(text).lower()) if t]
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", str(text))
+    return [t for t in re.split(r"[^a-z0-9]+", spaced.lower()) if t]
 
 
 # what a column measures, from its name first and its values second. "number" is a plain number that
