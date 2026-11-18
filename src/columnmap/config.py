@@ -113,8 +113,11 @@ def validate(cfg: dict) -> dict:
     for key, pascal in (
         ("fill_score", "FillScore"),
         ("copy_fill_score", "CopyFillScore"),
+        ("none_ceiling", "NoneCeiling"),
     ):
-        if not 0 < float(run.get(key, 0)) <= 1:
+        if key in run and not 0 <= float(run[key]) <= 1:
+            raise ValueError(f"Run:{pascal} must be in [0, 1]")
+        if key != "none_ceiling" and not 0 < float(run.get(key, 0)) <= 1:
             raise ValueError(f"Run:{pascal} must be in (0, 1]")
     if "seed" not in run:
         raise ValueError("Run:Seed is required")
@@ -151,4 +154,8 @@ def openrouter_settings(cfg: dict, env=None) -> dict:
 def fill_from_settings(cfg: dict):
     from .mapper import Fill
 
-    return Fill(cfg["run"]["fill_score"], cfg["run"]["copy_fill_score"])
+    return Fill(
+        cfg["run"]["fill_score"],
+        cfg["run"]["copy_fill_score"],
+        cfg["run"].get("none_ceiling", 0.5),
+    )

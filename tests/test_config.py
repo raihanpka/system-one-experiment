@@ -31,6 +31,12 @@ def test_committed_defaults_load_with_the_hosted_model_and_the_splits():
     assert cfg["splits"]["dev"] == [11] and "backend" not in cfg and "local" not in cfg
 
 
+def test_none_ceiling_defaults_to_half_and_can_be_overridden():
+    assert load_settings(env={})["run"]["none_ceiling"] == 0.5
+    cfg = parse(BASE, env={"COLUMNMAP__Run__NoneCeiling": "0.3"})
+    assert cfg["run"]["none_ceiling"] == 0.3
+
+
 def test_env_override_wins_over_the_file_and_is_parsed_as_json():
     cfg = parse(
         BASE,
