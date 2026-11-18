@@ -1,32 +1,35 @@
-# The mapping as a LangGraph: deterministic stages own the control flow, the Decisions model only answers
-# atomic questions, and a field close to the fill policy pauses for a human. The library core never imports
-# this module; it needs the optional graph extra: uv sync --extra graph.
+# The mapping as a LangGraph agent. Code owns the control flow; the Decisions model only answers atomic
+# questions. The graph has four reliability layers:
+#   retry     LangGraph RetryPolicy on the model-calling nodes (transient errors, with backoff)
+#   degrade   an error handler after retries is exhausted: exact name matches only, everything else empty
+#   repair    a bounded loop that tries the next candidate when an expression fails on the sample rows
+#   review    an interrupt for fields close to the fill policy, resumed with accept or empty
+# The library core never imports this module; it needs the optional graph extra: uv sync --extra graph.
 
 from __future__ import annotations
 
 import operator
+import re
 from dataclasses import dataclass
 from typing import Annotated, Any, TypedDict
 
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.errors import NodeError
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
-from langgraph.types import Command, interrupt
+from langgraph.types import Command, RetryPolicy, default_retry_on, interrupt
 
 from ..decider import Decider
 from ..expressions import safe_evaluate
 from ..knowledge import Knowledge
-from ..mapper import (
-    Fill,
-    choose_expressions,
-    convert,
-    infer_kinds,
-    is_filled,
-    score_columns,
-)
+from ..mapper import Fill, convert, is_filled
+from ..pipeline import Pipeline
+from ..prompts import expression_text
+from ..schema import extract
 from .retry import Retrying
 
 REVIEW_MARGIN = 0.15  # a field this close to the floor is worth a human look
+MAX_REPAIRS = 1
 
 
 class MappingState(TypedDict):
@@ -35,6 +38,9 @@ class MappingState(TypedDict):
     kinds: dict
     fields: dict
     review: dict
+    repair: dict
+    repair_attempts: int
+    degraded: bool
     header: list[str]
     converted: list[list]
     status: str
@@ -44,8 +50,7 @@ class MappingState(TypedDict):
 
 @dataclass
 class Context:
-    decider: Decider
-    knowledge: Knowledge
+    pipeline: Pipeline
     fill: Fill = Fill()
 
 
@@ -53,17 +58,36 @@ def _floor(rec: dict, fill: Fill) -> float:
     return fill.copy if rec.get("kind") in ("copy", "year", "lookup") else fill.derived
 
 
+# a transient model/network failure is retried; a programming or data error is not
+def _retry_on(error: BaseException) -> bool:
+    if isinstance(error, (ValueError, TypeError, KeyError, IndexError)):
+        return False
+    return isinstance(error, (RuntimeError, OSError, TimeoutError)) or default_retry_on(
+        error
+    )
+
+
+def retry_policy(
+    attempts: int = 3, interval: float = 0.5, jitter: bool = True
+) -> RetryPolicy:
+    return RetryPolicy(
+        max_attempts=attempts,
+        initial_interval=interval,
+        backoff_factor=2.0,
+        jitter=jitter,
+        retry_on=_retry_on,
+    )
+
+
 def _kinds(state: MappingState, runtime: Runtime[Context]) -> dict:
     if state.get("kinds"):
         return {}
-    kinds = infer_kinds(runtime.context.decider, runtime.context.knowledge)
+    kinds = runtime.context.pipeline.kinds()
     return {"kinds": kinds, "stages": [{"stage": "kinds", "fields": len(kinds)}]}
 
 
 def _score(state: MappingState, runtime: Runtime[Context]) -> dict:
-    matrix, raw = score_columns(
-        runtime.context.decider, state["rows"], runtime.context.knowledge
-    )
+    matrix, raw = runtime.context.pipeline.score(state["rows"])
     errors = [
         f"{name}: {rec['error']}" for name, rec in raw.items() if rec.get("error")
     ]
@@ -75,22 +99,104 @@ def _score(state: MappingState, runtime: Runtime[Context]) -> dict:
 
 
 def _decide(state: MappingState, runtime: Runtime[Context]) -> dict:
-    fields = choose_expressions(
-        runtime.context.decider,
-        state["rows"],
-        state["matrix"],
-        runtime.context.knowledge,
-        state["kinds"],
+    fields = runtime.context.pipeline.decide(
+        state["rows"], state["matrix"], state["kinds"]
     )
     return {"fields": fields, "stages": [{"stage": "decide", "fields": len(fields)}]}
 
 
-# deterministic checks: an expression that fails on the sample rows, or a field within the review
-# margin of the fill policy, goes to a human. Everything else is accepted or confidently empty.
+def _score_failed(state: MappingState, error: NodeError) -> Command:
+    return Command(
+        update={
+            "errors": [f"score failed after retries: {error.error}"],
+            "degraded": True,
+            "status": "degraded",
+        },
+        goto="degrade",
+    )
+
+
+def _decide_failed(state: MappingState, error: NodeError) -> Command:
+    return Command(
+        update={
+            "errors": [f"decide failed after retries: {error.error}"],
+            "degraded": True,
+            "status": "degraded",
+        },
+        goto="degrade",
+    )
+
+
+def _record(kind=None) -> dict:
+    return {
+        "kind": kind,
+        "shape": None,
+        "roles": [],
+        "cols": [],
+        "top_cols": [],
+        "set_scores": {},
+        "p_none": None,
+        "p_present": None,
+        "cands": [],
+        "cand_nodes": [],
+        "p_expr": None,
+        "best": None,
+        "best_text": None,
+        "score": None,
+        "method": "unmapped",
+    }
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(text).lower())
+
+
+# the fallback when the model is unavailable: only an exact column-name match for a copied field is
+# safe without a judgment. Everything else stays empty. This is deterministic and fail-closed.
+def _degrade(state: MappingState, runtime: Runtime[Context]) -> dict:
+    schema = extract(state["rows"])
+    names = schema.names()
+    fields = {}
+    for out in runtime.context.pipeline.knowledge.outputs:
+        kind = state.get("kinds", {}).get(out.name)
+        match = next((c for c in names if _norm(c) == _norm(out.name)), None)
+        rec = _record(kind)
+        if kind == "copy" and match:
+            rec.update(
+                {
+                    "shape": "src",
+                    "roles": [[out.description, match]],
+                    "cols": [match],
+                    "best": {"src": match},
+                    "best_text": match,
+                    "p_present": 1.0,
+                    "p_none": 0.0,
+                    "score": 1.0,
+                    "method": "degrade-exact",
+                }
+            )
+        else:
+            rec["method"] = "degrade-empty"
+        fields[out.name] = rec
+    return {
+        "fields": fields,
+        "degraded": True,
+        "status": "degraded",
+        "stages": [
+            {
+                "stage": "degrade",
+                "filled": sum(1 for r in fields.values() if r["best"]),
+            }
+        ],
+    }
+
+
+# deterministic checks: an expression that fails on the sample rows is repaired once with the next
+# candidate; a field within the review margin of the fill policy goes to a human.
 def _verify(state: MappingState, runtime: Runtime[Context]) -> dict:
     fill = runtime.context.fill
-    review = {}
-    for out in runtime.context.knowledge.outputs:
+    repair, review = {}, {}
+    for out in runtime.context.pipeline.knowledge.outputs:
         rec = state["fields"][out.name]
         if rec.get("best") is None:
             continue
@@ -105,10 +211,16 @@ def _verify(state: MappingState, runtime: Runtime[Context]) -> dict:
         }
         if is_filled(rec, fill):
             if any(safe_evaluate(rec["best"], r) is None for r in state["rows"]):
-                review[out.name] = {
-                    **detail,
-                    "reason": "expression fails on sample rows",
-                }
+                if state["repair_attempts"] < MAX_REPAIRS:
+                    repair[out.name] = {
+                        **detail,
+                        "reason": "expression fails on sample rows",
+                    }
+                else:
+                    review[out.name] = {
+                        **detail,
+                        "reason": "expression fails after repair",
+                    }
             elif (
                 rec.get("p_none") is not None
                 and rec["p_none"] > fill.none_ceiling - 0.1
@@ -121,14 +233,64 @@ def _verify(state: MappingState, runtime: Runtime[Context]) -> dict:
             review[out.name] = {**detail, "reason": "below the fill floor"}
         elif rec.get("p_none") is not None and rec["p_none"] > fill.none_ceiling:
             review[out.name] = {**detail, "reason": "none wins by the ceiling"}
-    return {"review": review, "stages": [{"stage": "verify", "review": len(review)}]}
+    return {
+        "repair": repair,
+        "review": review,
+        "stages": [{"stage": "verify", "repair": len(repair), "review": len(review)}],
+    }
+
+
+def _repair(state: MappingState) -> dict:
+    fields = dict(state["fields"])
+    for name in state["repair"]:
+        rec = dict(fields[name])
+        chosen = None
+        for node in rec.get("cand_nodes", []):
+            if node == rec.get("best"):
+                continue
+            if all(safe_evaluate(node, row) is not None for row in state["rows"]):
+                chosen = node
+                break
+        if chosen is None:
+            rec.update(
+                {
+                    "best": None,
+                    "best_text": None,
+                    "p_present": 0.0,
+                    "p_none": 0.0,
+                    "method": "repair-empty",
+                }
+            )
+        else:
+            rec.update(
+                {
+                    "best": chosen,
+                    "best_text": expression_text(chosen),
+                    "method": "repair",
+                }
+            )
+        fields[name] = rec
+    return {
+        "fields": fields,
+        "repair": {},
+        "repair_attempts": state["repair_attempts"] + 1,
+        "stages": [{"stage": "repair", "fields": list(state["repair"])}],
+    }
 
 
 def _gate(state: MappingState) -> dict:
-    return {"status": "review" if state["review"] else "accepted"}
+    if state["repair"] and state["repair_attempts"] < MAX_REPAIRS:
+        status = "repair"
+    elif state["review"]:
+        status = "review"
+    else:
+        status = "accepted"
+    return {"status": status}
 
 
 def _route(state: MappingState) -> str:
+    if state["repair"] and state["repair_attempts"] < MAX_REPAIRS:
+        return "repair"
     return "review" if state["review"] else "commit"
 
 
@@ -172,7 +334,7 @@ def _review(state: MappingState) -> dict:
 
 
 def _commit(state: MappingState, runtime: Runtime[Context]) -> dict:
-    order = [o.name for o in runtime.context.knowledge.outputs]
+    order = [o.name for o in runtime.context.pipeline.knowledge.outputs]
     header, converted = convert(
         state["fields"], state["rows"], order, runtime.context.fill
     )
@@ -184,14 +346,19 @@ def _commit(state: MappingState, runtime: Runtime[Context]) -> dict:
     }
 
 
-def build_graph(checkpointer=None):
+def build_graph(checkpointer=None, retry: RetryPolicy | None = None):
+    retry = retry or retry_policy()
     builder = StateGraph(MappingState, context_schema=Context)
-    builder.add_node("kinds", _kinds)
-    builder.add_node("score", _score)
-    builder.add_node("decide", _decide)
+    builder.add_node("kinds", _kinds, retry_policy=retry)
+    builder.add_node("score", _score, retry_policy=retry, error_handler=_score_failed)
+    builder.add_node(
+        "decide", _decide, retry_policy=retry, error_handler=_decide_failed
+    )
     builder.add_node("verify", _verify)
+    builder.add_node("repair", _repair)
     builder.add_node("gate", _gate)
     builder.add_node("review", _review)
+    builder.add_node("degrade", _degrade)
     builder.add_node("commit", _commit)
     builder.add_edge(START, "kinds")
     builder.add_edge("kinds", "score")
@@ -199,9 +366,13 @@ def build_graph(checkpointer=None):
     builder.add_edge("decide", "verify")
     builder.add_edge("verify", "gate")
     builder.add_conditional_edges(
-        "gate", _route, {"review": "review", "commit": "commit"}
+        "gate",
+        _route,
+        {"repair": "repair", "review": "review", "commit": "commit"},
     )
+    builder.add_edge("repair", "verify")
     builder.add_edge("review", "commit")
+    builder.add_edge("degrade", "commit")
     builder.add_edge("commit", END)
     return builder.compile(checkpointer=checkpointer or MemorySaver())
 
@@ -226,12 +397,20 @@ class Run:
         return self.result.get("status") == "done"
 
     @property
+    def degraded(self) -> bool:
+        return bool(self.result.get("degraded"))
+
+    @property
     def header(self) -> list[str]:
         return self.result.get("header", [])
 
     @property
     def converted(self) -> list[list]:
         return self.result.get("converted", [])
+
+    @property
+    def errors(self) -> list[str]:
+        return self.result.get("errors", [])
 
     def resume(self, decision: dict) -> dict:
         self.result = self.graph.invoke(
@@ -248,16 +427,21 @@ def run_graph(
     thread_id: str = "columnmap",
     checkpointer=None,
     retries: int = 2,
+    registry=None,
+    retry: RetryPolicy | None = None,
 ) -> Run:
-    graph = build_graph(checkpointer)
+    graph = build_graph(checkpointer, retry)
     wrapped = Retrying(decider, retries) if retries > 1 else decider
-    context = Context(wrapped, knowledge, fill or Fill())
+    context = Context(Pipeline(wrapped, knowledge, registry), fill or Fill())
     state = {
         "rows": rows,
         "matrix": {},
         "kinds": {},
         "fields": {},
         "review": {},
+        "repair": {},
+        "repair_attempts": 0,
+        "degraded": False,
         "header": [],
         "converted": [],
         "status": "new",

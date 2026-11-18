@@ -8,6 +8,7 @@ try:
         Run,
         build_graph,
         resume_graph,
+        retry_policy,
         run_graph,
     )
     from .retry import Retrying
@@ -25,5 +26,6 @@ __all__ = [
     "Run",
     "build_graph",
     "resume_graph",
+    "retry_policy",
     "run_graph",
 ]
