@@ -30,6 +30,9 @@ def test_samples_folder_is_the_single_source_of_truth(tmp_path):
     by_id = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=5)}
     write_samples(T, by_id, "abcd", tmp_path)
     assert (tmp_path / "template_header.csv").exists()
+    assert (tmp_path / "knowledge" / "outputs.json").exists()
+    assert (tmp_path / "knowledge" / "prompts.json").exists()
+    assert (tmp_path / "knowledge" / "reference" / "table_1.csv").exists()
     assert sorted(p.name for p in (tmp_path / "samples").iterdir()) == [
         "a_easy_identical",
         "b_medium_synonym",

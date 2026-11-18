@@ -6,6 +6,8 @@ from pathlib import Path
 
 from ..config import DATA
 from ..expressions import render
+from ..knowledge import Knowledge
+from ..prompts import DEFAULT_TEMPLATES
 from .csvio import write_csv as _write
 from .samples import SAMPLES, word
 from .template import knowledge_from_template, load_template
@@ -84,15 +86,17 @@ def sample_folder(letter: str) -> str:
 def write_samples(t: dict, cases: dict, letters: str, data_dir) -> None:
     data_dir = Path(data_dir)
     write_template(t, data_dir)
-    knowledge_from_template(t).save(
+    base = knowledge_from_template(t)
+    # the folder is self-contained: outputs, reference tables, and the editable prompt book
+    Knowledge(base.outputs, base.tables, tuple(sorted(DEFAULT_TEMPLATES.items()))).save(
         data_dir / "knowledge"
-    )  # the format another project fills in itself
+    )
     for x in letters:
         write_case(cases[SAMPLES[x][0]], data_dir / "samples" / sample_folder(x))
 
 
 if __name__ == "__main__":
-    from ..core.settings import load_settings
+    from ..config import load_settings
     from .generate import generate
 
     cfg = load_settings()["run"]
