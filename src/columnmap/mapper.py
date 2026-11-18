@@ -153,7 +153,7 @@ def infer_kinds(
     return out
 
 
-def _empty() -> dict:
+def empty_record() -> dict:
     return {
         "kind": None,
         "shape": None,
@@ -198,7 +198,7 @@ def _lookup_hint(kind: str, labels: list[str], rows: list[dict], tables) -> str 
             if column != NONE
         ):
             items = list(table.items())[:50]
-            return "Reference table: " + "; ".join(f"{k} -> {v}" for k, v in items)
+            return "; ".join(f"{k} -> {v}" for k, v in items)
     return None
 
 
@@ -248,11 +248,12 @@ def _bind_chunk(
         for i, role in enumerate(shp.roles):
             name = f"bind:{out.name}:{i}"
             labels = _columns_for(role, schema, units) + [NONE]
-            hint = _lookup_hint(kinds[out.name], labels, rows, tables)
-            questions.append(
-                bind_question(out, role, labels[:-1], name, registry, hint)
-            )
             meta[name] = labels
+            columns = labels[:-1]
+            if not columns:
+                continue  # no compatible column: the role is absent, no one-choice question
+            hint = _lookup_hint(kinds[out.name], labels, rows, tables)
+            questions.append(bind_question(out, role, columns, name, registry, hint))
     answers = {
         a.name: a
         for a in decider.decide(file_state(schema, registry), questions).answers
@@ -260,7 +261,7 @@ def _bind_chunk(
     fields = {}
     for out, shp in chunk:
         rec = {
-            **_empty(),
+            **empty_record(),
             "kind": kinds[out.name],
             "shape": shp.op,
             "top_cols": top_columns(matrix, out.name),
@@ -330,10 +331,14 @@ def _field(
     presence = answers.get("presence")
     probs = answers.get("set").probabilities if answers.get("set") else {}
     rec = {
-        **_empty(),
+        **empty_record(),
         "kind": kind,
         "top_cols": names,
-        "p_present": presence.probability if presence is not None else None,
+        "p_present": (
+            presence.probability
+            if presence is not None and presence.type == "predicate"
+            else 0.0  # a refusal or a missing answer fails closed
+        ),
         "p_none": probs.get(NONE),
     }
     if not probs:
@@ -457,15 +462,22 @@ class Fill:
 FILL = Fill()
 
 
-# a field is filled when it has an expression and its source is present; the others stay empty
+def floor_of(rec: dict, fill: Fill = FILL) -> float:
+    return fill.copy if rec.get("kind") in ("copy", "year", "lookup") else fill.derived
+
+
+# a field is filled when it has an expression and its source is present; the others stay empty.
+# Records from before the presence gate (no "p_present" key) keep the old score rule for the report.
 def is_filled(rec: dict, fill: Fill = FILL) -> bool:
     if rec["best"] is None:
         return False
-    floor = fill.copy if rec.get("kind") in ("copy", "year", "lookup") else fill.derived
+    floor = floor_of(rec, fill)
+    if "p_present" not in rec:
+        return (rec.get("score") or 0.0) >= floor
     present = rec.get("p_present")
-    if present is not None:
-        return present >= floor and (rec.get("p_none") or 0.0) <= fill.none_ceiling
-    return (rec.get("score") or 0.0) >= floor
+    if present is None:
+        return False  # a refusal or a missing presence answer must never fill
+    return present >= floor and (rec.get("p_none") or 0.0) <= fill.none_ceiling
 
 
 def convert(

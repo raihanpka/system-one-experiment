@@ -13,6 +13,14 @@ from .registry import FileRegistry
 SAMPLE_K = 5
 NONE = "none: the field cannot be built from the input columns"
 
+
+# partner text is data, not instructions: collapse control characters and cap the length before it
+# enters a prompt, so a header or a cell cannot forge another line
+def _safe(value, limit: int = 200) -> str:
+    text = " ".join(str(value).split())
+    return text[:limit] + ("…" if len(text) > limit else "")
+
+
 KIND_KEYS = ("copy", "join", "arithmetic", "date_difference", "year", "lookup")
 
 DEFAULT_TEMPLATES = {
@@ -40,6 +48,7 @@ DEFAULT_TEMPLATES = {
     "presence": "Does the input contain every component that the output field '{{field}}' is built from? Field description: {{description}}. Answer yes only if each component named or implied by the description is present as an input column. A merely similar column does not replace a missing one.",
     "presence_true": "Every component the field is defined from is present in the input.",
     "presence_false": "At least one component is missing; a similar column does not count.",
+    "lookup_hint": "Reference table: {{items}}",
 }
 DEFAULT = FileRegistry(DEFAULT_TEMPLATES)
 
@@ -63,16 +72,18 @@ def input_state(
     null_rate: float | None = None,
     registry=DEFAULT,
 ) -> str:
-    lines = [registry.get("input_header").format(name=name)]
+    lines = [registry.get("input_header").format(name=_safe(name, 120))]
     if kind:
-        lines.append(registry.get("input_type").format(kind=kind))
+        lines.append(registry.get("input_type").format(kind=_safe(kind, 40)))
     if unit:
-        lines.append(registry.get("input_unit").format(unit=unit))
+        lines.append(registry.get("input_unit").format(unit=_safe(unit, 40)))
     if null_rate is not None:
         lines.append(registry.get("input_null_rate").format(null_rate=null_rate))
     if values:
         lines.append(
-            registry.get("input_samples").format(values=", ".join(map(str, values)))
+            registry.get("input_samples").format(
+                values=", ".join(_safe(v, 80) for v in values)
+            )
         )
     return "\n".join(lines)
 
@@ -83,7 +94,7 @@ def mapping_question(outputs: tuple[Output, ...], registry=DEFAULT) -> Question:
         "choice",
         registry.get("mapping").template,
         name="field",
-        choices=tuple(Choice(o.name, o.description) for o in outputs),
+        choices=tuple(Choice(o.name, _safe(o.description, 500)) for o in outputs),
     )
 
 
@@ -92,7 +103,8 @@ def pool_state(names: list[str], rows: list[dict], registry=DEFAULT) -> str:
     for name in names:
         lines.append(
             registry.get("pool_row").format(
-                name=name, values=", ".join(map(str, samples(rows, name)))
+                name=_safe(name, 120),
+                values=", ".join(_safe(v, 80) for v in samples(rows, name)),
             )
         )
     return "\n".join(lines)
@@ -109,10 +121,10 @@ def file_state(source, registry=DEFAULT) -> str:
     for c in columns:
         lines.append(
             registry.get("file_row").format(
-                name=c.name,
-                kind=c.type,
-                unit=c.unit,
-                values=", ".join(c.samples),
+                name=_safe(c.name, 120),
+                kind=_safe(c.type, 40),
+                unit=_safe(c.unit, 40),
+                values=", ".join(_safe(v, 80) for v in c.samples),
             )
         )
     return "\n".join(lines)
@@ -121,7 +133,7 @@ def file_state(source, registry=DEFAULT) -> str:
 def _fmt(v) -> str:
     if v is None:
         return "error"
-    return f"{v:.2f}" if isinstance(v, float) else str(v)
+    return f"{v:.2f}" if isinstance(v, float) else _safe(v, 80)
 
 
 # what the expression gives on three evenly spaced rows
@@ -150,7 +162,9 @@ def kind_question(registry=DEFAULT) -> Question:
 
 def kind_state(out: Output, registry=DEFAULT) -> str:
     return registry.get("kind_state").format(
-        field=out.name, description=out.description, type=out.type
+        field=_safe(out.name, 120),
+        description=_safe(out.description, 500),
+        type=_safe(out.type, 40),
     )
 
 
@@ -166,7 +180,9 @@ def field_state(
     return (
         kind_state(out, registry)
         + "\n"
-        + registry.get("all_columns").format(columns=", ".join(all_columns))
+        + registry.get("all_columns").format(
+            columns=", ".join(_safe(c, 120) for c in all_columns)
+        )
         + "\n"
         + pool_state(names, rows, registry)
     )
@@ -180,7 +196,9 @@ def set_question(out: Output, labels: list[str], registry=DEFAULT) -> Question:
     return Question(
         "choice",
         registry.get("set").format(
-            field=out.name, description=out.description, none=NONE
+            field=_safe(out.name, 120),
+            description=_safe(out.description, 500),
+            none=NONE,
         ),
         name="set",
         choices=tuple(Choice(x) for x in [*labels, NONE]),
@@ -190,7 +208,9 @@ def set_question(out: Output, labels: list[str], registry=DEFAULT) -> Question:
 def expression_question(out: Output, options: list[str], registry=DEFAULT) -> Question:
     return Question(
         "choice",
-        registry.get("expression").format(field=out.name, description=out.description),
+        registry.get("expression").format(
+            field=_safe(out.name, 120), description=_safe(out.description, 500)
+        ),
         name="expr",
         choices=tuple(Choice(o) for o in options),
     )
@@ -202,10 +222,12 @@ def bind_question(
     out: Output, role, columns: list[str], name: str, registry=DEFAULT, hint=None
 ) -> Question:
     text = registry.get("bind").format(
-        field=out.name, description=out.description, role=role.phrase
+        field=_safe(out.name, 120),
+        description=_safe(out.description, 500),
+        role=_safe(role.phrase, 120),
     )
     if hint:
-        text = f"{text} {hint}"
+        text = f"{text} {registry.get('lookup_hint').format(items=_safe(hint, 500))}"
     return Question(
         "choice",
         text,
@@ -221,7 +243,9 @@ def presence_question(
 ) -> Question:
     return Question(
         "predicate",
-        registry.get("presence").format(field=out.name, description=out.description),
+        registry.get("presence").format(
+            field=_safe(out.name, 120), description=_safe(out.description, 500)
+        ),
         name=name,
         true=registry.get("presence_true").template,
         false=registry.get("presence_false").template,

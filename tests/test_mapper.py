@@ -282,6 +282,43 @@ def test_role_questions_for_a_group_of_fields_share_one_request():
     assert sum(n.startswith("bind:") for c in bind_calls for n in c) == 6
 
 
+def test_a_presence_refusal_fails_closed_in_the_fallback():
+    from columnmap.mapper import _field, is_filled
+
+    class PresenceRefused:
+        def decide(self, text, questions):
+            out = []
+            for q in questions:
+                if q.name == "presence":
+                    out.append(Answer("refusal", q.name, message="no"))
+                else:
+                    names = [c.value for c in q.choices]
+                    out.append(
+                        Answer(
+                            "choice",
+                            q.name,
+                            choice=names[0],
+                            probabilities={
+                                n: (0.95 if i == 0 else 0.01)
+                                for i, n in enumerate(names)
+                            },
+                        )
+                    )
+            return Response("refused", out, {})
+
+    out = Output("mystery", "number", "Something computed elsewhere")
+    rec = _field(
+        PresenceRefused(),
+        out,
+        "arithmetic",
+        [{"a": 1, "b": 2}],
+        {"a": {"mystery": 3.0}, "b": {"mystery": 3.0}},
+        ["a", "b"],
+        (),
+    )
+    assert rec["p_present"] == 0.0 and not is_filled(rec, Fill(0.5, 0.5))
+
+
 def test_an_amount_role_is_not_offered_a_rate_column():
     from columnmap.mapper import _columns_for
     from columnmap.roles import Role
