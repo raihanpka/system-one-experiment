@@ -17,6 +17,7 @@
   "kind_question": "What kind of value is this output field? Decide from its name and description only.",
   "kind_state": "Output field: {{field}}\nDescription: {{description}}\nType: {{type}}",
   "kind_year": "the value is the year taken from one date column",
+  "lookup_hint": "Reference table: {{items}}",
   "mapping": "Which output fields does this input column provide data for?",
   "pool_row": "- {{name}}\n  Sample values: {{values}}",
   "presence": "Does the input contain every component that the output field '{{field}}' is built from? Field description: {{description}}. Answer yes only if each component named or implied by the description is present as an input column. A merely similar column does not replace a missing one.",
