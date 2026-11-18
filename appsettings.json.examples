@@ -13,7 +13,7 @@
     "FillScore_Note": "default p_present floor for a derived field. A dataset's knowledge/policy.json overrides it; --fill-score overrides both for an experiment.",
     "CopyFillScore_Note": "default floor for a field copied from one column. A dataset policy overrides it.",
     "NoneCeiling_Note": "default p_none ceiling. A dataset policy overrides it; 0.5 means a coin flip never fills a file with a guess.",
-    "Seed": 1234,
+    "Seed": 3407,
     "Seed_Note": "seed used when neither --seed nor --split is given"
   },
   "Splits": {

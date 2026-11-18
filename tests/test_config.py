@@ -3,7 +3,12 @@ import json
 import pytest
 
 from columnmap.config import SETTINGS
-from columnmap.config import load_dotenv, load_settings, openrouter_settings
+from columnmap.config import (
+    fill_from_settings,
+    load_dotenv,
+    load_settings,
+    openrouter_settings,
+)
 from tests.settings_helpers import parse
 
 BASE = {
@@ -24,15 +29,16 @@ def with_(**sections):
     return d
 
 
-def test_committed_defaults_load_with_the_hosted_model_and_the_splits():
+def test_committed_defaults_load_with_the_hosted_model_seed_and_splits():
     cfg = load_settings(env={})
     assert cfg["open_router"]["api_key_env"] == "OPENROUTER_API_KEY"
     assert cfg["open_router"]["model"] == "microsoft/microsoft-decision-1.1"
+    assert cfg["run"]["seed"] == 3407
     assert cfg["splits"]["dev"] == [11] and "backend" not in cfg and "local" not in cfg
 
 
-def test_none_ceiling_defaults_to_half_and_can_be_overridden():
-    assert load_settings(env={})["run"]["none_ceiling"] == 0.5
+def test_fill_defaults_come_from_fill_and_can_be_overridden():
+    assert fill_from_settings(load_settings(env={})).none_ceiling == 0.5
     cfg = parse(BASE, env={"COLUMNMAP__Run__NoneCeiling": "0.3"})
     assert cfg["run"]["none_ceiling"] == 0.3
 
@@ -58,7 +64,7 @@ def test_local_file_overrides_defaults_without_touching_the_committed_file(tmp_p
     local.write_text(json.dumps({"Run": {"Seed": 5}}))
     cfg = load_settings(defaults=SETTINGS, local=local, env={})
     assert cfg["run"]["seed"] == 5
-    assert json.loads(SETTINGS.read_text())["Run"]["Seed"] == 1234
+    assert json.loads(SETTINGS.read_text())["Run"]["Seed"] == 3407
 
 
 def test_a_leftover_local_setting_is_refused_not_ignored():

@@ -110,15 +110,23 @@ def validate(cfg: dict) -> dict:
         if not section.get(key):
             raise ValueError(f"OpenRouter:{pascal} is required in appsettings.json")
     run = cfg.get("run", {})
+    # FillScore, CopyFillScore, and NoneCeiling are optional overrides; a dataset policy is the
+    # source, and Fill() supplies the defaults when appsettings.json omits them.
     for key, pascal in (
         ("fill_score", "FillScore"),
         ("copy_fill_score", "CopyFillScore"),
         ("none_ceiling", "NoneCeiling"),
     ):
-        if key in run and not 0 <= float(run[key]) <= 1:
-            raise ValueError(f"Run:{pascal} must be in [0, 1]")
-        if key != "none_ceiling" and not 0 < float(run.get(key, 0)) <= 1:
-            raise ValueError(f"Run:{pascal} must be in (0, 1]")
+        if key not in run:
+            continue
+        value = float(run[key])
+        lower = 0 if key == "none_ceiling" else 0.000001
+        if not lower <= value <= 1:
+            raise ValueError(
+                f"Run:{pascal} must be in (0, 1]"
+                if lower
+                else f"Run:{pascal} must be in [0, 1]"
+            )
     if "seed" not in run:
         raise ValueError("Run:Seed is required")
     for split in ("dev", "holdout", "test"):
@@ -150,12 +158,13 @@ def openrouter_settings(cfg: dict, env=None) -> dict:
     return {"model": section["model"], "base_url": section["base_url"], "api_key": key}
 
 
-# the fill scores of the settings (Run:FillScore for derived fields, Run:CopyFillScore for copied fields)
+# optional global overrides; the dataset policy wins and Fill() supplies the defaults
 def fill_from_settings(cfg: dict):
     from .mapper import Fill
 
+    base, run = Fill(), cfg["run"]
     return Fill(
-        cfg["run"]["fill_score"],
-        cfg["run"]["copy_fill_score"],
-        cfg["run"].get("none_ceiling", 0.5),
+        run.get("fill_score", base.derived),
+        run.get("copy_fill_score", base.copy),
+        run.get("none_ceiling", base.none_ceiling),
     )
