@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
+import uuid
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
 from ..config import DATA, ROOT, fill_from_settings, load_settings, openrouter_settings
 from ..decider import OpenRouterDecider
-from ..mapper import Fill
+from ..mapper import Fill, is_filled
 from .export import write_samples
 from .generate import generate
 from .report import make_report
@@ -20,21 +22,22 @@ from .samples import DEFAULT, SAMPLES, word
 from .store import Store
 from .template import knowledge_from_template, load_template
 
-EPILOG = """examples (run with: uv run columnmap ...):
-  columnmap                       run samples a, b, c, d into a new folder results/<samples>_<timestamp>/
-  columnmap --samples ac          run only samples a and c
-  columnmap --all                 run all four samples
-  columnmap --seed 5              build the samples from another seed (not written to data/)
-  columnmap --split holdout       one run per seed of a split from appsettings.json: dev, holdout, or test (test needs --final)
-  columnmap --out results/X       continue (or extend) the existing run folder X
-  columnmap --report-only         rebuild the files and summary of the newest run, no model
-  columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5   same, with other scores a field needs to be filled
-  columnmap --deepeval results/X  DeepEval metrics on a finished run, no model
+EPILOG = """examples (run with: uv run column-mapping ...):
+  column_mapping                       run samples a, b, c, d into a new folder results/<samples>_<timestamp>/
+  column-mapping --samples ac          run only samples a and c
+  column-mapping --all                 run all four samples
+  column-mapping --seed 5              build the samples from another seed (not written to data/)
+  column-mapping --split holdout       one run per seed of a split from appsettings.json: dev, holdout, or test (test needs --final)
+  column-mapping --out results/X       continue (or extend) the existing run folder X
+  column-mapping --report-only         rebuild the files and summary of the newest run, no model
+  column-mapping --report-only --fill-score 0.8 --copy-fill-score 0.5   same, with other scores a field needs to be filled
+  column-mapping --deepeval results/X  DeepEval metrics on a finished run, no model
 
 map a partner table (CSV, TSV, or XLSX):
-  columnmap --table in.csv --knowledge my_knowledge/ --output converted.csv
-  columnmap --table in.csv --schema --json        print the schema we extracted, no model
-  columnmap --table in.csv --graph --review empty  run through the LangGraph harness, fail closed
+  column-mapping --table in.csv --knowledge my_knowledge/ --output converted.csv
+  column-mapping --table in.csv --schema --json        print the schema we extracted, no model
+  column-mapping --table in.csv --graph --review empty  run through the LangGraph harness, fail closed
+  column-mapping --table in.csv --audit audit.jsonl --json  per-field decision trail, no ground truth
 """
 
 
@@ -159,8 +162,14 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
         except ValueError as error:
             ap.error(str(error))
         decider_factory = lambda: OpenRouterDecider(**opts)
-    reviewed, degraded, errors = {}, False, []
+    reviewed, degraded, errors, model = {}, False, [], None
+    started = time.time()
+    run_id = f"table-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
+    fields = {}
     with decider_factory() as decider:
+        model = getattr(decider, "run_meta", {}).get(
+            "model", cfg["open_router"]["model"]
+        )
         if a.graph:
             try:
                 from ..harness import run_graph
@@ -178,9 +187,11 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
                 reviewed = _review_decision(run, a.review)
                 run.resume(reviewed)
             header, converted = run.header, run.converted
+            fields = run.result.get("fields", {})
             degraded, errors = run.degraded, run.errors
         else:
             mapping = Mapper(decider, knowledge).map(rows)
+            fields = mapping.fields
             header, converted = mapping.convert(rows, fill)
     out = Path(a.output)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -188,10 +199,45 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
     filled = sum(
         1 for i in range(len(header)) if any(row[i] is not None for row in converted)
     )
+    policy = {
+        "derived": fill.derived,
+        "copy": fill.copy,
+        "none_ceiling": fill.none_ceiling,
+    }
+    audit_path = Path(a.audit) if a.audit else None
+    if audit_path:
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+        with audit_path.open("a", encoding="utf-8") as fh:
+            for name in header:
+                rec = fields.get(name, {})
+                fh.write(
+                    json.dumps(
+                        {
+                            "run_id": run_id,
+                            "table": str(a.table),
+                            "knowledge": str(knowledge_dir),
+                            "model": model,
+                            "field": name,
+                            "filled": is_filled(rec, fill),
+                            "p_present": rec.get("p_present"),
+                            "p_none": rec.get("p_none"),
+                            "method": rec.get("method"),
+                            "columns": rec.get("cols", []),
+                            "expression": rec.get("best_text"),
+                            "policy": policy,
+                        },
+                        default=str,
+                    )
+                    + "\n"
+                )
     summary = {
+        "run_id": run_id,
         "table": str(a.table),
         "knowledge": str(knowledge_dir),
+        "model": model,
+        "policy": policy,
         "output": str(out),
+        "audit": str(audit_path) if audit_path else None,
         "rows": len(rows),
         "fields": len(header),
         "filled": filled,
@@ -199,6 +245,7 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
         "degraded": degraded,
         "errors": errors,
         "reviewed": reviewed,
+        "elapsed_seconds": round(time.time() - started, 3),
     }
     if a.json:
         print(json.dumps(summary, indent=2, default=str))
@@ -206,13 +253,15 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
         print(f"{filled} / {len(header)} fields filled, {len(rows)} rows -> {out}")
         if degraded:
             print("degraded: " + "; ".join(errors))
+        if audit_path:
+            print(f"audit: {audit_path}")
     return 0
 
 
 def main(argv=None, decider_factory=None) -> int:
     cfg = load_settings()
     ap = argparse.ArgumentParser(
-        prog="columnmap",
+        prog="column-mapping",
         description="Run the model on sample files and write the results.",
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -314,6 +363,11 @@ def main(argv=None, decider_factory=None) -> int:
     ap.add_argument(
         "--json", action="store_true", help="print a machine-readable summary"
     )
+    ap.add_argument(
+        "--audit",
+        metavar="FILE",
+        help="append one JSON line per output field: model, policy, scores, method, expression",
+    )
     a = ap.parse_args(argv)
     if a.calibrate:
         if a.table or a.deepeval:
@@ -324,6 +378,8 @@ def main(argv=None, decider_factory=None) -> int:
 
         calibrate_run(_abs(a.calibrate), _abs(a.knowledge), a.budget, a.json)
         return 0
+    if a.audit and not a.table:
+        ap.error("--audit needs --table")
     if a.schema and not a.table:
         ap.error("--schema needs --table")
     if a.graph and not a.table:

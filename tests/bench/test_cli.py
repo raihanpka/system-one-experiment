@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from columnmap.bench.cli import main
+from column_mapping.bench.cli import main
 from tests.bench.fakes import Approves, Generic
 
 
@@ -143,7 +143,7 @@ def _table_case(tmp_path):
     csv_path.write_text(
         "first,last,amount\nBudi,Halim,10\nSiti,Wijaya,20\n", encoding="utf-8"
     )
-    from columnmap.knowledge import Knowledge, Output
+    from column_mapping.knowledge import Knowledge, Output
 
     knowledge = Knowledge(
         (
@@ -229,7 +229,7 @@ def test_table_mode_maps_with_the_knowledge_folder_and_writes_a_csv(tmp_path, ca
 
 
 def test_table_mode_uses_the_dataset_policy_before_appsettings(tmp_path, capsys):
-    from columnmap.policy import Policy
+    from column_mapping.policy import Policy
 
     csv_path, knowledge_dir = _table_case(tmp_path)
     Policy(derived=0.99, copy=0.99).save(knowledge_dir)
@@ -253,6 +253,43 @@ def test_table_mode_uses_the_dataset_policy_before_appsettings(tmp_path, capsys)
     assert (
         summary["filled"] == 0
     )  # the dataset policy overrides the appsettings fallback
+
+
+def test_table_mode_writes_a_decision_audit_trail(tmp_path, capsys):
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    out, audit = tmp_path / "converted.csv", tmp_path / "audit.jsonl"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--audit",
+                str(audit),
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    lines = [json.loads(line) for line in audit.read_text().splitlines()]
+    assert len(lines) == 2
+    assert {
+        "run_id",
+        "model",
+        "field",
+        "filled",
+        "p_present",
+        "p_none",
+        "method",
+        "policy",
+    } <= set(lines[0])
+    assert "truth" not in lines[0]
+    assert summary["run_id"] and summary["audit"] == str(audit)
 
 
 def test_table_graph_mode_runs_the_harness_and_fails_closed(tmp_path, capsys):
