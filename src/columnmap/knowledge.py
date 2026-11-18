@@ -22,6 +22,7 @@ class Output:
 class Knowledge:
     outputs: tuple[Output, ...]
     tables: tuple[dict, ...] = ()  # code -> label
+    prompts: tuple[tuple[str, str], ...] = ()  # prompt name -> template override
 
     @classmethod
     def load(cls, folder) -> Knowledge:
@@ -34,7 +35,17 @@ class Knowledge:
         for f in sorted((folder / "reference").glob("*.csv")):
             with f.open(encoding="utf-8", newline="") as fh:
                 tables.append({r["code"]: r["label"] for r in csv.DictReader(fh)})
-        return cls(outputs, tuple(tables))
+        prompts = ()
+        prompt_file = folder / "prompts.json"
+        if prompt_file.exists():
+            raw = json.loads(prompt_file.read_text(encoding="utf-8"))
+            prompts = tuple(
+                sorted(
+                    (k, v["template"] if isinstance(v, dict) else v)
+                    for k, v in raw.items()
+                )
+            )
+        return cls(outputs, tuple(tables), prompts)
 
     def save(self, folder) -> None:
         folder = Path(folder)
@@ -53,3 +64,18 @@ class Knowledge:
                 w = csv.writer(fh)
                 w.writerow(["code", "label"])
                 w.writerows(table.items())
+        if self.prompts:
+            (folder / "prompts.json").write_text(
+                json.dumps(dict(self.prompts), indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+
+    # the folder's overrides first, then the chosen backend (built-in file registry or MLflow)
+    def registry(self, base=None):
+        from .prompts import DEFAULT
+        from .registry import ChainRegistry, FileRegistry
+
+        base = base or DEFAULT
+        if not self.prompts:
+            return base
+        return ChainRegistry(FileRegistry(dict(self.prompts)), base)
