@@ -59,15 +59,17 @@ uv sync --extra graph
 ```python
 from columnmap.harness import run_graph
 
-run = run_graph(rows, decider, knowledge, thread_id="batch-1")
-header, converted = run.header, run.converted
-if run.paused:                                  # a field was close to the fill policy
-    run.resume({"total_charge": "accept"})      # or "empty"
+run = run_graph(rows, decider, knowledge, thread_id="batch-1", review="empty")
+header, converted = run.header, run.converted   # always yes or no, never "maybe"
 if run.degraded:                                # the model failed after retries
     print(run.errors)                           # only exact name matches were filled
 ```
 
-The graph retries transient failures with `RetryPolicy`, degrades to exact name matches when retries are exhausted, repairs a failed expression once with the next candidate, and pauses on an `interrupt` for a human. A checkpointer plus `thread_id` makes every pause resumable.
+`review="empty"` is the product mode: a field close to the policy is a no (empty), with no pause.
+`review="accept"` makes it a yes. `review="ask"` (the library default) pauses on an `interrupt` so a
+human can choose; the CLI default is `empty`. The output is binary in every mode.
+
+The graph retries transient failures with `RetryPolicy`, degrades to exact name matches when retries are exhausted, repairs a failed expression once with the next candidate, and pauses only when the review policy is `ask`. A checkpointer plus `thread_id` makes every pause resumable.
 
 ---
 

@@ -89,12 +89,15 @@ Reliability layers, in the order they act:
    stays empty, and the run records the error.
 4. **Repair.** `verify` detects an expression that fails on the sample rows. `repair` tries the next
    candidate expression, at most once, then re-verifies. No alternative means the field stays empty.
-5. **Review.** A field within 0.15 of the fill floor, or with `p_none` close to the ceiling, pauses
-   on `interrupt()`. The caller resumes with a dict of field to `accept` or `empty`.
+5. **Review.** A field within 0.15 of the fill floor, or with `p_none` close to the ceiling, is the
+   only ambiguous band. `review="empty"` resolves it to no (empty), `review="accept"` to yes, both
+   without a pause; `review="ask"` pauses on `interrupt()` and resumes with a dict of field to
+   `accept` or `empty`. The product output is binary in every mode; the score and the method stay in
+   the decisions CSV for audit.
 
-The graph is `kinds -> score -> decide -> verify -> gate`, then `repair` (loop back to `verify`),
-`review` (an `interrupt`), `degrade`, or `commit`. A checkpointer plus `thread_id` makes every pause
-resumable; nodes are idempotent and side effects happen only in `commit`.
+The graph is `kinds -> score -> decide -> verify`, then `repair` (loop back to `verify`), `review`
+(an `interrupt` only when `review="ask"`), `degrade`, or `commit`. A checkpointer plus `thread_id`
+makes every pause resumable; nodes are idempotent and side effects happen only in `commit`.
 
 ## Current violations
 
