@@ -8,22 +8,49 @@
 
 ### About
 
-Maps the columns of an input table onto the output fields of a target and gives a converted table. The Decisions model (`microsoft/microsoft-decision-1.1` through OpenRouter) reads the kind of each output field from its description, scores which columns feed which field, and binds each named role of the description to one column (or none). Code builds the expression from those columns (copy, year, date difference, arithmetic, concat, reference-table lookup), and a field is filled only when its source is present: `p_present` reaches the fill score and `p_none` stays below the ceiling. Everything else is deterministic.
+Maps the columns of a partner table onto the output fields of a target template and gives a converted table. The Decisions model (`microsoft/microsoft-decision-1.1` through OpenRouter) reads the kind of each output field from its description, scores which columns feed which field, and binds each named role of the description to one column (or none). Code builds the expression from those columns (copy, year, date difference, arithmetic, concat, reference-table lookup), and a field is filled only when its source is present: `p_present` reaches the fill score and `p_none` stays below the ceiling.
 
-The core library is one small package with no third-party dependency. To use it in another project, give it your own knowledge folder (output fields and reference tables):
+The input schema is extracted from the partner data itself (type, unit, samples, null rate, distinct count); a partner never has to supply one. All of that is deterministic and standard-library only. The same package ships an optional LangGraph agent with retries, a deterministic fallback, a repair loop, and human review.
+
+### Quickstart
 
 ```python
-from columnmap import Knowledge, Mapper, OpenRouterDecider
+from columnmap import Knowledge, Mapper, OpenRouterDecider, read_table
 
-knowledge = Knowledge.load("my_knowledge/")   # outputs.json + reference/*.csv, see data/knowledge/ for the format
+rows = read_table("partner.xlsx")              # CSV/TSV always; XLSX with --extra excel
+knowledge = Knowledge.load("my_knowledge/")    # outputs.json + reference/*.csv + prompts.json
 decider = OpenRouterDecider(api_key, "microsoft/microsoft-decision-1.1", "https://openrouter.ai/api/alpha/decisions")
-mapping = Mapper(decider, knowledge).map(rows)        # rows: list of dicts
-header, converted = mapping.convert(rows)             # a field without a present source stays empty
+mapping = Mapper(decider, knowledge).map(rows)
+header, converted = mapping.convert(rows)       # a field without a present source stays empty
 ```
 
-`columnmap.bench` evaluates the mapper on synthetic samples with a ground truth; a project that only maps tables never imports it.
+### Knowledge folder
 
-The optional graph harness needs the `graph` extra and adds no dependency to the core:
+One folder per dataset, committed with the code or registered in MLflow:
+
+```
+my_knowledge/
+  outputs.json          target template: name, type, description
+  reference/*.csv       code -> label tables for lookups
+  prompts.json          editable overrides of any prompt in the built-in book
+```
+
+`make data` writes a complete example to `data/knowledge/`, including the default prompt book. Copy that folder into your project before editing; `make data` regenerates the example.
+
+The prompt book is a registry, not an f-string. The folder wins, then the backend, then the built-in defaults:
+
+```python
+from columnmap import MlflowRegistry, Mapper
+
+registry = MlflowRegistry(prefix="columnmap/", version="production")  # needs --extra registry
+mapper = Mapper(decider, knowledge, registry=registry)
+```
+
+MLflow uses immutable versions and aliases (`prompts:/columnmap/bind@production`); a numeric version loads `prompts:/columnmap/bind/7`.
+
+### Graph harness
+
+The optional agent needs the `graph` extra and adds no dependency to the core:
 
 ```bash
 uv sync --extra graph
@@ -36,7 +63,11 @@ run = run_graph(rows, decider, knowledge, thread_id="batch-1")
 header, converted = run.header, run.converted
 if run.paused:                                  # a field was close to the fill policy
     run.resume({"total_charge": "accept"})      # or "empty"
+if run.degraded:                                # the model failed after retries
+    print(run.errors)                           # only exact name matches were filled
 ```
+
+The graph retries transient failures with `RetryPolicy`, degrades to exact name matches when retries are exhausted, repairs a failed expression once with the next candidate, and pauses on an `interrupt` for a human. A checkpointer plus `thread_id` makes every pause resumable.
 
 ---
 
@@ -44,12 +75,23 @@ if run.paused:                                  # a field was close to the fill 
 
 ```bash
 cp .env.example .env   # then put the OpenRouter key in .env
-make test              # unit tests, no model call
-make run               # asks: a, b, c, d, or all (or make run SAMPLES=c)
+make check             # format check, lint, and tests, no model call
 make help              # all commands
 ```
 
-Settings live in `appsettings.json` (every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (your overrides, gitignored). Environment variables `COLUMNMAP__Section__Key` override both.
+Extras: `uv sync --extra graph` (LangGraph), `--extra excel` (XLSX input), `--extra registry` (MLflow prompts). Settings live in `appsettings.json` (every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (gitignored). Environment variables `COLUMNMAP__Section__Key` override both.
+
+### Map a partner table
+
+```bash
+uv run columnmap --table in.csv --knowledge my_knowledge/ --output converted.csv
+uv run columnmap --table in.csv --schema --json          # the schema we extracted, no model
+uv run columnmap --table in.csv --graph --review empty   # through the agent, fail closed
+make map TABLE=in.csv KNOWLEDGE=my_knowledge/ OUT=converted.csv
+make schema TABLE=in.csv
+```
+
+`--json` prints one machine-readable object (`rows`, `fields`, `filled`, `empty`, `degraded`, `errors`, `reviewed`). `--review ask` prompts per field; `accept` keeps the expression; `empty` leaves the field empty.
 
 ### Running the bench
 
@@ -61,7 +103,7 @@ uv run columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5   # rebuil
 uv run columnmap --deepeval results/<run>          # DeepEval metrics, no model
 ```
 
-Samples: `a` identical names, `b` synonyms, `c` unusual technical terms, `d` mixed styles with extra columns. Every run writes `results/<run>/report/summary.md` with each count as x / y against the ground truth, and per sample the converted file, the decisions, and the column scores.
+Samples: `a` identical names, `b` synonyms, `c` unusual technical terms, `d` mixed styles with extra columns. Every run writes `results/<run>/report/summary.md` with each count as x / y against the ground truth, fill precision, and per sample the converted file, the decisions (including `p_present`/`p_none`), and the column scores.
 
 <div align="center">
 <sub>Copyright &copy; 2026 Raihan Putra Kirana. All rights reserved.</sub>
