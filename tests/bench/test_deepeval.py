@@ -6,6 +6,8 @@ from deepeval.test_case import LLMTestCase
 from columnmap.bench.cli import main
 from columnmap.bench.deepeval import (
     FieldsRight,
+    FillPrecision,
+    NoSourceEmpty,
     SourceAccuracy,
     cases_from_run,
     evaluate_run,
@@ -53,6 +55,18 @@ def test_fields_right_counts_every_field_and_succeeds_only_when_all_are_right():
         )
         == 1.0
     )
+
+
+def test_fill_precision_counts_only_the_filled_fields():
+    m = FillPrecision()
+    assert m.measure(tc(ACTUAL, EXPECTED)) == 1 / 3  # f1 right, f2 and f3 filled wrong
+    assert FillPrecision().measure(tc({"f": {"filled": False}}, {"f": []})) == 1.0
+
+
+def test_no_source_empty_counts_only_the_fields_without_a_source():
+    m = NoSourceEmpty()
+    assert m.measure(tc(ACTUAL, EXPECTED)) == 0.5  # f4 empty, f3 filled wrongly
+    assert NoSourceEmpty().measure(tc({"f": {"filled": True}}, {"f": ["x"]})) == 1.0
 
 
 def test_a_tie_in_the_top_score_goes_to_the_name_that_sorts_first():
@@ -106,7 +120,13 @@ def test_deepeval_flag_scores_a_run_folder_and_writes_the_report(tmp_path, capsy
     assert main(["--deepeval", str(run)]) == 0
     saved = json.loads((run / "report" / "deepeval.json").read_text())
     assert (
-        set(saved["metrics"]) == {"Source accuracy", "Fields right"}
+        set(saved["metrics"])
+        == {
+            "Source accuracy",
+            "Fields right",
+            "Fill precision",
+            "No source empty",
+        }
         and saved["cases"] == 2
     )
     assert "Source accuracy:" in capsys.readouterr().out

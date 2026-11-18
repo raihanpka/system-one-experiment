@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -11,6 +13,8 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = (
     "YES"  # forced: no usage data leaves the machine
 )
 
+from deepeval import evaluate  # noqa: E402
+from deepeval.evaluate.configs import DisplayConfig  # noqa: E402
 from deepeval.metrics import BaseMetric  # noqa: E402
 from deepeval.test_case import LLMTestCase  # noqa: E402
 
@@ -117,22 +121,90 @@ class FieldsRight(BaseMetric):
         return "Fields right"
 
 
+class FillPrecision(BaseMetric):
+    # share of filled fields that are right; the false-fill cost, not the false-empty cost
+    def __init__(self, threshold: float = 1.0):
+        self.threshold = threshold
+
+    def measure(self, test_case, *args, **kwargs) -> float:
+        actual, _ = _read(test_case)
+        filled = [f for f, a in actual.items() if a["filled"]]
+        right = [f for f in filled if actual[f]["right"]]
+        self.score = len(right) / len(filled) if filled else 1.0
+        self.reason = f"{len(right)} / {len(filled)} filled fields are right"
+        self.success = self.score >= self.threshold
+        return self.score
+
+    async def a_measure(self, test_case, *args, **kwargs) -> float:
+        return self.measure(test_case)
+
+    def is_successful(self) -> bool:
+        return self.success
+
+    @property
+    def __name__(self) -> str:
+        return "Fill precision"
+
+
+class NoSourceEmpty(BaseMetric):
+    # share of fields with no source that stayed empty; the false-fill rate is 1 - this
+    def __init__(self, threshold: float = 1.0):
+        self.threshold = threshold
+
+    def measure(self, test_case, *args, **kwargs) -> float:
+        actual, expected = _read(test_case)
+        nosrc = [f for f, sources in expected.items() if not sources]
+        empty = [f for f in nosrc if not actual[f]["filled"]]
+        self.score = len(empty) / len(nosrc) if nosrc else 1.0
+        self.reason = f"{len(empty)} / {len(nosrc)} fields with no source stayed empty"
+        self.success = self.score >= self.threshold
+        return self.score
+
+    async def a_measure(self, test_case, *args, **kwargs) -> float:
+        return self.measure(test_case)
+
+    def is_successful(self) -> bool:
+        return self.success
+
+    @property
+    def __name__(self) -> str:
+        return "No source empty"
+
+
 def evaluate_run(run_dir, fill: Fill | None = None) -> dict:
     fill = fill or fill_from_settings(load_settings())
-    metrics = [SourceAccuracy(), FieldsRight()]
+    metrics = [SourceAccuracy(), FieldsRight(), FillPrecision(), NoSourceEmpty()]
     rows = cases_from_run(run_dir, fill)
-    summary: dict = {}
-    for m in metrics:
-        scores = []
-        for row in rows:
-            tc = LLMTestCase(
-                input=row["input"],
-                actual_output=row["actual_output"],
-                expected_output=row["expected_output"],
-            )
-            scores.append(m.measure(tc))
-        summary[m.__name__] = round(sum(scores) / len(scores), 4) if scores else None
-        print(f"{m.__name__}: {summary[m.__name__]} (mean over {len(scores)} samples)")
+    test_cases = [
+        LLMTestCase(
+            input=row["input"],
+            actual_output=row["actual_output"],
+            expected_output=row["expected_output"],
+        )
+        for row in rows
+    ]
+    # the current DeepEval entry point runs every metric over the same cases; the banner is noise
+    with contextlib.redirect_stdout(io.StringIO()):
+        result = evaluate(
+            test_cases=test_cases,
+            metrics=metrics,
+            display_config=DisplayConfig(
+                show_indicator=False,
+                print_results=False,
+                inspect_after_run=False,
+            ),
+        )
+    scores: dict[str, list[float]] = {}
+    for test_result in result.test_results:
+        for metric_data in test_result.metrics_data:
+            if metric_data.score is not None:
+                scores.setdefault(metric_data.name, []).append(metric_data.score)
+    summary = {
+        name: round(sum(values) / len(values), 4) if values else None
+        for name, values in scores.items()
+    }
+    for name, value in summary.items():
+        print(f"{name}: {value} (mean over {len(rows)} samples)")
     out = Path(run_dir) / "report" / "deepeval.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
