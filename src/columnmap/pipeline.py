@@ -7,6 +7,8 @@ from __future__ import annotations
 from .decider import Decider
 from .knowledge import Knowledge
 from .mapper import Mapping, choose_expressions, infer_kinds, score_columns
+from .prompts import DEFAULT
+from .registry import ChainRegistry
 from .schema import Schema, extract
 
 
@@ -14,7 +16,9 @@ class Pipeline:
     def __init__(self, decider: Decider, knowledge: Knowledge, registry=None):
         self.decider = decider
         self.knowledge = knowledge
-        self.registry = knowledge.registry(registry)
+        # folder overrides -> the chosen backend (file or MLflow) -> the built-in book
+        base = ChainRegistry(registry, DEFAULT) if registry is not None else DEFAULT
+        self.registry = knowledge.registry(base)
         self._kinds: dict | None = None
 
     def kinds(self, refresh: bool = False) -> dict:

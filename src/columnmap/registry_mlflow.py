@@ -35,6 +35,10 @@ class MlflowRegistry:
 
     def get(self, name: str, version: str | None = None) -> Prompt:
         prompt = self._loader(self.uri(name, version))
+        if not isinstance(prompt.template, str):
+            raise ValueError(
+                f"MLflow prompt {name!r} is a chat prompt; columnmap needs text prompts"
+            )
         return Prompt(
             name=name,
             template=prompt.template,

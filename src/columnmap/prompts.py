@@ -42,7 +42,6 @@ DEFAULT_TEMPLATES = {
     "presence_false": "At least one component is missing; a similar column does not count.",
 }
 DEFAULT = FileRegistry(DEFAULT_TEMPLATES)
-KINDS = {k: DEFAULT_TEMPLATES[f"kind_{k}"] for k in KIND_KEYS}
 
 
 # k values of one column from evenly spaced rows (so the odd cell is sometimes visible, not always)
@@ -200,13 +199,16 @@ def expression_question(out: Output, options: list[str], registry=DEFAULT) -> Qu
 # one role of a field, bound to exactly one input column (or none). The state is the whole file, so
 # every field can ask its roles in the same request.
 def bind_question(
-    out: Output, role, columns: list[str], name: str, registry=DEFAULT
+    out: Output, role, columns: list[str], name: str, registry=DEFAULT, hint=None
 ) -> Question:
+    text = registry.get("bind").format(
+        field=out.name, description=out.description, role=role.phrase
+    )
+    if hint:
+        text = f"{text} {hint}"
     return Question(
         "choice",
-        registry.get("bind").format(
-            field=out.name, description=out.description, role=role.phrase
-        ),
+        text,
         name=name,
         choices=tuple(Choice(c) for c in columns) + (Choice(NONE),),
     )

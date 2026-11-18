@@ -267,6 +267,13 @@ def test_presence_and_none_decide_the_fill_not_the_joint_set_score():
     assert is_filled({**rec, "p_present": 0.9, "p_none": 0.2}, Fill(0.7, 0.4))
 
 
+def test_a_lookup_bind_question_shows_the_code_table():
+    d = Scripted()
+    Mapper(d, KNOWLEDGE).map(ROWS)
+    q = next(q for q in d.questions if q.name == "bind:status:0")
+    assert "Reference table: A -> Approved" in q.instructions
+
+
 def test_role_questions_for_a_group_of_fields_share_one_request():
     d = Scripted()
     Mapper(d, KNOWLEDGE).map(ROWS)

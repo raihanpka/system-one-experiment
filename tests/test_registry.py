@@ -57,6 +57,16 @@ def test_mlflow_registry_builds_version_and_alias_uris_and_keeps_the_version():
     assert seen[-1] == "prompts:/columnmap/presence@latest"
 
 
+def test_mlflow_chat_prompts_are_rejected_with_a_clear_message():
+    class Chat:
+        template = [{"role": "user", "content": "x"}]
+        version = 1
+
+    reg = MlflowRegistry(loader=lambda uri: Chat())
+    with pytest.raises(ValueError, match="chat prompt"):
+        reg.get("bind")
+
+
 def test_a_knowledge_folder_carries_its_prompt_overrides_with_the_dataset(tmp_path):
     (tmp_path / "outputs.json").write_text(
         json.dumps([{"name": "x", "type": "string", "description": "X"}]),

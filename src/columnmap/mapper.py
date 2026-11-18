@@ -108,7 +108,7 @@ def top_columns(matrix: dict, field: str, k: int = TOP_COLUMNS) -> list[str]:
     return [c for _, c in sorted((-m[field], c) for c, m in matrix.items())[:k]]
 
 
-# which family an expression belongs to, as named in KINDS
+# which family an expression belongs to, as named in the kind list
 def family(ast: dict) -> str:
     if "src" in ast:
         return "copy"
@@ -187,6 +187,21 @@ def _columns_for(role, source, units: dict) -> list[str]:
     return allowed or names
 
 
+# a code column is easier to bind when the model can see the code table it will be translated with
+def _lookup_hint(kind: str, labels: list[str], rows: list[dict], tables) -> str | None:
+    if kind != "lookup" or not tables:
+        return None
+    for table in tables:
+        if any(
+            covering([r[column] for r in rows], [table])
+            for column in labels
+            if column != NONE
+        ):
+            items = list(table.items())[:50]
+            return "Reference table: " + "; ".join(f"{k} -> {v}" for k, v in items)
+    return None
+
+
 # the expressions that build a field from exactly this column set, of the field's kind (a plain copy when there is no other)
 def set_candidates(chosen, rows, out: Output, kind: str, tables) -> list[dict]:
     cols = [(n, [r[n] for r in rows]) for n in chosen]
@@ -233,7 +248,10 @@ def _bind_chunk(
         for i, role in enumerate(shp.roles):
             name = f"bind:{out.name}:{i}"
             labels = _columns_for(role, schema, units) + [NONE]
-            questions.append(bind_question(out, role, labels[:-1], name, registry))
+            hint = _lookup_hint(kinds[out.name], labels, rows, tables)
+            questions.append(
+                bind_question(out, role, labels[:-1], name, registry, hint)
+            )
             meta[name] = labels
     answers = {
         a.name: a
@@ -479,8 +497,8 @@ class Mapper:
         )  # lazy: pipeline imports Mapping from this module
 
         self.decider, self.knowledge = decider, knowledge
-        self.registry = knowledge.registry(registry)
         self.pipeline = Pipeline(decider, knowledge, registry)
+        self.registry = self.pipeline.registry
 
     @property
     def kinds(self) -> dict:

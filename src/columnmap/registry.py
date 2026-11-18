@@ -19,6 +19,10 @@ class Prompt:
     template: str
     version: str | None = None
 
+    def __post_init__(self):
+        if not isinstance(self.template, str):
+            raise ValueError(f"prompt {self.name!r} is not a text template")
+
     def format(self, **values) -> str:
         def replace(match):
             key = match.group(1)
