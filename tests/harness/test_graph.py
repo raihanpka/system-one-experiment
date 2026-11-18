@@ -154,6 +154,26 @@ def test_a_review_can_leave_the_field_empty():
     assert run.converted[0][2] is None
 
 
+def test_review_empty_resolves_the_band_to_no_without_a_pause():
+    fake = Fake()
+    fake.low = ("total_charge", 0, 0.65)
+    run = run_graph(
+        ROWS, fake, KNOWLEDGE, thread_id="binary-empty", retries=1, review="empty"
+    )
+    assert run.done and not run.paused
+    assert run.converted[0][2] is None
+
+
+def test_review_accept_resolves_the_band_to_yes_without_a_pause():
+    fake = Fake()
+    fake.low = ("total_charge", 0, 0.65)
+    run = run_graph(
+        ROWS, fake, KNOWLEDGE, thread_id="binary-accept", retries=1, review="accept"
+    )
+    assert run.done and not run.paused
+    assert run.converted[0][2] == 110
+
+
 def test_a_refusal_is_retried_once_and_then_commits():
     fake = Flaky()
     run = run_graph(ROWS, fake, KNOWLEDGE, thread_id="retry", retries=2)

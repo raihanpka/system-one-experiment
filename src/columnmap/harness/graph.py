@@ -52,6 +52,9 @@ class MappingState(TypedDict):
 class Context:
     pipeline: Pipeline
     fill: Fill = Fill()
+    review: str = (
+        "ask"  # ask: interrupt; empty/accept: resolve the band to a binary decision
+    )
 
 
 # a transient model/network failure is retried; a programming or data error is not
@@ -183,6 +186,7 @@ def _degrade(state: MappingState, runtime: Runtime[Context]) -> dict:
 # candidate; a field within the review margin of the fill policy goes to a human.
 def _verify(state: MappingState, runtime: Runtime[Context]) -> dict:
     fill = runtime.context.fill
+    fields = dict(state["fields"])
     repair, review = {}, {}
     for out in runtime.context.pipeline.knowledge.outputs:
         rec = state["fields"][out.name]
@@ -221,7 +225,28 @@ def _verify(state: MappingState, runtime: Runtime[Context]) -> dict:
             review[out.name] = {**detail, "reason": "below the fill floor"}
         elif rec.get("p_none") is not None and rec["p_none"] > fill.none_ceiling:
             review[out.name] = {**detail, "reason": "none wins by the ceiling"}
+    policy = runtime.context.review
+    if policy in ("empty", "accept"):
+        for name in review:
+            rec = dict(fields[name])
+            ok = rec.get("best") is not None and all(
+                safe_evaluate(rec["best"], row) is not None for row in state["rows"]
+            )
+            if policy == "accept" and ok:
+                rec.update({"p_present": 1.0, "p_none": 0.0, "method": "review-accept"})
+            else:
+                rec.update(
+                    {
+                        "best": None,
+                        "best_text": None,
+                        "p_present": 0.0,
+                        "method": "review-empty",
+                    }
+                )
+            fields[name] = rec
+        review = {}
     return {
+        "fields": fields,
         "repair": repair,
         "review": review,
         "stages": [{"stage": "verify", "repair": len(repair), "review": len(review)}],
@@ -405,10 +430,11 @@ def run_graph(
     retries: int = 2,
     registry=None,
     retry: RetryPolicy | None = None,
+    review: str = "ask",
 ) -> Run:
     graph = build_graph(checkpointer, retry)
     wrapped = Retrying(decider, retries) if retries > 1 else decider
-    context = Context(Pipeline(wrapped, knowledge, registry), fill or Fill())
+    context = Context(Pipeline(wrapped, knowledge, registry), fill or Fill(), review)
     state = {
         "rows": rows,
         "matrix": {},
