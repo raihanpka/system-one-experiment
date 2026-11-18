@@ -1,6 +1,15 @@
 import pytest
 
-from columnmap.expressions import evaluate, render, safe_evaluate
+from columnmap.expressions import (
+    column_unit,
+    compatible,
+    evaluate,
+    output_unit,
+    render,
+    result_unit,
+    safe_evaluate,
+)
+from columnmap.knowledge import Output
 
 S = lambda x: {"src": x}  # noqa: E731
 L = lambda x: {"lit": x}  # noqa: E731
@@ -86,3 +95,64 @@ def test_arithmetic_refuses_text_instead_of_repeating_or_joining_it():
     assert safe_evaluate(mul, row) is None  # was a 1.7 GB string
     assert safe_evaluate(add, row) is None  # was "12"
     assert safe_evaluate({"op": "add", "args": [{"lit": 1}, {"lit": 2}]}, row) == 3
+
+
+def test_column_unit_reads_the_name_before_the_values_and_keeps_codes_out_of_math():
+    money = ["1000.50", "2000.00"]
+    assert column_unit("CHG_AMT_RAW", money) == "amount"
+    assert column_unit("premium_tax_rate", ["0.11", "0.12"]) == "rate"
+    assert column_unit("CHG_LVY_PCT", ["0.05", "0.06"]) == "rate"
+    assert column_unit("policy_number", ["POL-1", "POL-2"]) == "id"
+    assert column_unit("postal_code", ["54556", "04721"]) == "id"
+    assert column_unit("excess", ["1000", "2000"]) == "number"
+    assert column_unit("coverage_start_date", ["2024-01-01"]) == "date"
+    assert column_unit("ratio", ["0.4", "0.5"]) == "rate"
+
+
+def test_output_unit_comes_from_name_and_description():
+    assert (
+        output_unit(Output("total_charge", "number", "Transaction amount plus fee"))
+        == "amount"
+    )
+    assert (
+        output_unit(Output("claim_paid_ratio", "number", "Paid divided by premium"))
+        == "rate"
+    )
+    assert (
+        output_unit(Output("coverage_days", "number", "Days between start and end"))
+        == "count"
+    )
+    assert (
+        output_unit(Output("insured_city", "string", "City of the insured")) == "text"
+    )
+
+
+def test_result_unit_rejects_a_rate_where_an_amount_is_needed():
+    units = {"fee": "amount", "pct": "rate", "premium": "amount", "days": "count"}
+    assert result_unit(S("fee"), units) == "amount"
+    assert (
+        result_unit({"op": "add", "args": [S("fee"), S("premium")]}, units) == "amount"
+    )
+    assert result_unit({"op": "add", "args": [S("fee"), S("pct")]}, units) == "number"
+    assert (
+        result_unit(
+            {
+                "op": "mul",
+                "args": [S("premium"), {"op": "add", "args": [L(1), S("pct")]}],
+            },
+            units,
+        )
+        == "amount"
+    )
+    assert result_unit({"op": "div", "args": [S("fee"), S("premium")]}, units) == "rate"
+    assert (
+        result_unit({"op": "days_between", "args": [S("days"), S("days")]}, units)
+        == "count"
+    )
+
+
+def test_compatible_lets_a_plain_number_be_an_amount_but_not_a_rate():
+    assert compatible("amount", "amount") and compatible("amount", "number")
+    assert not compatible("amount", "rate") and not compatible("amount", "date")
+    assert compatible("rate", "rate") and not compatible("rate", "amount")
+    assert compatible("date", "date") and not compatible("date", "text")

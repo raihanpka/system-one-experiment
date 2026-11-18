@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from itertools import permutations
 
@@ -126,6 +127,152 @@ def column_type(values) -> str:
     if sum(_is_number(v) for v in vals) >= 0.7 * len(vals):
         return "number"
     return "text"
+
+
+# words in a column or field name that say which unit it holds
+RATE_HINTS = (
+    "rate",
+    "pct",
+    "percent",
+    "percentage",
+    "tax",
+    "levy",
+    "discount",
+    "ratio",
+    "share",
+)
+AMOUNT_HINTS = (
+    "amount",
+    "amt",
+    "charge",
+    "premium",
+    "payable",
+    "payout",
+    "sum",
+    "fee",
+    "cost",
+    "price",
+    "balance",
+    "value",
+    "total",
+    "limit",
+    "lmt",
+)
+COUNT_HINTS = ("days", "count", "qty", "quantity", "age", "year")
+IDENTIFIER_HINTS = (
+    "id",
+    "key",
+    "code",
+    "ref",
+    "number",
+    "no",
+    "nomor",
+    "kode",
+    "uniq",
+    "case",
+)
+DATE_HINTS = (
+    "date",
+    "dt",
+    "day",
+    "birth",
+    "incident",
+    "start",
+    "end",
+    "expiry",
+    "effective",
+    "posting",
+    "receipt",
+    "from",
+    "to",
+)
+
+
+def _tokens(text: str) -> list[str]:
+    return [t for t in re.split(r"[^a-z0-9]+", str(text).lower()) if t]
+
+
+# what a column measures, from its name first and its values second. "number" is a plain number that
+# could still be an amount; "id" is a code that looks numeric (postal code, policy number).
+def column_unit(name: str, values=()) -> str:
+    kind = column_type(values)
+    if kind == "date":
+        return "date"
+    toks = _tokens(name)
+    if any(t in IDENTIFIER_HINTS for t in toks):
+        return "id"
+    if any(t in RATE_HINTS for t in toks):
+        return "rate"
+    if any(t in AMOUNT_HINTS for t in toks):
+        return "amount"
+    if any(t in COUNT_HINTS for t in toks):
+        return "count"
+    if kind == "text":
+        return "text"
+    nums = [float(str(v)) for v in values if _is_number(v)]
+    if (
+        nums
+        and all(0.0 <= x <= 1.0 for x in nums)
+        and any("." in str(v) for v in values)
+    ):
+        return "rate"
+    return "number"
+
+
+# the unit an output field should receive; only name and description are read, never a rule
+def output_unit(out) -> str:
+    if out.type == "date":
+        return "date"
+    toks = _tokens(f"{out.name} {out.description}")
+    if any(t in RATE_HINTS for t in toks):
+        return "rate"
+    if any(t in AMOUNT_HINTS for t in toks):
+        return "amount"
+    if any(t in COUNT_HINTS for t in toks):
+        return "count"
+    return "number" if out.type == "number" else "text"
+
+
+# a role may only take a column of a compatible unit. A plain number can still be an amount or a count.
+def compatible(role_unit: str | None, col_unit: str) -> bool:
+    if role_unit is None:
+        return True
+    return {
+        "amount": col_unit in ("amount", "number"),
+        "rate": col_unit == "rate",
+        "date": col_unit == "date",
+        "count": col_unit in ("count", "number"),
+        "text": col_unit in ("text", "id"),
+    }.get(role_unit, True)
+
+
+# the unit an expression produces, so a rate cannot fill an amount and an amount cannot fill a rate
+def result_unit(node: dict, units: dict) -> str:
+    if "src" in node:
+        return units[node["src"]]
+    if "lit" in node:
+        return "multiplier" if node["lit"] == 1 else "number"
+    op, args = node.get("op"), node.get("args", ())
+    if op in ("year", "days_between"):
+        return "count"
+    if op in ("concat", "lookup"):
+        return "text"
+    us = [result_unit(a, units) for a in args]
+    if op in ("add", "sub"):
+        if all(u == "amount" for u in us):
+            return "amount"
+        if "multiplier" in us and any(u == "rate" for u in us):
+            return "multiplier"
+        if all(u in ("count", "number") for u in us):
+            return "count"
+        return "number"
+    if op == "mul":
+        if "amount" in us and any(u in ("rate", "multiplier") for u in us):
+            return "amount"
+        return "number"
+    if op == "div":
+        return "rate" if all(u == "amount" for u in us) else "number"
+    return "number"
 
 
 def size(node: dict) -> int:
