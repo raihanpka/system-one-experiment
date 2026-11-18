@@ -118,6 +118,6 @@ None in the core. Check: `grep -rn "bench\|harness" src/columnmap/*.py` prints o
    the column-set question plus a separate presence question.
 5. **Fill.** A field is filled when its source is present: `p_present` (the weakest role, or the
    presence answer in the fallback) reaches `Fill.copy` (0.4) for a copied field or `Fill.derived`
-   (0.7) for a derived one, and `p_none` stays at or below `Fill.none_ceiling` (0.5). A column
+   (0.75) for a derived one, and `p_none` stays at or below `Fill.none_ceiling` (0.5). A column
    claimed by two copied fields stays with the higher score; the other gets score 0 and presence 0.
    Converting is deterministic.

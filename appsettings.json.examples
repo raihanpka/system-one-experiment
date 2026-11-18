@@ -7,7 +7,7 @@
     "ApiKeyEnv_Note": "name of the env var that holds the key (set it in .env). The key itself never goes in this file."
   },
   "Run": {
-    "FillScore": 0.7,
+    "FillScore": 0.75,
     "CopyFillScore": 0.4,
     "NoneCeiling": 0.5,
     "FillScore_Note": "p_present floor for a derived field (year, join, arithmetic, date difference, lookup); filled when it reaches this, otherwise empty. Can be changed with --report-only --fill-score.",
