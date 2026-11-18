@@ -193,6 +193,15 @@ class Broken(Fake):
         return super().decide(text, questions)
 
 
+class BrokenKinds(Fake):
+    """Fails the first model stage, so kinds must degrade too."""
+
+    def decide(self, text, questions):
+        if any(q.name == "kind" for q in questions):
+            raise RuntimeError("kind model down")
+        return super().decide(text, questions)
+
+
 def test_a_transient_exception_is_retried_by_the_node_retry_policy():
     fake = Transient()
     run = run_graph(
@@ -224,6 +233,20 @@ def test_an_exhausted_retry_degrades_to_exact_matches_and_commits():
         None,
         "A1",
     ]  # only the exact-name copy survives
+
+
+def test_a_kind_failure_after_retries_degrades_instead_of_raising():
+    run = run_graph(
+        ROWS,
+        BrokenKinds(),
+        KNOWLEDGE,
+        thread_id="kinds-down",
+        retries=1,
+        retry=retry_policy(attempts=2, interval=0.01, jitter=False),
+    )
+    assert run.done and run.degraded
+    assert any("kinds failed after retries" in e for e in run.errors)
+    assert run.converted[0] == [None, None, None, None]
 
 
 def test_repair_tries_the_next_candidate_that_evaluates():

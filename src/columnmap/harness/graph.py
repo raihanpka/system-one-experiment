@@ -22,7 +22,7 @@ from langgraph.types import Command, RetryPolicy, default_retry_on, interrupt
 from ..decider import Decider
 from ..expressions import safe_evaluate
 from ..knowledge import Knowledge
-from ..mapper import Fill, convert, is_filled
+from ..mapper import Fill, convert, empty_record, floor_of, is_filled
 from ..pipeline import Pipeline
 from ..prompts import expression_text
 from ..schema import extract
@@ -52,10 +52,6 @@ class MappingState(TypedDict):
 class Context:
     pipeline: Pipeline
     fill: Fill = Fill()
-
-
-def _floor(rec: dict, fill: Fill) -> float:
-    return fill.copy if rec.get("kind") in ("copy", "year", "lookup") else fill.derived
 
 
 # a transient model/network failure is retried; a programming or data error is not
@@ -105,6 +101,17 @@ def _decide(state: MappingState, runtime: Runtime[Context]) -> dict:
     return {"fields": fields, "stages": [{"stage": "decide", "fields": len(fields)}]}
 
 
+def _kinds_failed(state: MappingState, error: NodeError) -> Command:
+    return Command(
+        update={
+            "errors": [f"kinds failed after retries: {error.error}"],
+            "degraded": True,
+            "status": "degraded",
+        },
+        goto="degrade",
+    )
+
+
 def _score_failed(state: MappingState, error: NodeError) -> Command:
     return Command(
         update={
@@ -127,26 +134,6 @@ def _decide_failed(state: MappingState, error: NodeError) -> Command:
     )
 
 
-def _record(kind=None) -> dict:
-    return {
-        "kind": kind,
-        "shape": None,
-        "roles": [],
-        "cols": [],
-        "top_cols": [],
-        "set_scores": {},
-        "p_none": None,
-        "p_present": None,
-        "cands": [],
-        "cand_nodes": [],
-        "p_expr": None,
-        "best": None,
-        "best_text": None,
-        "score": None,
-        "method": "unmapped",
-    }
-
-
 def _norm(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(text).lower())
 
@@ -160,7 +147,8 @@ def _degrade(state: MappingState, runtime: Runtime[Context]) -> dict:
     for out in runtime.context.pipeline.knowledge.outputs:
         kind = state.get("kinds", {}).get(out.name)
         match = next((c for c in names if _norm(c) == _norm(out.name)), None)
-        rec = _record(kind)
+        rec = empty_record()
+        rec["kind"] = kind
         if kind == "copy" and match:
             rec.update(
                 {
@@ -201,7 +189,7 @@ def _verify(state: MappingState, runtime: Runtime[Context]) -> dict:
         if rec.get("best") is None:
             continue
         present = rec.get("p_present")
-        floor = _floor(rec, fill)
+        floor = floor_of(rec, fill)
         detail = {
             "kind": rec.get("kind"),
             "columns": rec.get("cols", []),
@@ -278,16 +266,6 @@ def _repair(state: MappingState) -> dict:
     }
 
 
-def _gate(state: MappingState) -> dict:
-    if state["repair"] and state["repair_attempts"] < MAX_REPAIRS:
-        status = "repair"
-    elif state["review"]:
-        status = "review"
-    else:
-        status = "accepted"
-    return {"status": status}
-
-
 def _route(state: MappingState) -> str:
     if state["repair"] and state["repair_attempts"] < MAX_REPAIRS:
         return "repair"
@@ -349,14 +327,13 @@ def _commit(state: MappingState, runtime: Runtime[Context]) -> dict:
 def build_graph(checkpointer=None, retry: RetryPolicy | None = None):
     retry = retry or retry_policy()
     builder = StateGraph(MappingState, context_schema=Context)
-    builder.add_node("kinds", _kinds, retry_policy=retry)
+    builder.add_node("kinds", _kinds, retry_policy=retry, error_handler=_kinds_failed)
     builder.add_node("score", _score, retry_policy=retry, error_handler=_score_failed)
     builder.add_node(
         "decide", _decide, retry_policy=retry, error_handler=_decide_failed
     )
     builder.add_node("verify", _verify)
     builder.add_node("repair", _repair)
-    builder.add_node("gate", _gate)
     builder.add_node("review", _review)
     builder.add_node("degrade", _degrade)
     builder.add_node("commit", _commit)
@@ -364,9 +341,8 @@ def build_graph(checkpointer=None, retry: RetryPolicy | None = None):
     builder.add_edge("kinds", "score")
     builder.add_edge("score", "decide")
     builder.add_edge("decide", "verify")
-    builder.add_edge("verify", "gate")
     builder.add_conditional_edges(
-        "gate",
+        "verify",
         _route,
         {"repair": "repair", "review": "review", "commit": "commit"},
     )
