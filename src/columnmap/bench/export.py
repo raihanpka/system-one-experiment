@@ -90,13 +90,16 @@ def write_samples(
     data_dir = Path(data_dir)
     write_template(t, data_dir)
     base = knowledge_from_template(t)
+    knowledge_dir = data_dir / "knowledge"
+    # keep a calibrated policy across `make data`; only a new folder gets the default
+    policy = Policy.load(knowledge_dir) or Policy(model=model)
     # the folder is self-contained: outputs, reference tables, prompt book, and policy
     Knowledge(
         base.outputs,
         base.tables,
         tuple(sorted(DEFAULT_TEMPLATES.items())),
-        Policy(model=model),
-    ).save(data_dir / "knowledge")
+        policy,
+    ).save(knowledge_dir)
     for x in letters:
         write_case(cases[SAMPLES[x][0]], data_dir / "samples" / sample_folder(x))
 

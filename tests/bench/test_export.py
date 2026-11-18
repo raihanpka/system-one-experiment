@@ -1,6 +1,7 @@
 import csv
 
 from columnmap.bench.template import load_template
+from columnmap.policy import Policy
 from columnmap.bench.export import write_samples, write_template
 from columnmap.bench.generate import generate
 
@@ -81,6 +82,15 @@ def test_samples_folder_is_the_single_source_of_truth(tmp_path):
         T, by_id, "abcd", tmp_path
     )  # deterministic: rewriting changes nothing
     assert (d / "input_hardest_noisy.csv").read_text() == before
+
+
+def test_write_samples_keeps_a_calibrated_policy(tmp_path):
+    Policy(copy=0.55, calibration={"seed": 11}).save(tmp_path / "knowledge")
+    by_id = {c["case_id"]: c for c in generate(T, n_per_level=1, seed=5)}
+    write_samples(T, by_id, "a", tmp_path, model="microsoft/microsoft-decision-1.1")
+    loaded = Policy.load(tmp_path / "knowledge")
+    assert loaded.copy == 0.55
+    assert loaded.calibration == {"seed": 11}
 
 
 def test_level5_has_unusual_technical_terms():
