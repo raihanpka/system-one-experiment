@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "model": "microsoft/microsoft-decision-1.1",
   "fill": {
     "derived": 0.75,
@@ -6,6 +7,7 @@
     "none_ceiling": 0.5
   },
   "calibration": {
+    "calibrated_at": "2026-11-18T06:38:10+00:00",
     "run": "all-seed11_20261118-113931",
     "seed": 11,
     "budget": 0.02,

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import math
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ..mapper import Fill, convert, is_filled
@@ -120,6 +121,7 @@ def calibrate_run(
         none_ceiling=0.5,
         model=meta.get("model"),
         calibration={
+            "calibrated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "run": Path(run_dir).name,
             "seed": meta.get("seed"),
             "budget": budget,

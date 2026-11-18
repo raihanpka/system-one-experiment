@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from columnmap.knowledge import Knowledge
-from columnmap.mapper import Fill
-from columnmap.policy import Policy
+from column_mapping.knowledge import Knowledge
+from column_mapping.mapper import Fill
+from column_mapping.policy import Policy
 
 
 def test_policy_defaults_and_fill():
@@ -28,6 +28,7 @@ def test_policy_round_trips_next_to_the_dataset(tmp_path):
     assert path.name == "policy.json"
     assert Policy.load(tmp_path) == policy
     raw = json.loads(path.read_text())
+    assert raw["version"] == 1
     assert raw["fill"] == {"derived": 0.8, "copy": 0.45, "none_ceiling": 0.4}
     assert Policy.load(tmp_path / "missing") is None
 

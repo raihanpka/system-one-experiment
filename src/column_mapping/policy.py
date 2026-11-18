@@ -18,12 +18,15 @@ class Policy:
     none_ceiling: float = DEFAULTS["none_ceiling"]
     model: str | None = None
     calibration: dict = field(default_factory=dict)
+    version: int = 1
 
     def __post_init__(self):
         for name in DEFAULTS:
             value = float(getattr(self, name))
             if not 0 <= value <= 1:
                 raise ValueError(f"policy {name} must be in [0, 1]")
+        if self.version < 1:
+            raise ValueError("policy version must be >= 1")
 
     def fill(self):
         from .mapper import Fill
@@ -32,6 +35,7 @@ class Policy:
 
     def as_dict(self) -> dict:
         return {
+            "version": self.version,
             "model": self.model,
             "fill": {
                 "derived": self.derived,
@@ -54,6 +58,7 @@ class Policy:
             none_ceiling=float(fill.get("none_ceiling", DEFAULTS["none_ceiling"])),
             model=raw.get("model"),
             calibration=raw.get("calibration", {}),
+            version=int(raw.get("version", 1)),
         )
 
     def save(self, folder, name: str = "policy.json") -> Path:
