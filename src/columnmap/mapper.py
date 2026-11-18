@@ -27,6 +27,7 @@ from .expressions import (
 )
 from .knowledge import Knowledge, Output
 from .prompts import (
+    DEFAULT,
     NONE,
     bind_question,
     expression_question,
@@ -40,11 +41,11 @@ from .prompts import (
     option_text,
     pool_state,
     presence_question,
-    samples,
     set_label,
     set_question,
 )
 from .roles import shape
+from .schema import Schema, extract
 
 KIND_SHUFFLES = (
     3  # the kind question is asked with the options in this many orders and averaged
@@ -66,12 +67,25 @@ SIZES = {
 
 # stage 1: matrix[column][field] = raw score; raw keeps the model's own answer per column for logging
 def score_columns(
-    decider: Decider, rows: list[dict], knowledge: Knowledge
+    decider: Decider,
+    rows: list[dict],
+    knowledge: Knowledge,
+    schema: Schema | None = None,
+    registry=DEFAULT,
 ) -> tuple[dict, dict]:
-    question = mapping_question(knowledge.outputs)
+    schema = schema or extract(rows)
+    question = mapping_question(knowledge.outputs, registry)
     matrix, raw = {}, {}
-    for name in rows[0]:
-        state = input_state(name, samples(rows, name))
+    for column in schema.columns:
+        name = column.name
+        state = input_state(
+            name,
+            column.samples,
+            kind=column.type,
+            unit=column.unit,
+            null_rate=column.null_rate,
+            registry=registry,
+        )
         res = decider.decide(state, [question])
         raw[name] = {
             "model": res.model,
@@ -113,9 +127,12 @@ def family(ast: dict) -> str:
 # the kind of every output field, read from its description (once per knowledge, not per file); the option order is
 # shuffled and the answers averaged, because one fixed order made a field flip between two kinds from run to run
 def infer_kinds(
-    decider: Decider, knowledge: Knowledge, shuffles: int = KIND_SHUFFLES
+    decider: Decider,
+    knowledge: Knowledge,
+    shuffles: int = KIND_SHUFFLES,
+    registry=DEFAULT,
 ) -> dict:
-    q = kind_question()
+    q = kind_question(registry)
     out = {}
     for o in knowledge.outputs:
         total: dict[str, float] = {}
@@ -125,7 +142,7 @@ def infer_kinds(
             asked = Question(
                 q.type, q.instructions, name=q.name, choices=tuple(choices)
             )
-            res = decider.decide(kind_state(o), [asked])
+            res = decider.decide(kind_state(o, registry), [asked])
             answer = res.answers[0] if res.answers else None
             probs = answer.probabilities if answer is not None else None
             if not probs:
@@ -147,6 +164,7 @@ def _empty() -> dict:
         "p_none": None,
         "p_present": None,
         "cands": [],
+        "cand_nodes": [],
         "p_expr": None,
         "best": None,
         "best_text": None,
@@ -161,14 +179,10 @@ def _pick(probs: dict | None, labels: list[str]) -> tuple[str, float, float]:
     return best, float(probs.get(best, 0.0)), float(probs.get(NONE, 0.0))
 
 
-def _units(rows: list[dict]) -> dict:
-    return {n: column_unit(n, [r[n] for r in rows]) for n in rows[0]}
-
-
 # a role may only see columns of a compatible unit; if the filter would hide every column, keep them all
 # and let the check after the answer reject a wrong unit instead of making the model guess blindly.
-def _columns_for(role, rows: list[dict], units: dict) -> list[str]:
-    names = list(rows[0])
+def _columns_for(role, source, units: dict) -> list[str]:
+    names = source.names() if hasattr(source, "names") else list(source[0])
     allowed = [n for n in names if compatible(role.unit, units[n])]
     return allowed or names
 
@@ -207,19 +221,24 @@ def _bind_chunk(
     decider: Decider,
     chunk: list[tuple[Output, object]],
     rows: list[dict],
+    schema: Schema,
     matrix: dict,
     kinds: dict,
     units: dict,
     tables,
+    registry=DEFAULT,
 ) -> dict:
     questions, meta = [], {}
     for out, shp in chunk:
         for i, role in enumerate(shp.roles):
             name = f"bind:{out.name}:{i}"
-            labels = _columns_for(role, rows, units) + [NONE]
-            questions.append(bind_question(out, role, labels[:-1], name))
+            labels = _columns_for(role, schema, units) + [NONE]
+            questions.append(bind_question(out, role, labels[:-1], name, registry))
             meta[name] = labels
-    answers = {a.name: a for a in decider.decide(file_state(rows), questions).answers}
+    answers = {
+        a.name: a
+        for a in decider.decide(file_state(schema, registry), questions).answers
+    }
     fields = {}
     for out, shp in chunk:
         rec = {
@@ -262,6 +281,8 @@ def _bind_chunk(
             )
         rec.update(
             {
+                "cands": [expression_text(best)],
+                "cand_nodes": [best],
                 "best": best,
                 "best_text": expression_text(best),
                 "method": "copy" if "src" in best else "expression",
@@ -273,12 +294,20 @@ def _bind_chunk(
 
 # the fallback for a description the role parser cannot read: the old column-set question plus an explicit
 # presence question, so "does the source exist" is not inferred from the joint set probability.
-def _field(decider, out: Output, kind, rows, matrix, all_columns, tables) -> dict:
+def _field(
+    decider, out: Output, kind, rows, matrix, all_columns, tables, registry=DEFAULT
+) -> dict:
     names = top_columns(matrix, out.name)
     sets = [s for n in SIZES[kind] for s in combinations(names, n)]
     labels = [set_label(s) for s in sets]
-    state = field_state(out, all_columns, names, rows)
-    res = decider.decide(state, [presence_question(out), set_question(out, labels)])
+    state = field_state(out, all_columns, names, rows, registry)
+    res = decider.decide(
+        state,
+        [
+            presence_question(out, registry=registry),
+            set_question(out, labels, registry),
+        ],
+    )
     answers = {a.name: a for a in res.answers}
     presence = answers.get("presence")
     probs = answers.get("set").probabilities if answers.get("set") else {}
@@ -309,7 +338,8 @@ def _field(decider, out: Output, kind, rows, matrix, all_columns, tables) -> dic
         options = [option_text(c, rows) for c in cands]
         pe = (
             decider.decide(
-                pool_state(list(chosen), rows), [expression_question(out, options)]
+                pool_state(list(chosen), rows, registry),
+                [expression_question(out, options, registry)],
             )
             .answers[0]
             .probabilities
@@ -322,6 +352,7 @@ def _field(decider, out: Output, kind, rows, matrix, all_columns, tables) -> dic
     rec.update(
         {
             "cands": [expression_text(c) for c in cands],
+            "cand_nodes": cands,
             "best": best,
             "best_text": expression_text(best),
             "method": "copy" if "src" in best else "expression",
@@ -337,9 +368,12 @@ def choose_expressions(
     matrix: dict,
     knowledge: Knowledge,
     kinds: dict | None = None,
+    schema: Schema | None = None,
+    registry=DEFAULT,
 ) -> dict:
-    kinds = kinds or infer_kinds(decider, knowledge)
-    units = _units(rows)
+    kinds = kinds or infer_kinds(decider, knowledge, registry=registry)
+    schema = schema or extract(rows)
+    units = schema.units()
     shaped, fallback = [], []
     for out in knowledge.outputs:
         shp = shape(out, kinds[out.name])
@@ -351,15 +385,24 @@ def choose_expressions(
                 decider,
                 shaped[i : i + BATCH_FIELDS],
                 rows,
+                schema,
                 matrix,
                 kinds,
                 units,
                 knowledge.tables,
+                registry,
             )
         )
     for out in fallback:
         fields[out.name] = _field(
-            decider, out, kinds[out.name], rows, matrix, list(matrix), knowledge.tables
+            decider,
+            out,
+            kinds[out.name],
+            rows,
+            matrix,
+            schema.names(),
+            knowledge.tables,
+            registry,
         )
     return drop_double_claims(fields)
 
@@ -430,17 +473,18 @@ class Mapping:
 
 
 class Mapper:
-    def __init__(self, decider: Decider, knowledge: Knowledge):
+    def __init__(self, decider: Decider, knowledge: Knowledge, registry=None):
+        from .pipeline import (
+            Pipeline,
+        )  # lazy: pipeline imports Mapping from this module
+
         self.decider, self.knowledge = decider, knowledge
-        self.kinds: dict | None = (
-            None  # read from the descriptions on first use, then reused for every table
-        )
+        self.registry = knowledge.registry(registry)
+        self.pipeline = Pipeline(decider, knowledge, registry)
+
+    @property
+    def kinds(self) -> dict:
+        return self.pipeline.kinds()
 
     def map(self, rows: list[dict]) -> Mapping:
-        if self.kinds is None:
-            self.kinds = infer_kinds(self.decider, self.knowledge)
-        matrix, _ = score_columns(self.decider, rows, self.knowledge)
-        fields = choose_expressions(
-            self.decider, rows, matrix, self.knowledge, self.kinds
-        )
-        return Mapping(matrix, fields, [o.name for o in self.knowledge.outputs])
+        return self.pipeline.run(rows)

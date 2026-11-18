@@ -10,14 +10,27 @@
 from .decider import Decider, OpenRouterDecider
 from .knowledge import Knowledge, Output
 from .mapper import FILL, Fill, Mapper, Mapping
+from .pipeline import Pipeline
+from .registry import FileRegistry, Prompt
+from .registry_mlflow import MlflowRegistry
+from .schema import Column, Schema, extract
+from .table import read_table
 
 __all__ = [
+    "Column",
     "Decider",
     "FILL",
+    "FileRegistry",
     "Fill",
     "Knowledge",
     "Mapper",
     "Mapping",
+    "MlflowRegistry",
     "OpenRouterDecider",
     "Output",
+    "Pipeline",
+    "Prompt",
+    "Schema",
+    "extract",
+    "read_table",
 ]

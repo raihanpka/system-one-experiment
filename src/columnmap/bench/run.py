@@ -6,7 +6,7 @@ import time
 
 from ..decider import Decider
 from ..knowledge import Knowledge
-from ..mapper import choose_expressions, infer_kinds, score_columns
+from ..pipeline import Pipeline
 from .usage import Counting, estimate_minutes, mark, since
 
 WARN_MINUTES = 15
@@ -34,9 +34,10 @@ def run_models(decider: Decider, cases, store, knowledge: Knowledge, log=print) 
             f"warning: this run is estimated at {est:.0f} minutes; consider fewer samples"
         )
     decider, t0 = Counting(decider), time.time()
+    pipeline = Pipeline(decider, knowledge)
 
     def mapping(c):
-        matrix, raw = score_columns(decider, c["rows"], knowledge)
+        matrix, raw = pipeline.score(c["rows"])
         return {"matrix": matrix, "raw": raw}
 
     n = _stage(decider, cases, store, "mapping", mapping)
@@ -44,7 +45,8 @@ def run_models(decider: Decider, cases, store, knowledge: Knowledge, log=print) 
     stored = {r["case_id"]: r for r in store.rows("mapping")}
     todo = [c for c in cases if c["case_id"] in stored]
 
-    kinds = store.data["meta"].get("kinds") or infer_kinds(decider, knowledge)
+    kinds = store.data["meta"].get("kinds") or pipeline.kinds()
+    pipeline.use_kinds(kinds)
     store.data["meta"]["kinds"] = (
         kinds  # read from the descriptions, the same for every file
     )
@@ -52,9 +54,7 @@ def run_models(decider: Decider, cases, store, knowledge: Knowledge, log=print) 
 
     def honest(c):
         matrix = stored[c["case_id"]]["matrix"]
-        return {
-            "fields": choose_expressions(decider, c["rows"], matrix, knowledge, kinds)
-        }
+        return {"fields": pipeline.decide(c["rows"], matrix, kinds)}
 
     n = _stage(decider, todo, store, "honest", honest)
     log(f"honest: {n} new, {len(todo) - n} resumed ({time.time() - t0:.0f}s)")
