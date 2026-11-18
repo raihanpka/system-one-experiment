@@ -1,142 +1,160 @@
-<div align="center">
+# Column Mapping with System One Model
 
-# Column Mapper
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![OpenRouter Decisions](https://img.shields.io/badge/OpenRouter-Decisions-purple)](https://openrouter.ai/docs/guides/features/decisions)
+[![LangGraph optional](https://img.shields.io/badge/LangGraph-optional-green)](https://docs.langchain.com/oss/python/langgraph/graph-api)
+[![DeepEval](https://img.shields.io/badge/DeepEval-no--judge-orange)](https://deepeval.com/)
 
-[Architecture](./docs/ARCHITECTURE.md) &nbsp;&middot;&nbsp; [Model](https://openrouter.ai/microsoft/microsoft-decision-1.1) &nbsp;&middot;&nbsp; [OpenRouter](https://openrouter.ai)
+**Maps a partner's columns onto your target template, then decides every output field yes or no with a
+calibrated System One policy.**
 
-</div>
+A partner sends a table. The target template describes each output field. The System One model reads
+the schema we extract, binds each named role of a field to one input column, and returns calibrated
+probabilities. Code builds the expression, verifies it, applies a dataset policy, and writes the
+converted file. The model never sees the ground truth, and the output is always binary: filled or
+empty, never "maybe".
 
-### About
+> **Project status: work in progress.** Implemented: schema extraction, role binding, presence gate,
+> prompt and policy registries, table CLI, LangGraph harness, and DeepEval metrics. Not implemented:
+> monitoring/drift dashboards, PII redaction, and shadow/canary automation; the checklist is in
+> [docs/PRODUCTION.md](docs/PRODUCTION.md).
+>
+> Dev baseline, seed 11 with `microsoft/microsoft-decision-1.1`: **122 / 124 fields right**,
+> 73 / 74 with a source, 49 / 50 without a source, 73 / 74 fill precision. The two remaining errors
+> are semantic ambiguity in the synthetic template; 100% is not promised. See
+> [docs/PRODUCTION.md](docs/PRODUCTION.md#why-100-is-not-a-natural-target).
 
-Maps the columns of a partner table onto the output fields of a target template and gives a converted table. The Decisions model (`microsoft/microsoft-decision-1.1` through OpenRouter) reads the kind of each output field from its description, scores which columns feed which field, and binds each named role of the description to one column (or none). Code builds the expression from those columns (copy, year, date difference, arithmetic, concat, reference-table lookup), and a field is filled only when its source is present: `p_present` reaches the fill score and `p_none` stays below the ceiling.
+## What you will see
 
-The input schema is extracted from the partner data itself (type, unit, samples, null rate, distinct count); a partner never has to supply one. All of that is deterministic and standard-library only. The same package ships an optional LangGraph agent with retries, a deterministic fallback, a repair loop, and human review.
+| Output | Shows |
+|---|---|
+| Converted file | One row per partner row; a field is filled or empty, with the expression that built it |
+| Decisions CSV | Per field: chosen columns, expression, `p_present`, `p_none`, filled, ground truth in the bench |
+| Audit JSONL | Per field: run id, model, policy, scores, method, columns, expression; no ground truth |
+| Calibration policy | Derived/copy floors, model version, calibration run, point estimate, 95% upper bound |
+| Graph review | Optional pause for fields close to the policy; `review="empty"` resolves to no in production |
 
-### Quickstart
+## Architecture
 
-```python
-from columnmap import Knowledge, Mapper, OpenRouterDecider, read_table
-
-rows = read_table("partner.xlsx")              # CSV/TSV always; XLSX with --extra excel
-knowledge = Knowledge.load("my_knowledge/")    # outputs.json + reference/*.csv + prompts.json
-decider = OpenRouterDecider(api_key, "microsoft/microsoft-decision-1.1", "https://openrouter.ai/api/alpha/decisions")
-mapping = Mapper(decider, knowledge).map(rows)
-header, converted = mapping.convert(rows)       # a field without a present source stays empty
+```mermaid
+flowchart LR
+    P["Partner table<br/>CSV, TSV, XLSX"] --> S["Extract schema<br/>type, unit, samples, nulls"]
+    S --> M["System One model<br/>typed questions"]
+    M --> B["Bind named roles<br/>one column each"]
+    B --> E["Code builds expression<br/>copy, year, date, arithmetic, concat, lookup"]
+    E --> V["Verify<br/>type, unit, sample rows, one-to-one"]
+    V --> F["Dataset policy<br/>p_present, p_none"]
+    F --> O["Converted file<br/>yes or no"]
+    F --> A["Audit:<br/>scores, method, expression"]
+    V -.-> G["Optional LangGraph<br/>retry, degrade, repair, review"]
 ```
 
-### Knowledge folder
+- **Core library (`src/column_mapping`)** owns the schema, prompt registry, role parser, expression
+  AST, pipeline, policy, and the table reader. The core uses the standard library only.
+- **Bench (`src/column_mapping/bench`)** owns the synthetic template, seeds, ground truth, report,
+  calibration, DeepEval, and the CLI.
+- **Harness (`src/column_mapping/harness`)** is the optional LangGraph agent around the same pipeline.
+  It needs the `graph` extra and is never imported by the core.
 
-One folder per dataset, committed with the code or registered in MLflow:
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Knowledge folder
+
+One dataset is one source-controlled folder:
 
 ```
 my_knowledge/
-  outputs.json          target template: name, type, description
-  reference/*.csv       code -> label tables for lookups
-  prompts.json          editable overrides of any prompt in the built-in book
-  policy.json           fill floors calibrated for this dataset and model
+  outputs.json       target template: name, type, description
+  reference/*.csv    code -> label tables for lookups
+  prompts.json       editable overrides of the built-in prompt book
+  policy.json        calibrated floors, model version, calibration facts
 ```
 
-`make data` writes a complete example to `data/knowledge/`, including the default prompt book. Copy that folder into your project before editing; `make data` regenerates the example.
+`make data` writes a complete example to `data/knowledge/`. Copy it into your project before editing;
+`make data` regenerates the example but keeps a calibrated `policy.json`.
 
-The prompt book is a registry, not an f-string. The folder wins, then the backend, then the built-in defaults:
+## Design choices
 
-```python
-from columnmap import MlflowRegistry, Mapper
+| Choice | Why |
+|---|---|
+| Read the description as named roles, bind each role in code | The model judges meaning; code owns the formula and units |
+| Gate on presence (`p_present`) and `p_none` | A joint set score alone forced fields that had no source |
+| One policy per dataset | A global threshold per batch drifts; a policy travels with the data and model |
+| Calibrate, do not hand-tune | `make calibrate` records the point estimate and the 95% upper bound |
+| Binary output | A field is yes or no; empty is a valid no, never an open question |
+| Prompt and policy registries | The folder, MLflow, and the built-in book are versioned; the folder wins |
+| Optional graph with retry/degrade/repair | Production reliability without making the core an agent |
+| Audit every decision | Scores, method, columns, expression, model, and policy are explainable |
 
-registry = MlflowRegistry(prefix="columnmap/", version="production")  # needs --extra registry
-mapper = Mapper(decider, knowledge, registry=registry)
+## Quick start
+
+Prerequisites: Python 3.12+ and `uv`.
+
+```bash
+git clone https://github.com/raihanpka/system-one-experiment
+cd system-one-experiment
+cp .env.example .env          # then put OPENROUTER_API_KEY in .env
+uv sync
+make check                    # format check, lint, tests; no model call
 ```
 
-MLflow uses immutable versions and aliases (`prompts:/columnmap/bind@production`); a numeric version loads `prompts:/columnmap/bind/7`.
+Map a partner table with your knowledge folder:
 
-### Threshold policy
-
-The floors are a policy, not a per-batch knob. Each dataset carries the policy it was calibrated
-for, so production never edits a global setting per file:
-
-```json
-{
-  "model": "microsoft/microsoft-decision-1.1",
-  "fill": {"derived": 0.75, "copy": 0.4, "none_ceiling": 0.5},
-  "calibration": {"seed": 11, "budget": 0.02, "false_fill_rate": 0.02, "upper_false_fill": 0.105}
-}
+```bash
+uv run column-mapping --table in.xlsx --knowledge my_knowledge/ --output converted.csv
+uv run column-mapping --table in.csv --schema --json
+uv run column-mapping --table in.csv --audit audit.jsonl --json
+uv run column-mapping --table in.csv --graph --review empty
 ```
+
+Calibrate the dataset policy from a labeled run (no model call):
 
 ```bash
 make calibrate RUN_DIR=results/<labeled run> BUDGET=0.02
-# or: uv run columnmap --calibrate results/<run> --knowledge my_knowledge/ --budget 0.02
 ```
 
-Calibration sweeps derived and copy floors, keeps the best field accuracy under the false-fill
-budget, and stays closest to the current policy when a whole plateau ties. It reports the point
-estimate and a Wilson 95% upper bound. On a small labeled set the point estimate can meet the budget
-while the upper bound cannot; that is the signal to collect more labels, not to lower the floor.
-
-`appsettings.json` is the fallback; `--fill-score`/`--copy-fill-score` override the policy for an
-experiment. The output is binary in every mode: a field is filled (yes) or empty (no). Human review
-is optional and only for collecting labels; `review="empty"` is the product mode.
-
-### Graph harness
-
-The optional agent needs the `graph` extra and adds no dependency to the core:
+Rebuild a report with other floors, no model:
 
 ```bash
-uv sync --extra graph
+uv run column-mapping --report-only --fill-score 0.8 --copy-fill-score 0.5
 ```
 
-```python
-from columnmap.harness import run_graph
+Settings: `appsettings.json` holds the model, default seed (3407), and split seeds;
+`knowledge/policy.json` holds the dataset floors; `appsettings.local.json` and
+`COLUMN_MAPPING__Section__Key` override. See [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
-run = run_graph(rows, decider, knowledge, thread_id="batch-1", review="empty")
-header, converted = run.header, run.converted   # always yes or no, never "maybe"
-if run.degraded:                                # the model failed after retries
-    print(run.errors)                           # only exact name matches were filled
+## Data
+
+The bench uses a synthetic insurance/finance template. Seeds generate different samples:
+`Dev` 11, `Holdout` 12/13, `Test` 21/22, and the default sample seed 3407. The model never sees the
+template rule, kind, or source id. Partner data is never committed; the example data is generated by
+`make data`.
+
+## Repository layout
+
+```
+src/column_mapping/        core library, bench, optional graph harness
+data/                      generated template, samples, knowledge folder
+results/                   run output; not committed
+docs/                      architecture, configuration, production, conventions
+tests/                     unit and bench tests; no network
 ```
 
-`review="empty"` is the product mode: a field close to the policy is a no (empty), with no pause.
-`review="accept"` makes it a yes. `review="ask"` (the library default) pauses on an `interrupt` so a
-human can choose; the CLI default is `empty`. The output is binary in every mode.
+## Documentation
 
-The graph retries transient failures with `RetryPolicy`, degrades to exact name matches when retries are exhausted, repairs a failed expression once with the next candidate, and pauses only when the review policy is `ask`. A checkpointer plus `thread_id` makes every pause resumable.
+| Document | About |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, flow, knowledge folder, graph harness |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Settings precedence, seeds, policy |
+| [docs/PRODUCTION.md](docs/PRODUCTION.md) | Readiness, calibration/recalibration, monitoring, rollback |
+| [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code and reporting rules |
 
----
+## Out of scope
 
-### Getting Started
+A hosted multi-tenant service, a web UI, per-row LLM calls, training or fine-tuning the model,
+agent actions that change partner data, and a 100% accuracy guarantee.
 
-```bash
-cp .env.example .env   # then put the OpenRouter key in .env
-make check             # format check, lint, and tests, no model call
-make help              # all commands
-```
+## Contributing and license
 
-Extras: `uv sync --extra graph` (LangGraph), `--extra excel` (XLSX input), `--extra registry` (MLflow prompts).
-
-Configuration has one job per file: `appsettings.json` holds the model endpoint, the default seed (3407), and the split seeds; `knowledge/policy.json` holds the calibrated floors for one dataset; `appsettings.local.json` holds personal overrides (gitignored); `COLUMNMAP__Section__Key` overrides all three. Precedence and examples: [docs/CONFIGURATION.md](./docs/CONFIGURATION.md). Every optional key is listed in `appsettings.json.examples`.
-
-### Map a partner table
-
-```bash
-uv run columnmap --table in.csv --knowledge my_knowledge/ --output converted.csv
-uv run columnmap --table in.csv --schema --json          # the schema we extracted, no model
-uv run columnmap --table in.csv --graph --review empty   # through the agent, fail closed
-make map TABLE=in.csv KNOWLEDGE=my_knowledge/ OUT=converted.csv
-make schema TABLE=in.csv
-```
-
-`--json` prints one machine-readable object (`rows`, `fields`, `filled`, `empty`, `degraded`, `errors`, `reviewed`). `--review ask` prompts per field; `accept` keeps the expression; `empty` leaves the field empty.
-
-### Running the bench
-
-```bash
-uv run columnmap                 # samples a, b, c, d
-uv run columnmap --samples ac    # only a and c
-uv run columnmap --split holdout # seeds 12 and 13, never tuned on
-uv run columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5   # rebuild the newest run, no model
-uv run columnmap --deepeval results/<run>          # DeepEval metrics, no model
-```
-
-Samples: `a` identical names, `b` synonyms, `c` unusual technical terms, `d` mixed styles with extra columns. Every run writes `results/<run>/report/summary.md` with each count as x / y against the ground truth, fill precision, and per sample the converted file, the decisions (including `p_present`/`p_none`), and the column scores.
-
-<div align="center">
-<sub>Copyright &copy; 2026 Raihan Putra Kirana. All rights reserved.</sub>
-</div>
+Read [AGENTS.md](AGENTS.md) before changing code or running the model. Report security issues
+privately to the repository owner. Copyright &copy; 2026 Raihan Putra Kirana. All rights reserved.
