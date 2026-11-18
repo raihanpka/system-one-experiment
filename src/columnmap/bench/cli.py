@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
@@ -28,6 +30,11 @@ EPILOG = """examples (run with: uv run columnmap ...):
   columnmap --report-only         rebuild the files and summary of the newest run, no model
   columnmap --report-only --fill-score 0.8 --copy-fill-score 0.5   same, with other scores a field needs to be filled
   columnmap --deepeval results/X  DeepEval metrics on a finished run, no model
+
+map a partner table (CSV, TSV, or XLSX):
+  columnmap --table in.csv --knowledge my_knowledge/ --output converted.csv
+  columnmap --table in.csv --schema --json        print the schema we extracted, no model
+  columnmap --table in.csv --graph --review empty  run through the LangGraph harness, fail closed
 """
 
 
@@ -40,7 +47,118 @@ def _fill(cfg, a) -> Fill:
     return Fill(
         a.fill_score if a.fill_score is not None else base.derived,
         a.copy_fill_score if a.copy_fill_score is not None else base.copy,
+        base.none_ceiling,
     )
+
+
+def _print_schema(schema, as_json: bool) -> None:
+    if as_json:
+        print(
+            json.dumps(
+                {
+                    "rows": schema.rows,
+                    "columns": [asdict(column) for column in schema.columns],
+                },
+                indent=2,
+            )
+        )
+        return
+    for column in schema.columns:
+        print(
+            f"{column.name}\t{column.type}\t{column.unit}"
+            f"\tnull={column.null_rate}\tdistinct={column.distinct}"
+            f"\t{', '.join(column.samples)}"
+        )
+
+
+# the graph pauses only for fields close to the fill policy; the CLI never guesses
+def _review_decision(run, mode: str) -> dict:
+    fields = run.result["__interrupt__"][0].value.get("fields", {})
+    if mode == "accept":
+        return {name: "accept" for name in fields}
+    if mode == "empty":
+        return {name: "empty" for name in fields}
+    decision = {}
+    for name, info in fields.items():
+        print(
+            f"{name}: {info.get('reason')} · {info.get('expression')} "
+            f"· p_present={info.get('p_present')} p_none={info.get('p_none')}"
+        )
+        answer = input(f"  keep {name}? [a]ccept/[e]mpty [e]: ").strip().lower()
+        decision[name] = "accept" if answer.startswith("a") else "empty"
+    return decision
+
+
+def _map_table(ap, a, cfg, decider_factory=None) -> int:
+    from ..knowledge import Knowledge
+    from ..mapper import Mapper
+    from ..schema import extract
+    from ..table import read_table
+    from .csvio import write_csv
+
+    rows = read_table(a.table)
+    schema = extract(rows)
+    if a.schema:
+        _print_schema(schema, a.json)
+        return 0
+    knowledge_dir = Path(a.knowledge)
+    if not knowledge_dir.exists():
+        ap.error(f"knowledge folder not found: {knowledge_dir}")
+    knowledge = Knowledge.load(knowledge_dir)
+    fill = _fill(cfg, a)
+    if decider_factory is None:
+        try:
+            opts = openrouter_settings(cfg)
+        except ValueError as error:
+            ap.error(str(error))
+        decider_factory = lambda: OpenRouterDecider(**opts)
+    reviewed, degraded, errors = {}, False, []
+    with decider_factory() as decider:
+        if a.graph:
+            try:
+                from ..harness import run_graph
+            except ImportError as error:
+                ap.error(str(error))
+            run = run_graph(
+                rows,
+                decider,
+                knowledge,
+                fill=fill,
+                thread_id=f"table:{Path(a.table).name}",
+            )
+            if run.paused:
+                reviewed = _review_decision(run, a.review)
+                run.resume(reviewed)
+            header, converted = run.header, run.converted
+            degraded, errors = run.degraded, run.errors
+        else:
+            mapping = Mapper(decider, knowledge).map(rows)
+            header, converted = mapping.convert(rows, fill)
+    out = Path(a.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    write_csv(out, header, converted)
+    filled = sum(
+        1 for i in range(len(header)) if any(row[i] is not None for row in converted)
+    )
+    summary = {
+        "table": str(a.table),
+        "knowledge": str(knowledge_dir),
+        "output": str(out),
+        "rows": len(rows),
+        "fields": len(header),
+        "filled": filled,
+        "empty": len(header) - filled,
+        "degraded": degraded,
+        "errors": errors,
+        "reviewed": reviewed,
+    }
+    if a.json:
+        print(json.dumps(summary, indent=2, default=str))
+    else:
+        print(f"{filled} / {len(header)} fields filled, {len(rows)} rows -> {out}")
+        if degraded:
+            print("degraded: " + "; ".join(errors))
+    return 0
 
 
 def main(argv=None, decider_factory=None) -> int:
@@ -104,7 +222,48 @@ def main(argv=None, decider_factory=None) -> int:
         "--out",
         help="use this run folder (continue it) instead of creating a new one named <samples>_<timestamp>",
     )
+    ap.add_argument(
+        "--table",
+        help="map a partner CSV/TSV/XLSX file instead of the synthetic samples",
+    )
+    ap.add_argument(
+        "--knowledge",
+        default=str(DATA / "knowledge"),
+        help="folder with outputs.json, reference/*.csv, and prompts.json (default data/knowledge)",
+    )
+    ap.add_argument(
+        "--output",
+        default="converted.csv",
+        help="where --table writes the converted CSV (default converted.csv)",
+    )
+    ap.add_argument(
+        "--graph",
+        action="store_true",
+        help="map --table through the LangGraph harness (needs the graph extra)",
+    )
+    ap.add_argument(
+        "--review",
+        choices=("ask", "accept", "empty"),
+        default="empty",
+        help="what to do with graph review fields (default empty, fail closed)",
+    )
+    ap.add_argument(
+        "--schema",
+        action="store_true",
+        help="print the extracted input schema and stop",
+    )
+    ap.add_argument(
+        "--json", action="store_true", help="print a machine-readable summary"
+    )
     a = ap.parse_args(argv)
+    if a.schema and not a.table:
+        ap.error("--schema needs --table")
+    if a.graph and not a.table:
+        ap.error("--graph needs --table")
+    if a.review != "empty" and not a.table:
+        ap.error("--review needs --table")
+    if a.table:
+        return _map_table(ap, a, cfg, decider_factory)
 
     if a.deepeval:
         from .deepeval import evaluate_run

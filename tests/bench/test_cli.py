@@ -138,6 +138,90 @@ def test_seed_option_builds_other_data_and_is_recorded(tmp_path):
     ).exists()  # data/ holds the baseline seed only
 
 
+def _table_case(tmp_path):
+    csv_path = tmp_path / "partner.csv"
+    csv_path.write_text(
+        "first,last,amount\nBudi,Halim,10\nSiti,Wijaya,20\n", encoding="utf-8"
+    )
+    from columnmap.knowledge import Knowledge, Output
+
+    knowledge = Knowledge(
+        (
+            Output("full_name", "string", "Full name, given name then family name"),
+            Output("amount", "number", "Transaction amount"),
+        ),
+        (),
+    )
+    knowledge_dir = tmp_path / "knowledge"
+    knowledge.save(knowledge_dir)
+    return csv_path, knowledge_dir
+
+
+def test_table_schema_is_extracted_without_a_model(tmp_path, capsys):
+    csv_path, _ = _table_case(tmp_path)
+    assert (
+        main(
+            ["--table", str(csv_path), "--schema", "--json"],
+            decider_factory=Forbidden,
+        )
+        == 0
+    )
+    data = json.loads(capsys.readouterr().out)
+    assert data["rows"] == 2
+    assert [c["name"] for c in data["columns"]] == ["first", "last", "amount"]
+    assert data["columns"][2]["unit"] == "amount"
+
+
+def test_table_mode_maps_with_the_knowledge_folder_and_writes_a_csv(tmp_path, capsys):
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    out = tmp_path / "converted.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["rows"] == 2 and summary["filled"] == 2
+    with out.open() as fh:
+        rows = list(csv.reader(fh))
+    assert rows[0] == ["full_name", "amount"] and len(rows) == 3
+
+
+def test_table_graph_mode_runs_the_harness_and_fails_closed(tmp_path, capsys):
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    out = tmp_path / "converted.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--graph",
+                "--review",
+                "empty",
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["degraded"] is False and out.exists()
+
+
 def test_splits_run_one_folder_per_seed_and_the_test_split_needs_final(tmp_path):
     main(
         ["--samples", "a", "--split", "holdout", *paths(tmp_path)],
