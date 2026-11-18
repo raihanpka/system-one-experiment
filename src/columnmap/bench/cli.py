@@ -92,7 +92,7 @@ def _review_decision(run, mode: str) -> dict:
 def _map_table(ap, a, cfg, decider_factory=None) -> int:
     from ..knowledge import Knowledge
     from ..mapper import Mapper
-    from ..schema import extract
+    from ..schema import Column, Schema, extract
     from ..table import read_header, read_table
     from .csvio import write_csv
 
@@ -100,33 +100,33 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
     if not rows:
         header = read_header(a.table)
         if a.schema:
-            data = {
-                "rows": 0,
-                "columns": [
-                    {
-                        "name": name,
-                        "type": "unknown",
-                        "unit": "unknown",
-                        "samples": [],
-                        "null_rate": 0.0,
-                        "distinct": 0,
-                    }
-                    for name in header
-                ],
-            }
-            print(json.dumps(data, indent=2) if a.json else "\n".join(header))
+            _print_schema(
+                Schema(
+                    tuple(
+                        Column(name, "unknown", "unknown", (), 0.0, 0)
+                        for name in header
+                    ),
+                    0,
+                ),
+                a.json,
+            )
             return 0
+        knowledge_dir = Path(a.knowledge)
+        if not knowledge_dir.exists():
+            ap.error(f"knowledge folder not found: {knowledge_dir}")
+        knowledge = Knowledge.load(knowledge_dir)
+        targets = [o.name for o in knowledge.outputs]
         out = Path(a.output)
         out.parent.mkdir(parents=True, exist_ok=True)
-        write_csv(out, header, [])
+        write_csv(out, targets, [])
         summary = {
             "table": str(a.table),
-            "knowledge": str(a.knowledge),
+            "knowledge": str(knowledge_dir),
             "output": str(out),
             "rows": 0,
-            "fields": len(header),
+            "fields": len(targets),
             "filled": 0,
-            "empty": len(header),
+            "empty": len(targets),
             "degraded": False,
             "errors": [],
             "reviewed": {},
@@ -134,7 +134,7 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
         print(
             json.dumps(summary, indent=2)
             if a.json
-            else f"0 rows, header written -> {out}"
+            else f"0 rows, {len(targets)} target fields written -> {out}"
         )
         return 0
     schema = extract(rows)
@@ -165,6 +165,7 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
                 knowledge,
                 fill=fill,
                 thread_id=f"table:{Path(a.table).name}",
+                review=a.review,
             )
             if run.paused:
                 reviewed = _review_decision(run, a.review)

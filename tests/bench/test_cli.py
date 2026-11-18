@@ -173,6 +173,7 @@ def test_table_schema_is_extracted_without_a_model(tmp_path, capsys):
 
 
 def test_a_header_only_table_keeps_the_header_and_writes_no_rows(tmp_path, capsys):
+    _, knowledge_dir = _table_case(tmp_path)
     path = tmp_path / "empty.csv"
     path.write_text("first,last,amount\n", encoding="utf-8")
     assert main(["--table", str(path), "--schema", "--json"]) == 0
@@ -183,15 +184,23 @@ def test_a_header_only_table_keeps_the_header_and_writes_no_rows(tmp_path, capsy
     out = tmp_path / "out.csv"
     assert (
         main(
-            ["--table", str(path), "--output", str(out), "--json"],
+            [
+                "--table",
+                str(path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--json",
+            ],
             decider_factory=Forbidden,
         )
         == 0
     )
     summary = json.loads(capsys.readouterr().out)
-    assert summary["rows"] == 0 and summary["fields"] == 3
+    assert summary["rows"] == 0 and summary["fields"] == 2 and summary["empty"] == 2
     with out.open() as fh:
-        assert next(csv.reader(fh)) == ["first", "last", "amount"]
+        assert next(csv.reader(fh)) == ["full_name", "amount"]
 
 
 def test_table_mode_maps_with_the_knowledge_folder_and_writes_a_csv(tmp_path, capsys):
