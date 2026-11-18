@@ -298,3 +298,18 @@ def test_a_rate_field_does_not_take_an_amount_column():
         Role("tax rate", "rate"), rows, {"fee_pct": "rate", "fee_amount": "amount"}
     )
     assert allowed == ["fee_pct"]
+
+
+def test_a_refusal_fails_closed_instead_of_crashing_a_stage():
+    class Refusal:
+        def decide(self, text, questions):
+            return Response(
+                "refusal",
+                [Answer("refusal", q.name, message="no answer") for q in questions],
+                {},
+            )
+
+    assert infer_kinds(Refusal(), KNOWLEDGE) == {f: "copy" for f in KINDS}
+    matrix, raw = score_columns(Refusal(), ROWS, KNOWLEDGE)
+    assert all(v == 0.0 for row in matrix.values() for v in row.values())
+    assert raw["born"]["error"] == "no answer"

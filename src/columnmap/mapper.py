@@ -79,7 +79,14 @@ def score_columns(
             "answers": [asdict(a) for a in res.answers],
             "usage": res.usage,
         }
-        matrix[name] = dict(res.answers[0].raw_scores)
+        answer = res.answers[0] if res.answers else None
+        if answer is None or answer.raw_scores is None:
+            raw[name]["error"] = (
+                "no answer"  # refusal or missing key: this column scores zero
+            )
+            matrix[name] = {o.name: 0.0 for o in knowledge.outputs}
+        else:
+            matrix[name] = dict(answer.raw_scores)
     return matrix, raw
 
 
@@ -118,11 +125,14 @@ def infer_kinds(
             asked = Question(
                 q.type, q.instructions, name=q.name, choices=tuple(choices)
             )
-            for k, p in (
-                decider.decide(kind_state(o), [asked]).answers[0].probabilities.items()
-            ):
+            res = decider.decide(kind_state(o), [asked])
+            answer = res.answers[0] if res.answers else None
+            probs = answer.probabilities if answer is not None else None
+            if not probs:
+                continue  # a refusal on one order does not decide the field
+            for k, p in probs.items():
                 total[k] = total.get(k, 0.0) + p / shuffles
-        out[o.name] = max(total, key=total.get)
+        out[o.name] = max(total, key=total.get) if total else "copy"
     return out
 
 
