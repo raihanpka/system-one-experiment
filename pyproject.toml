@@ -1,24 +1,37 @@
 [project]
-name = "columnmap"
+name = "column-mapping-system-one"
 version = "0.1.0"
+description = "Map partner columns onto a target template with a System One decision model."
+readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "numpy==2.5.3",
-    "seaborn>=0.13.2",
-    "tokenizers==0.23.2",
-]
+dependencies = []  # the library uses the standard library only
 
 [project.scripts]
-columnmap = "columnmap.main:main"
+column-mapping = "column_mapping.bench.cli:main"
+
+[project.optional-dependencies]
+graph = [
+    "langgraph>=1.0,<2",
+]
+excel = [
+    "openpyxl>=3.1",
+]
+registry = [
+    "mlflow>=3.4",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "column_mapping"
+
 [dependency-groups]
 dev = [
     "deepeval==4.3.1",
-    "linkml>=1.12.1",
+    "langgraph>=1.0,<2",
+    "openpyxl>=3.1",
     "pytest>=9.2.0",
 ]
 

@@ -1,43 +1,41 @@
-# columnmap
+# Column Mapping with System One Model
 
-Maps messy input columns to a fixed insurance/finance output template. A field is filled automatically only when calibrated confidence and precision justify it, otherwise it goes to human review. Generic working rules come from the dotagent, the facts below are this repo's.
+Maps messy input columns to a fixed insurance/finance output template. Each output field's description is read as named roles, each role is bound to one input column, and code builds the expression. A field is filled when its source is present (`p_present` reaches the fill score and `p_none` stays below the ceiling); otherwise it stays empty. The goal is a converted file equal to the expected file. Generic working rules come from the dotagent, the facts below are this repo's.
 
 ## Commands
 
 - Build: `uv build`
 - Run: `make run SAMPLES=a` (calls OpenRouter, run only when the user orders it)
+- Map a partner table: `make map TABLE=in.csv KNOWLEDGE=my_knowledge/ OUT=converted.csv`
+- Map through the graph: `make graph TABLE=in.csv REVIEW=empty` (needs `uv sync --extra graph`)
+- Extract the input schema: `make schema TABLE=in.csv`
+- Calibrate the dataset policy from a labeled run: `make calibrate RUN_DIR=results/<run> BUDGET=0.02`
 - Format: `uvx ruff@0.15.0 format src tests` (check only: `uvx ruff@0.15.0 format --check src tests`)
 - Lint: `make lint`
-- Test: `make test` (one file: `uv run pytest -q tests/core/test_selective.py`)
-- DeepEval check of a finished run, no model call: `uv run columnmap --deepeval results/<run folder>`
-- One module: not used, the repo is one package.
+- Test: `make test` (one file: `uv run pytest -q tests/test_mapper.py`)
+- Full gate: `make check` (format check, lint, test)
+- DeepEval check of a finished run, no model call: `uv run column-mapping --deepeval results/<run folder>`
+- Rebuild a report with other fill scores, no model call: `uv run column-mapping --report-only --fill-score 0.8 --copy-fill-score 0.5`
 
 ## Architecture
 
-- Style: layered pipeline in one Python package, because one command runs every stage. Structure: horizontal layers by stage.
-- Coupling: `core` and `decisions` import no stage. A stage imports `core`, `decisions`, and earlier stages only, in this order: `dataset`, `mapping`, `honest`, `convert`, `report`. Enforced by none yet, see `docs/DOTAGENT-SETUP.md`.
-
-## Modules
-
-- `src/columnmap/core/`: shared helpers (settings, paths, scoring, calibration, selective cutoff, validation, prompts, template). Import the module, there is no single public file.
-- `src/columnmap/decisions/`: decider interface and question and answer types. Imports nothing from the repo.
-- `src/columnmap/backends/`: OpenRouter adapter, the only backend. May depend on `core` and `decisions`.
-- `src/columnmap/dataset/`: writes the template and sample CSV files (`make data`).
-- `src/columnmap/mapping/`: scores each input column against each output field.
-- `src/columnmap/honest/`: the honest run, which picks the fields from the scores.
-- `src/columnmap/convert/`: fills the output file with the calibrated cutoff.
-- `src/columnmap/report/`: builds files, figures, and tables from all stages.
-- `src/columnmap/evaluate/`: DeepEval metrics on a finished run against the ground truth. Top-level, may use `calibrate` and `core`. DeepEval is imported only there.
-- `src/columnmap/main.py`, `calibrate.py`, `experiment.py`: entry points, may use any stage.
+- Style: one small package whose core has no third-party dependency. Core files at `src/column_mapping/`: `knowledge.py`, `policy.py`, `decider.py`, `prompts.py`, `registry.py`, `registry_mlflow.py`, `schema.py`, `table.py`, `expressions.py`, `roles.py`, `pipeline.py`, `mapper.py`, `config.py`. Evaluation only in `src/column_mapping/bench/` (synthetic data, ground truth, report, cases, calibration, DeepEval, CLI). The optional graph harness in `src/column_mapping/harness/` needs the `graph` extra (`uv sync --extra graph`).
+- Optional extras: `graph` (LangGraph harness), `excel` (openpyxl input), `registry` (MLflow Prompt Registry). The core never imports them.
+- Coupling: core files never import `bench` or `harness`; both import the core. Details in `docs/ARCHITECTURE.md`.
+- Production: `docs/PRODUCTION.md` (what is ready, calibration/recalibration triggers, monitoring, shadow/canary, rollback).
 
 ## Rules
 
-- Branch from `main`. One task is one branch and one PR.
-- Commits are one line, `type(scope): summary`, no trailer. Scopes: calibration, convert, core, dataset, decisions, honest, mapping, report, settings, ontology, results, gitignore, deps, docs, test, format, cli, evaluate.
+- Branch from `refactor/modular-mapping` (the integration base; `main` is far behind). One task is one branch and one PR.
+- Commits are one line, `type(scope): summary`, no trailer. Scopes: mapper, knowledge, policy, decider, prompts, registry, schema, table, expressions, roles, pipeline, config, bench, calibrate, cli, deps, docs, test, results, gitignore, format.
 - Names say what changed. Never a plan label such as `milestone-1`, `task-2`, `slice 3`, or "finishing task", and never `(#N)`, in a commit message, PR title, or branch.
 - Never edit protected paths: `.env`, `appsettings.local.json`, `data/real/`. A hook refuses it.
-- Never edit generated files: `data/` (regenerate with `make data`), `results/` (run output), `calibration.json` (refit with `uv run columnmap --fit-calibration <run folders>`).
-- Never call the model (`make run`, `make sample`, `make full`, `make pairs`) without the user's explicit order.
-- Seeds: 11 for dev tuning only; 12 and 13 for calibration; 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
+- Never edit generated files: `data/` (regenerate with `make data`) and `results/` (run output). `data/knowledge/` is a generated example; copy it into the project to edit prompts for a real dataset.
+- One dataset is one knowledge folder: `outputs.json`, `reference/*.csv`, `prompts.json`, `policy.json`. Commit it with the code; MLflow Prompt Registry is the versioned alternative.
+- The policy is calibrated, not hand-tuned: `make calibrate RUN_DIR=... BUDGET=0.02` writes `policy.json` and records the point estimate and the 95% upper bound. Do not change floors per batch or per file. `appsettings.json` is the fallback when a dataset has no policy.
+- Never call the model (`make run`, `make sample`, `make full`) without the user's explicit order.
+- Seeds: `Run:Seed` 3407 is the default sample seed for `make run`/`make data`; the split lists are separate. 11 for dev tuning. 12 and 13 (holdout) were used to choose the double-claim rule and the copy fill score, so they are no longer clean. 14 and 15 checked the frozen pipeline once. A new claim needs a seed nobody has looked at. 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
+- Report every mapping result as `x / y` (fields right out of the fields counted), per sample and context, and say which seed.
+- The model gets no ground truth: no rule, kind, or source id of the synthetic template. Reference tables and field descriptions are task input.
 - The API key goes in `.env` as `OPENROUTER_API_KEY` only. Never print it, log it, or commit it.
 - A PR stays reviewable in one sitting, a few hundred changed lines is typical.

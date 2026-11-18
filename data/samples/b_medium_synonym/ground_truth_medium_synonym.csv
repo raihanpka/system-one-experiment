@@ -1,34 +1,33 @@
 output,kind,available,input_columns,expression
 policy_number,pass,True,contractRef,contractRef
-insured_full_name,concat,False,,
-insured_birth_date,pass,True,bornOn,bornOn
-insured_birth_year,format,True,bornOn,year(bornOn)
-insured_gender,pass,True,sex,sex
-insured_city,pass,False,,
-insured_province,pass,True,stateRegion,stateRegion
-postal_code,pass,True,zip,zip
+insured_full_name,concat,True,givenName|surname,"concat(givenName, "" "", surname)"
+insured_birth_date,pass,False,,
+insured_birth_year,format,False,,
+insured_gender,pass,False,,
+insured_city,pass,True,town,town
+insured_province,pass,False,,
+postal_code,pass,False,,
 insured_address,concat,False,,
-coverage_start_date,pass,False,,
-coverage_end_date,pass,True,expiryDate,expiryDate
+coverage_start_date,pass,True,effectiveDate,effectiveDate
+coverage_end_date,pass,False,,
 coverage_days,arith,False,,
 sum_insured_amount,pass,True,coverLimit,coverLimit
 currency_code,pass,True,moneyUnit,moneyUnit
-gross_premium,arith,False,,
+gross_premium,arith,True,baseCharge|levyRate,baseCharge * (1 + levyRate)
 net_premium_after_discount,arith,False,,
-claim_number,pass,True,caseRef,caseRef
-claim_incident_date,pass,True,lossDate,lossDate
+claim_number,pass,False,,
+claim_incident_date,pass,False,,
 claim_age_days,arith,False,,
 claimed_amount,pass,True,requestedPayout,requestedPayout
 deductible_amount,pass,True,excess,excess
 net_claim_payable,arith,True,requestedPayout|excess,requestedPayout - excess
 claim_paid_amount,pass,True,settledSum,settledSum
-claim_paid_ratio,arith,False,,
+claim_paid_ratio,arith,True,settledSum|baseCharge,settledSum / baseCharge
 claim_status,lookup,True,caseState,"lookup(caseState, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
-agent_id,pass,True,brokerId,brokerId
+agent_id,pass,False,,
 account_number,pass,True,ledgerRef,ledgerRef
 transaction_date,pass,True,postingDate,postingDate
-transaction_amount,pass,False,,
-transaction_fee_amount,pass,True,serviceCharge,serviceCharge
+transaction_amount,pass,True,movementValue,movementValue
+transaction_fee_amount,pass,False,,
 total_charge,arith,False,,
-,anomaly,False,moneyUnit@row13,na: 'N/A'
-,anomaly,False,lossDate@row11,sentinel: '1900-01-01'
+,anomaly,False,moneyUnit@row13,empty: ''

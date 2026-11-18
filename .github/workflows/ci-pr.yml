@@ -5,8 +5,10 @@ name: Pull Request Python Gate
 
 on:
   pull_request:
-    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,11 +25,9 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
-      - name: Format
-        run: uvx ruff@0.15.0 format --check src tests
-      - name: Lint
-        run: make lint
+      - name: Sync
+        run: uv sync --frozen --extra graph --extra excel
+      - name: Check
+        run: make check
       - name: Build
         run: uv build
-      - name: Test
-        run: make test

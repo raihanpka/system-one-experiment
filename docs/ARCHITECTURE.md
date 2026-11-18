@@ -2,45 +2,132 @@
 
 ## Style
 
-- System: layered pipeline inside one Python package, because one command runs every stage and the stages share one set of helpers.
-- Structure: horizontal layers by pipeline stage. Shared packages `core` and `decisions` sit below the stages.
-- Coupling rule: `core` and `decisions` import no stage. A stage imports `core`, `decisions`, and earlier stages only, in the order `dataset`, `mapping`, `honest`, `convert`, `report`.
+- One small Python package, `column_mapping`, that other projects import. The core has no third-party dependency (standard library only).
+- Four parts: the core library (schema, prompts, mapping), `column_mapping.bench` (synthetic data, ground truth, reports, DeepEval), the optional `column_mapping.harness` (a LangGraph agent around the same mapping), and the optional input/prompt backends (`excel`, `registry`).
+- Optional extras: `uv sync --extra graph` (LangGraph), `--extra excel` (openpyxl), `--extra registry` (MLflow Prompt Registry).
+- Coupling rule: the core files never import `bench` or `harness`. `bench` and `harness` import the core.
 
-## Shape
+## Library
 
-One package, `src/columnmap`. `main.py`, `calibrate.py`, and `experiment.py` are entry points that run the stages in order. Backends (`backends/`) sit behind the interface in `decisions/`, so the stages never import a model.
+| File | Owns |
+|---|---|
+| `knowledge.py` | `Knowledge`: the output fields, reference tables, prompt overrides, and policy, loaded from one source-controlled folder. `registry(base)` layers the folder over the chosen prompt backend. |
+| `policy.py` | `Policy`: the derived/copy/none ceilings, the model they were calibrated for, and the calibration facts. `knowledge/policy.json` is the source; `appsettings.json` is the fallback. |
+| `decider.py` | The Decisions interface: `Question`, `Answer`, `Response`, the `Decider` protocol, and `OpenRouterDecider`. |
+| `prompts.py` | The built-in prompt book (`DEFAULT_TEMPLATES`) and the question builders. Every text is a `{{variable}}` template; a knowledge folder or MLflow can override any name. |
+| `registry.py` | `Prompt`, `FileRegistry`, `ChainRegistry`: the source-controlled prompt book with double-brace variables. |
+| `registry_mlflow.py` | `MlflowRegistry`: loads `prompts:/<prefix><name>/<version>` or `@alias` through `mlflow.genai.load_prompt`. MLflow is imported only when this backend is used. |
+| `schema.py` | Extracts the input schema ourselves: type, unit, samples, null rate, and distinct count per column. Partners never supply a schema. |
+| `table.py` | `read_table`: CSV/TSV with the standard library, XLSX through the `excel` extra. |
+| `expressions.py` | The expression AST, the candidate catalog, and the deterministic unit inference (`amount`, `rate`, `count`, `date`, `text`, `id`). |
+| `roles.py` | Reads a field description as a shape: the operator and its named operands, with the unit each expects. It never reads the rule, the kind, or a source id. |
+| `pipeline.py` | The explicit stage machine: `kinds -> score -> decide`. `Mapper`, the bench, and the graph all use it; there is no hidden state beyond the kind cache. |
+| `mapper.py` | The stages themselves, `convert`, `is_filled`, and `Mapper`, a thin wrapper around `Pipeline`. |
+| `config.py` | Paths and the `appsettings.json` / `.env` settings used by the CLI. The library itself takes plain arguments. |
 
-## Modules
+```python
+from column_mapping import Knowledge, Mapper, OpenRouterDecider, read_table
 
-Each module owns one thing. Import the module, there is no single public file.
+rows = read_table("partner.xlsx")                  # CSV/TSV always; XLSX with --extra excel
+knowledge = Knowledge.load("my_knowledge/")        # outputs, reference, prompts, policy
+mapping = Mapper(OpenRouterDecider(key, model, url), knowledge).map(rows)
+header, converted = mapping.convert(rows)          # uses the dataset policy; empty when not present
+```
 
-| Module | Owns | May depend on | Public interface |
-|---|---|---|---|
-| `core/` | settings, paths, scoring, calibration, selective cutoff, validation, prompts, template | none of the stages | the module itself |
-| `decisions/` | decider interface and question and answer types | none | `base.py`, `types.py` |
-| `backends/` | OpenRouter adapter, the only backend | `core`, `decisions` | `openrouter.py` |
-| `dataset/` | template and sample CSV files (`make data`) | `core` | `export.py`, `samples.py` |
-| `mapping/` | score of each input column for each output field | `core`, `decisions`, `dataset` | `run.py`, `metrics.py` |
-| `honest/` | the honest run that picks fields from the scores | `core`, `decisions` | `run.py` |
-| `convert/` | fills the output file with the calibrated cutoff | `core`, `decisions`, `mapping`, `honest` | `auto.py`, `metrics.py` |
-| `report/` | files, figures, and tables from all stages | every stage above it | `build.py` |
+## Knowledge folder
+
+One folder per dataset, committed next to the code (or registered in MLflow):
+
+```
+my_knowledge/
+  outputs.json          the target template: name, type, description (task input)
+  reference/*.csv       code -> label tables for lookups (task input)
+  prompts.json          editable overrides of any prompt in the built-in book
+  policy.json           fill floors calibrated for this dataset and model
+```
+
+- `outputs.json` and `reference/` describe the target. They may be complex (`x + y`, a date
+  difference, a code lookup); the role parser reads the description, never the rule.
+- `prompts.json` lets the user change the wording per dataset without touching Python. A full
+  default book is written by `make data` into `data/knowledge/prompts.json` as a starting point.
+- MLflow is the versioned alternative: `MlflowRegistry(prefix="column_mapping/", version="production")`.
+  The folder overrides win, then the MLflow registry, then the built-in book.
+- `policy.json` is chosen by `column-mapping --calibrate <labeled run> --budget 0.02`, not by hand. The
+  command sweeps derived and copy floors, maximizes field accuracy under the false-fill budget, and
+  records the point estimate plus a Wilson 95% upper bound. If the upper bound is above the budget,
+  the label set is too small to certify it; collect more fields. `appsettings.json` is the fallback
+  when a dataset has no policy.
+
+```python
+from column_mapping import MlflowRegistry, Mapper
+
+registry = MlflowRegistry(prefix="column_mapping/", version="production")
+mapper = Mapper(decider, knowledge, registry=registry)   # folder overrides -> MLflow -> built-in
+```
+
+## Bench (evaluation only)
+
+`bench/` holds the synthetic template and generator (`template.py`, `generate.py`, `samples.py`), the CSV export (`export.py`, which also writes `data/knowledge/`), the resumable run store (`store.py`, `run.py`, `runs.py`, `usage.py`), grading against the ground truth (`metrics.py`), the report (`summary.py`, `report.py`), the run reader shared by evaluation and calibration (`cases.py`), threshold calibration (`calibrate.py`), DeepEval (`deepeval.py`), and the CLI (`cli.py`).
+
+## Harness (optional)
+
+`harness/` turns the same pipeline into a LangGraph agent with durable state, bounded retries, a
+deterministic fallback, and human review. It needs the graph extra; the core never imports it.
+
+```python
+from column_mapping.harness import run_graph
+
+run = run_graph(rows, decider, knowledge, thread_id="batch-1")
+header, converted = run.header, run.converted
+if run.paused:                                  # a field was close to the fill policy
+    run.resume({"total_charge": "accept"})      # or "empty"
+if run.degraded:                                # the model failed after retries
+    print(run.errors)                           # only exact name matches were filled
+```
+
+Reliability layers, in the order they act:
+
+1. **Retry.** `RetryPolicy` on `kinds`, `score`, and `decide`: transient `RuntimeError`/`OSError`
+   retry with backoff; programming errors do not.
+2. **Refusal retry.** `Retrying` re-asks a batch that returns a refusal once; a refusal after that
+   fails closed and leaves the field empty.
+3. **Degrade.** A LangGraph `error_handler` runs after retries are exhausted. It routes to
+   `degrade`, which only fills a copied field that has an exact column-name match; everything else
+   stays empty, and the run records the error.
+4. **Repair.** `verify` detects an expression that fails on the sample rows. `repair` tries the next
+   candidate expression, at most once, then re-verifies. No alternative means the field stays empty.
+5. **Review.** A field within 0.15 of the fill floor, or with `p_none` close to the ceiling, is the
+   only ambiguous band. `review="empty"` resolves it to no (empty), `review="accept"` to yes, both
+   without a pause; `review="ask"` pauses on `interrupt()` and resumes with a dict of field to
+   `accept` or `empty`. The product output is binary in every mode; the score and the method stay in
+   the decisions CSV for audit.
+
+The graph is `kinds -> score -> decide -> verify`, then `repair` (loop back to `verify`), `review`
+(an `interrupt` only when `review="ask"`), `degrade`, or `commit`. A checkpointer plus `thread_id`
+makes every pause resumable; nodes are idempotent and side effects happen only in `commit`.
 
 ## Current violations
 
-None. Checked with:
-
-```
-grep -rnE "from \.\.?(dataset|mapping|honest|convert|report)" src/columnmap/core src/columnmap/decisions src/columnmap/backends
-grep -rnE "from \.\.(honest|convert|report)" src/columnmap/mapping src/columnmap/honest src/columnmap/dataset
-grep -rnE "from \.\.report" src/columnmap/convert
-```
-
-All three print nothing.
-
-## Boundary check
-
-None yet. The rule holds today by grep, not by a tool. See `docs/DOTAGENT-SETUP.md`, open items.
+None in the core. Check: `grep -rn "bench\|harness" src/column_mapping/*.py` prints only comments and the CLI import of `bench.cli`. The harness imports LangGraph by design; MLflow and openpyxl are imported lazily by their backends.
 
 ## Flow
 
-The dataset stage writes the template and the sample inputs. The mapping stage asks the decider to score each input column against each output field and keeps the raw scores. The honest stage picks the fields from those scores. The convert stage fills the output file: a field is filled automatically only when its score passes the calibrated cutoff and its values pass the template type, otherwise it goes to review. The report stage writes the files, figures, and tables from all of these.
+1. **Schema (per file).** `extract(rows)` derives type, unit, samples, null rate, and distinct count
+   for every input column. The model sees these facts instead of raw rows.
+2. **Kind (once per knowledge).** The model reads each output field's description and says what kind
+   of value it is: copy, join, arithmetic, date difference, year, or lookup. The question is asked
+   with the options in three shuffled orders and the answers are averaged.
+3. **Stage 1 (per file).** One question per input column: which output fields does it provide data
+   for. The raw scores rank the columns for each field.
+4. **Stage 2 (per field).** A readable description becomes a shape with named roles: `total_charge`
+   is "transaction amount plus fee", `coverage_days` is "days between coverage start and coverage
+   end". Each role is one choice over the compatible input columns plus an explicit `none`; the
+   questions for a group of fields share one request. Code builds the expression from the chosen
+   columns, so the model never picks a formula. A rate column is not offered for an amount role, and
+   a plain code is not offered for a date role. A description the parser cannot read falls back to
+   the column-set question plus a separate presence question.
+5. **Fill.** The dataset `policy.json` (or the `appsettings.json` fallback) sets the floors. A field
+   is filled when its source is present: `p_present` (the weakest role, or the presence answer in
+   the fallback) reaches the copy or derived floor, and `p_none` stays at or below the ceiling. A
+   column claimed by two copied fields stays with the higher score; the other gets score 0 and
+   presence 0. Converting is deterministic.

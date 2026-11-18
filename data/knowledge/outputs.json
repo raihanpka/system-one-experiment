@@ -1,0 +1,157 @@
+[
+  {
+    "name": "policy_number",
+    "type": "string",
+    "description": "Official policy identifier"
+  },
+  {
+    "name": "insured_full_name",
+    "type": "string",
+    "description": "Full name of the insured, given name then family name"
+  },
+  {
+    "name": "insured_birth_date",
+    "type": "date",
+    "description": "Date of birth of the insured"
+  },
+  {
+    "name": "insured_birth_year",
+    "type": "number",
+    "description": "Year of birth of the insured"
+  },
+  {
+    "name": "insured_gender",
+    "type": "string",
+    "description": "Gender of the insured"
+  },
+  {
+    "name": "insured_city",
+    "type": "string",
+    "description": "City of the insured address"
+  },
+  {
+    "name": "insured_province",
+    "type": "string",
+    "description": "Province of the insured address"
+  },
+  {
+    "name": "postal_code",
+    "type": "string",
+    "description": "Postal code of the insured address"
+  },
+  {
+    "name": "insured_address",
+    "type": "string",
+    "description": "Single-line address: city, province postal code"
+  },
+  {
+    "name": "coverage_start_date",
+    "type": "date",
+    "description": "Date coverage begins"
+  },
+  {
+    "name": "coverage_end_date",
+    "type": "date",
+    "description": "Date coverage ends"
+  },
+  {
+    "name": "coverage_days",
+    "type": "number",
+    "description": "Number of days between coverage start and coverage end"
+  },
+  {
+    "name": "sum_insured_amount",
+    "type": "number",
+    "description": "Maximum payout under the policy"
+  },
+  {
+    "name": "currency_code",
+    "type": "string",
+    "description": "Currency of all amounts"
+  },
+  {
+    "name": "gross_premium",
+    "type": "number",
+    "description": "Base premium plus tax: base premium times (1 + tax rate)"
+  },
+  {
+    "name": "net_premium_after_discount",
+    "type": "number",
+    "description": "Base premium after discount: base premium times (1 - discount rate)"
+  },
+  {
+    "name": "claim_number",
+    "type": "string",
+    "description": "Official claim identifier"
+  },
+  {
+    "name": "claim_incident_date",
+    "type": "date",
+    "description": "Date of the insured event"
+  },
+  {
+    "name": "claim_age_days",
+    "type": "number",
+    "description": "Days from coverage start to the incident"
+  },
+  {
+    "name": "claimed_amount",
+    "type": "number",
+    "description": "Amount requested in the claim"
+  },
+  {
+    "name": "deductible_amount",
+    "type": "number",
+    "description": "Deductible borne by the insured"
+  },
+  {
+    "name": "net_claim_payable",
+    "type": "number",
+    "description": "Claimed amount minus deductible"
+  },
+  {
+    "name": "claim_paid_amount",
+    "type": "number",
+    "description": "Amount already paid on the claim"
+  },
+  {
+    "name": "claim_paid_ratio",
+    "type": "number",
+    "description": "Paid amount divided by base premium"
+  },
+  {
+    "name": "claim_status",
+    "type": "string",
+    "description": "Claim status in words (Approved, Rejected, Pending)"
+  },
+  {
+    "name": "agent_id",
+    "type": "string",
+    "description": "Selling agent identifier"
+  },
+  {
+    "name": "account_number",
+    "type": "string",
+    "description": "Customer account number"
+  },
+  {
+    "name": "transaction_date",
+    "type": "date",
+    "description": "Booking date of the transaction"
+  },
+  {
+    "name": "transaction_amount",
+    "type": "number",
+    "description": "Transaction amount"
+  },
+  {
+    "name": "transaction_fee_amount",
+    "type": "number",
+    "description": "Fee charged on the transaction"
+  },
+  {
+    "name": "total_charge",
+    "type": "number",
+    "description": "Transaction amount plus fee"
+  }
+]

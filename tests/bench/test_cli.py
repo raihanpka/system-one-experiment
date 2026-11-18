@@ -1,0 +1,333 @@
+import csv
+import json
+import re
+
+import pytest
+
+from column_mapping.bench.cli import main
+from tests.bench.fakes import Approves, Generic
+
+
+class Counting(Generic):
+    calls = 0
+
+    def decide(self, text, questions):
+        type(self).calls += 1
+        return super().decide(text, questions)
+
+
+class Forbidden(Generic):
+    def decide(self, text, questions):
+        raise AssertionError("the model must not be called")
+
+
+def paths(tmp_path):
+    return ["--root", str(tmp_path / "results"), "--data", str(tmp_path / "data")]
+
+
+def runs(tmp_path):
+    return sorted(p for p in (tmp_path / "results").iterdir() if p.is_dir())
+
+
+def test_run_folder_layout_files_and_summary(tmp_path):
+    assert main(["--samples", "abcd", *paths(tmp_path)], decider_factory=Generic) == 0
+    (run,) = runs(tmp_path)
+    assert re.fullmatch(r"all_\d{8}-\d{6}", run.name)  # <samples>_<timestamp>
+    for f in (
+        "input_technical_terms.csv",
+        "expected_technical_terms.csv",
+        "ground_truth_technical_terms.csv",
+    ):
+        assert (tmp_path / "data" / "samples" / "c_technical_terms" / f).exists(), f
+    assert (
+        tmp_path / "data" / "knowledge" / "outputs.json"
+    ).exists()  # the format another project fills in
+    raw = json.loads((run / "result.json").read_text())
+    assert set(raw) == {"meta", "mapping", "honest"}
+    assert [r["case_id"] for r in raw["mapping"]][0] == "easy_identical-000"
+    for letter, word in (
+        ("a", "easy_identical"),
+        ("b", "medium_synonym"),
+        ("c", "technical_terms"),
+        ("d", "hardest_noisy"),
+    ):
+        for f in (
+            f"converted_{word}.csv",
+            f"decisions_{word}.csv",
+            f"scores_{word}.csv",
+        ):
+            assert (run / f"{letter}_{word}" / f).exists(), f
+    with (run / "c_technical_terms" / "decisions_technical_terms.csv").open() as fh:
+        rows = list(csv.reader(fh))
+        assert len(rows) == 32  # header + 31 fields
+        assert {"p_present", "p_none", "roles"} <= set(rows[0])
+    md = (run / "report" / "summary.md").read_text()
+    assert (
+        re.search(r"\| a \| \d+ / \d+ \| \d+ / \d+ \|", md)
+        and "**total**" in md
+        and "Fields still wrong" in md
+        and "filled right (of filled)" in md
+        and "Model calls:" in md
+    )
+
+
+def test_a_finished_run_resumes_without_calling_the_model_again(tmp_path):
+    main(
+        ["--samples", "ac", *paths(tmp_path)],
+        decider_factory=Counting,
+    )
+    (run,) = runs(tmp_path)
+    Counting.calls = 0
+    main(
+        ["--samples", "ac", "--out", str(run), *paths(tmp_path)],
+        decider_factory=Counting,
+    )
+    assert Counting.calls == 0
+
+
+def test_report_only_rebuilds_the_newest_run_with_another_fill_score_and_no_model_call(
+    tmp_path,
+):
+    main(
+        ["--samples", "a", *paths(tmp_path)],
+        decider_factory=Approves,
+    )
+    (run,) = runs(tmp_path)
+    dec = run / "a_easy_identical" / "decisions_easy_identical.csv"
+
+    def filled():
+        with dec.open() as fh:
+            return sum(r["filled"] == "True" for r in csv.DictReader(fh))
+
+    assert (
+        filled() > 0
+    )  # the first column set of every field gets 0.95, above the default fill score
+    main(
+        [
+            "--report-only",
+            "--fill-score",
+            "0.99",
+            "--copy-fill-score",
+            "0.99",
+            *paths(tmp_path),
+        ],
+        decider_factory=Forbidden,
+    )
+    assert filled() == 0
+
+
+def test_each_run_gets_its_own_folder(tmp_path):
+    import time
+
+    main(["--samples", "a", *paths(tmp_path)], decider_factory=Generic)
+    time.sleep(1.1)
+    main(["--samples", "a", *paths(tmp_path)], decider_factory=Generic)
+    assert len(runs(tmp_path)) == 2
+
+
+def test_seed_option_builds_other_data_and_is_recorded(tmp_path):
+    main(
+        ["--samples", "a", "--seed", "5", *paths(tmp_path)],
+        decider_factory=Generic,
+    )
+    (run,) = runs(tmp_path)
+    assert run.name.startswith("easy_identical-seed5_")
+    assert json.loads((run / "result.json").read_text())["meta"]["seed"] == 5
+    assert not (
+        tmp_path / "data" / "samples"
+    ).exists()  # data/ holds the baseline seed only
+
+
+def _table_case(tmp_path):
+    csv_path = tmp_path / "partner.csv"
+    csv_path.write_text(
+        "first,last,amount\nBudi,Halim,10\nSiti,Wijaya,20\n", encoding="utf-8"
+    )
+    from column_mapping.knowledge import Knowledge, Output
+
+    knowledge = Knowledge(
+        (
+            Output("full_name", "string", "Full name, given name then family name"),
+            Output("amount", "number", "Transaction amount"),
+        ),
+        (),
+    )
+    knowledge_dir = tmp_path / "knowledge"
+    knowledge.save(knowledge_dir)
+    return csv_path, knowledge_dir
+
+
+def test_table_schema_is_extracted_without_a_model(tmp_path, capsys):
+    csv_path, _ = _table_case(tmp_path)
+    assert (
+        main(
+            ["--table", str(csv_path), "--schema", "--json"],
+            decider_factory=Forbidden,
+        )
+        == 0
+    )
+    data = json.loads(capsys.readouterr().out)
+    assert data["rows"] == 2
+    assert [c["name"] for c in data["columns"]] == ["first", "last", "amount"]
+    assert data["columns"][2]["unit"] == "amount"
+
+
+def test_a_header_only_table_keeps_the_header_and_writes_no_rows(tmp_path, capsys):
+    _, knowledge_dir = _table_case(tmp_path)
+    path = tmp_path / "empty.csv"
+    path.write_text("first,last,amount\n", encoding="utf-8")
+    assert main(["--table", str(path), "--schema", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["rows"] == 0
+    assert [c["name"] for c in data["columns"]] == ["first", "last", "amount"]
+
+    out = tmp_path / "out.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--json",
+            ],
+            decider_factory=Forbidden,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["rows"] == 0 and summary["fields"] == 2 and summary["empty"] == 2
+    with out.open() as fh:
+        assert next(csv.reader(fh)) == ["full_name", "amount"]
+
+
+def test_table_mode_maps_with_the_knowledge_folder_and_writes_a_csv(tmp_path, capsys):
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    out = tmp_path / "converted.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["rows"] == 2 and summary["filled"] == 2
+    with out.open() as fh:
+        rows = list(csv.reader(fh))
+    assert rows[0] == ["full_name", "amount"] and len(rows) == 3
+
+
+def test_table_mode_uses_the_dataset_policy_before_appsettings(tmp_path, capsys):
+    from column_mapping.policy import Policy
+
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    Policy(derived=0.99, copy=0.99).save(knowledge_dir)
+    out = tmp_path / "converted.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert (
+        summary["filled"] == 0
+    )  # the dataset policy overrides the appsettings fallback
+
+
+def test_table_mode_writes_a_decision_audit_trail(tmp_path, capsys):
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    out, audit = tmp_path / "converted.csv", tmp_path / "audit.jsonl"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--audit",
+                str(audit),
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    lines = [json.loads(line) for line in audit.read_text().splitlines()]
+    assert len(lines) == 2
+    assert {
+        "run_id",
+        "model",
+        "field",
+        "filled",
+        "p_present",
+        "p_none",
+        "method",
+        "policy",
+    } <= set(lines[0])
+    assert "truth" not in lines[0]
+    assert summary["run_id"] and summary["audit"] == str(audit)
+
+
+def test_table_graph_mode_runs_the_harness_and_fails_closed(tmp_path, capsys):
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    out = tmp_path / "converted.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--graph",
+                "--review",
+                "empty",
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["degraded"] is False and out.exists()
+
+
+def test_splits_run_one_folder_per_seed_and_the_test_split_needs_final(tmp_path):
+    main(
+        ["--samples", "a", "--split", "holdout", *paths(tmp_path)],
+        decider_factory=Generic,
+    )
+    assert sorted(r.name.rsplit("_", 1)[0] for r in runs(tmp_path)) == [
+        "easy_identical-seed12",
+        "easy_identical-seed13",
+    ]
+    with pytest.raises(SystemExit):
+        main(
+            ["--samples", "a", "--split", "test", *paths(tmp_path)],
+            decider_factory=Generic,
+        )

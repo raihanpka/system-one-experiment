@@ -1,30 +1,26 @@
 {
   "OpenRouter": {
-    "Model": "~liquid/d1-ultra-latest",
-    "Model_Options": ["~liquid/d1-ultra-latest (follows the newest version)", "liquid/d1-ultra-20261015 (pinned, reproducible)"],
+    "Model": "microsoft/microsoft-decision-1.1",
+    "Model_Options": ["microsoft/microsoft-decision-1.1", "~liquid/d1-ultra-latest (the earlier baseline)"],
     "BaseUrl": "https://openrouter.ai/api/alpha/decisions",
     "ApiKeyEnv": "OPENROUTER_API_KEY",
     "ApiKeyEnv_Note": "name of the env var that holds the key (set it in .env). The key itself never goes in this file."
   },
   "Run": {
-    "KeepD": 0.0,
-    "KeepD_Note": "score a column needs to be chosen for a field; 0.0 = probability 0.5",
-    "TargetPrecision": 0.9,
-    "TargetPrecision_Note": "precision a field must reach to be filled automatically, in (0, 1]; 0.9 = 90 percent, checked on the 95 percent lower bound",
-    "PromptVersion": "v1",
-    "PromptVersion_Note": "part of the calibration key; change it when the prompt changes",
-    "Mode": "options",
-    "Mode_Options": ["options (one question per input column, fast)", "pairs (one yes/no per column and field, slow, calibrated)", "both"],
-    "Seed": 1234,
-    "Seed_Note": "seed used when neither --seed nor --split is given",
-    "Conds": ["name", "samples"],
-    "Conds_Options": ["name", "samples"]
+    "FillScore": 0.75,
+    "CopyFillScore": 0.4,
+    "NoneCeiling": 0.5,
+    "FillScore_Note": "default p_present floor for a derived field. A dataset's knowledge/policy.json overrides it; --fill-score overrides both for an experiment.",
+    "CopyFillScore_Note": "default floor for a field copied from one column. A dataset policy overrides it.",
+    "NoneCeiling_Note": "default p_none ceiling. A dataset policy overrides it; 0.5 means a coin flip never fills a file with a guess.",
+    "Seed": 3407,
+    "Seed_Note": "seed used when neither --seed nor --split is given"
   },
   "Splits": {
     "Dev": [11],
-    "Dev_Note": "tuning: prompts, contexts, cutoffs. Can be looked at many times.",
-    "Calibration": [12, 13],
-    "Calibration_Note": "fit calibration on one seed, check it on the other.",
+    "Dev_Note": "tuning: prompts, expressions, the fill score. Can be looked at many times.",
+    "Holdout": [12, 13],
+    "Holdout_Note": "never tuned on; checks that a dev result holds on other data.",
     "Test": [21, 22],
     "Test_Note": "final evaluation, looked at once, needs --final. Already used; do not reuse."
   }
