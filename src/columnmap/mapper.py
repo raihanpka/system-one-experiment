@@ -454,7 +454,7 @@ def drop_double_claims(fields: dict) -> dict:
 # flip between a column and none never fills a file with a guess.
 @dataclass(frozen=True)
 class Fill:
-    derived: float = 0.7
+    derived: float = 0.75
     copy: float = 0.4
     none_ceiling: float = 0.5
 
