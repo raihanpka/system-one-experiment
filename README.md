@@ -109,7 +109,9 @@ make check             # format check, lint, and tests, no model call
 make help              # all commands
 ```
 
-Extras: `uv sync --extra graph` (LangGraph), `--extra excel` (XLSX input), `--extra registry` (MLflow prompts). Settings live in `appsettings.json` (every option is listed in `appsettings.json.examples`) and `appsettings.local.json` (gitignored). Environment variables `COLUMNMAP__Section__Key` override both.
+Extras: `uv sync --extra graph` (LangGraph), `--extra excel` (XLSX input), `--extra registry` (MLflow prompts).
+
+Configuration has one job per file: `appsettings.json` holds the model endpoint, the default seed (3407), and the split seeds; `knowledge/policy.json` holds the calibrated floors for one dataset; `appsettings.local.json` holds personal overrides (gitignored); `COLUMNMAP__Section__Key` overrides all three. Precedence and examples: [docs/CONFIGURATION.md](./docs/CONFIGURATION.md). Every optional key is listed in `appsettings.json.examples`.
 
 ### Map a partner table
 

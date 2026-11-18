@@ -33,7 +33,7 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 - One dataset is one knowledge folder: `outputs.json`, `reference/*.csv`, `prompts.json`, `policy.json`. Commit it with the code; MLflow Prompt Registry is the versioned alternative.
 - The policy is calibrated, not hand-tuned: `make calibrate RUN_DIR=... BUDGET=0.02` writes `policy.json` and records the point estimate and the 95% upper bound. Do not change floors per batch or per file. `appsettings.json` is the fallback when a dataset has no policy.
 - Never call the model (`make run`, `make sample`, `make full`) without the user's explicit order.
-- Seeds: 11 for dev tuning. 12 and 13 (holdout) were used to choose the double-claim rule and the copy fill score, so they are no longer clean. 14 and 15 checked the frozen pipeline once. A new claim needs a seed nobody has looked at. 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
+- Seeds: `Run:Seed` 3407 is the default sample seed for `make run`/`make data`; the split lists are separate. 11 for dev tuning. 12 and 13 (holdout) were used to choose the double-claim rule and the copy fill score, so they are no longer clean. 14 and 15 checked the frozen pipeline once. A new claim needs a seed nobody has looked at. 21 and 22 were already used for the one test run; 31 and 32 only with the user's permission.
 - Report every mapping result as `x / y` (fields right out of the fields counted), per sample and context, and say which seed.
 - The model gets no ground truth: no rule, kind, or source id of the synthetic template. Reference tables and field descriptions are task input.
 - The API key goes in `.env` as `OPENROUTER_API_KEY` only. Never print it, log it, or commit it.
