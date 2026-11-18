@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from datetime import date
 from itertools import permutations
@@ -22,14 +23,18 @@ def _num(x):
     if isinstance(x, bool):
         raise TypeError(f"not a number: {x!r}")
     if isinstance(x, (int, float)):
-        return x
-    if isinstance(x, str):
+        value = x
+    elif isinstance(x, str):
         text = x.strip()
         try:
-            return int(text) if re.fullmatch(r"[+-]?\d+", text) else float(text)
+            value = int(text) if re.fullmatch(r"[+-]?\d+", text) else float(text)
         except ValueError:
             raise TypeError(f"not a number: {x!r}") from None
-    raise TypeError(f"not a number: {x!r}")
+    else:
+        raise TypeError(f"not a number: {x!r}")
+    if not math.isfinite(value):
+        raise TypeError(f"not a finite number: {x!r}")
+    return value
 
 
 def evaluate(node: dict, row: dict):

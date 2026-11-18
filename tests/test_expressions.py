@@ -108,6 +108,10 @@ def test_numeric_csv_cells_are_coerced_not_rejected():
         safe_evaluate({"op": "div", "args": [{"src": "total"}, {"src": "amount"}]}, row)
         == 1.25
     )
+    add = {"op": "add", "args": [{"src": "a"}, {"src": "b"}]}
+    assert safe_evaluate(add, {"a": "nan", "b": "1"}) is None
+    assert safe_evaluate(add, {"a": "inf", "b": "1"}) is None
+    assert safe_evaluate(add, {"a": "1e400", "b": "1"}) is None
 
 
 def test_column_unit_reads_the_name_before_the_values_and_keeps_codes_out_of_math():
