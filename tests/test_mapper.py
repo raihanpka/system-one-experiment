@@ -46,6 +46,12 @@ SETS = {
     "full_name": "first & last",
     "gender": "sex",
 }  # tax_id has no source
+BIND = {
+    "birth_year": ["born"],
+    "status": ["code"],
+    "full_name": ["first", "last"],
+    "gender": ["sex"],
+}  # tax_id has no role that a column can fill
 SCORES = {c: {f: -3.0 for f in KINDS} for c in ROWS[0]}
 for f, s in SETS.items():
     for c in s.split(" & "):
@@ -55,9 +61,11 @@ for f, s in SETS.items():
 class Scripted:
     def __init__(self):
         self.questions = []
+        self.calls = []
 
     def decide(self, text, questions):
         self.questions += questions
+        self.calls.append([q.name for q in questions])
         out = []
         for q in questions:
             names = [c.value for c in q.choices]
@@ -65,11 +73,32 @@ class Scripted:
                 (
                     f
                     for f in KINDS
-                    if f"'{f}'" in q.instructions or f"field: {f}" in text
+                    if f"Output field: {f}" in q.instructions
+                    or f"'{f}'" in q.instructions
+                    or f"field: {f}" in text
                 ),
                 None,
             )
-            if q.name == "field":
+            if q.type == "predicate":
+                p = 0.9 if field in SETS or field in BIND else 0.05
+                out.append(
+                    Answer(
+                        "predicate",
+                        q.name,
+                        probability=p,
+                        raw_scores={"false": 0.0, "true": 0.0},
+                    )
+                )
+            elif q.name.startswith("bind:"):
+                _, f, i = q.name.split(":")
+                i = int(i)
+                target = BIND.get(f, [])
+                if i < len(target) and target[i] in names:
+                    p = {n: (0.9 if n == target[i] else 0.01) for n in names}
+                else:
+                    p = {n: (0.9 if n.startswith("none") else 0.01) for n in names}
+                out.append(Answer("choice", q.name, probabilities=p))
+            elif q.name == "field":
                 col = text.split("\n")[0].removeprefix("Input column: ")
                 out.append(
                     Answer(
@@ -154,7 +183,7 @@ def test_a_kind_without_candidates_falls_back_to_a_plain_copy():
 def test_a_field_whose_columns_are_not_there_says_none_and_stays_empty():
     mapping = Mapper(Scripted(), KNOWLEDGE).map(ROWS)
     rec = mapping.fields["tax_id"]
-    assert rec["p_none"] == 0.8 and rec["score"] < 0.1
+    assert rec["p_none"] >= 0.8 and rec["score"] < 0.1
     assert mapping.convert(ROWS)[1][0][4] is None  # below the fill score
 
 
@@ -221,3 +250,51 @@ def test_a_copied_field_needs_a_lower_score_than_a_derived_field_to_be_filled():
     derived = {"kind": "join", "best": {"src": "x"}, "score": 0.5}
     assert is_filled(copy, Fill(0.7, 0.4)) and not is_filled(derived, Fill(0.7, 0.4))
     assert not is_filled({**copy, "best": None}, Fill(0.1, 0.1))
+
+
+def test_presence_and_none_decide_the_fill_not_the_joint_set_score():
+    from columnmap.mapper import Fill, is_filled
+
+    rec = {
+        "kind": "copy",
+        "best": {"src": "x"},
+        "score": 0.95,
+        "p_present": 0.3,
+        "p_none": 0.1,
+    }
+    assert not is_filled(rec, Fill(0.7, 0.4))  # the source is not there
+    assert not is_filled({**rec, "p_present": 0.9, "p_none": 0.8}, Fill(0.7, 0.4))
+    assert is_filled({**rec, "p_present": 0.9, "p_none": 0.2}, Fill(0.7, 0.4))
+
+
+def test_role_questions_for_a_group_of_fields_share_one_request():
+    d = Scripted()
+    Mapper(d, KNOWLEDGE).map(ROWS)
+    bind_calls = [c for c in d.calls if any(n.startswith("bind:") for n in c)]
+    assert len(bind_calls) == 1  # the five shaped fields fit in one batch
+    assert sum(n.startswith("bind:") for c in bind_calls for n in c) == 6
+
+
+def test_an_amount_role_is_not_offered_a_rate_column():
+    from columnmap.mapper import _columns_for
+    from columnmap.roles import Role
+
+    rows = [{"fee_pct": "0.05", "fee_amount": "10", "other": "x"}]
+    allowed = _columns_for(
+        Role("fee", "amount"),
+        rows,
+        {"fee_pct": "rate", "fee_amount": "amount", "other": "text"},
+    )
+    assert "fee_amount" in allowed and "fee_pct" not in allowed
+    assert "other" not in allowed
+
+
+def test_a_rate_field_does_not_take_an_amount_column():
+    from columnmap.mapper import _columns_for
+    from columnmap.roles import Role
+
+    rows = [{"fee_pct": "0.05", "fee_amount": "10"}]
+    allowed = _columns_for(
+        Role("tax rate", "rate"), rows, {"fee_pct": "rate", "fee_amount": "amount"}
+    )
+    assert allowed == ["fee_pct"]

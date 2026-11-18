@@ -34,6 +34,8 @@ class Question:
     name: str | None = None
     choices: tuple[Choice, ...] = ()
     levels: tuple[Level, ...] = ()
+    true: str | None = None  # predicate: what counts as yes
+    false: str | None = None  # predicate: what counts as no
 
     def __post_init__(self):
         if self.type not in TYPES:
@@ -44,6 +46,8 @@ class Question:
             raise ValueError("choices only allowed on choice questions")
         if self.type != "score" and self.levels:
             raise ValueError("levels only allowed on score questions")
+        if self.type != "predicate" and (self.true or self.false):
+            raise ValueError("true/false criteria only allowed on predicate questions")
         if self.type == "choice":
             vals = [c.value for c in self.choices]
             if len(vals) < 2 or len(set(vals)) != len(vals):
@@ -91,7 +95,7 @@ def _to_api(q: Question, name: str) -> dict:
         return {
             "type": "noul",
             "instructions": q.instructions,
-            "criteria": {"true": "Yes", "false": "No"},
+            "criteria": {"true": q.true or "Yes", "false": q.false or "No"},
         }
     if q.type == "choice":
         return {

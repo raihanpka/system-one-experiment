@@ -45,6 +45,11 @@ def pool_state(names: list[str], rows: list[dict]) -> str:
     )
 
 
+# every input column once, so one request can answer questions about every output field
+def file_state(rows: list[dict]) -> str:
+    return pool_state(list(rows[0]), rows)
+
+
 def _fmt(v) -> str:
     if v is None:
         return "error"
@@ -122,4 +127,32 @@ def expression_question(out: Output, options: list[str]) -> Question:
         f"Which expression gives the value of the output field '{out.name}' ({out.description})?",
         name="expr",
         choices=tuple(Choice(o) for o in options),
+    )
+
+
+# one role of a field, bound to exactly one input column (or none). The state is the whole file, so
+# every field can ask its roles in the same request.
+def bind_question(out: Output, role, columns: list[str], name: str) -> Question:
+    return Question(
+        "choice",
+        f"Output field: {out.name} ({out.description}). "
+        f"Which input column holds the {role.phrase}? "
+        f"Choose none if no input column holds it, even when a similar column exists.",
+        name=name,
+        choices=tuple(Choice(c) for c in columns) + (Choice(NONE),),
+    )
+
+
+# the fallback for a description the role parser cannot read: ask whether the source exists at all,
+# separately from which columns build it. A similar column does not count.
+def presence_question(out: Output, name: str = "presence") -> Question:
+    return Question(
+        "predicate",
+        f"Does the input contain every component that the output field '{out.name}' is built from? "
+        f"Field description: {out.description}. "
+        "Answer yes only if each component named or implied by the description is present as an "
+        "input column. A merely similar column does not replace a missing one.",
+        name=name,
+        true="Every component the field is defined from is present in the input.",
+        false="At least one component is missing; a similar column does not count.",
     )
