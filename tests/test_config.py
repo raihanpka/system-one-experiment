@@ -27,7 +27,7 @@ def with_(**sections):
 def test_committed_defaults_load_with_the_hosted_model_and_the_splits():
     cfg = load_settings(env={})
     assert cfg["open_router"]["api_key_env"] == "OPENROUTER_API_KEY"
-    assert cfg["open_router"]["model"] == "~liquid/d1-ultra-latest"
+    assert cfg["open_router"]["model"] == "microsoft/microsoft-decision-1.1"
     assert cfg["splits"]["dev"] == [11] and "backend" not in cfg and "local" not in cfg
 
 
