@@ -1,6 +1,6 @@
 # columnmap
 
-Maps messy input columns to a fixed insurance/finance output template. Each output field is filled with the best expression over the input columns when its score reaches the fill score; otherwise it stays empty. The goal is a converted file equal to the expected file. Generic working rules come from the dotagent, the facts below are this repo's.
+Maps messy input columns to a fixed insurance/finance output template. Each output field's description is read as named roles, each role is bound to one input column, and code builds the expression. A field is filled when its source is present (`p_present` reaches the fill score and `p_none` stays below the ceiling); otherwise it stays empty. The goal is a converted file equal to the expected file. Generic working rules come from the dotagent, the facts below are this repo's.
 
 ## Commands
 
@@ -14,8 +14,8 @@ Maps messy input columns to a fixed insurance/finance output template. Each outp
 
 ## Architecture
 
-- Style: one small package, no third-party dependency. Library files at `src/columnmap/`: `knowledge.py`, `decider.py`, `prompts.py`, `expressions.py`, `mapper.py`, `config.py`. Evaluation only in `src/columnmap/bench/` (synthetic data, ground truth, report, DeepEval, CLI).
-- Coupling: library files never import `bench`. Details in `docs/ARCHITECTURE.md`.
+- Style: one small package whose core has no third-party dependency. Core files at `src/columnmap/`: `knowledge.py`, `decider.py`, `prompts.py`, `expressions.py`, `roles.py`, `mapper.py`, `config.py`. Evaluation only in `src/columnmap/bench/` (synthetic data, ground truth, report, DeepEval, CLI). The optional graph harness in `src/columnmap/harness/` needs the `graph` extra (`uv sync --extra graph`).
+- Coupling: core files never import `bench` or `harness`; both import the core. Details in `docs/ARCHITECTURE.md`.
 
 ## Rules
 

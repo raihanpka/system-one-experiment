@@ -2,26 +2,41 @@
 
 # Column Mapper
 
-[Architecture](./docs/ARCHITECTURE.md) &nbsp;&middot;&nbsp; [Model](https://openrouter.ai/liquid/d1-ultra) &nbsp;&middot;&nbsp; [OpenRouter](https://openrouter.ai)
+[Architecture](./docs/ARCHITECTURE.md) &nbsp;&middot;&nbsp; [Model](https://openrouter.ai/microsoft/microsoft-decision-1.1) &nbsp;&middot;&nbsp; [OpenRouter](https://openrouter.ai)
 
 </div>
 
 ### About
 
-Maps the columns of an input table onto the output fields of a target and gives a converted table. The Decisions model (`~liquid/d1-ultra-latest` through OpenRouter) reads the kind of each output field from its description, scores which columns feed which field, chooses the set of columns a field needs (or none), and chooses the expression (copy, year, date difference, arithmetic, concat, reference-table lookup). Everything else is deterministic. A field is filled when the probability of its column set reaches the fill score.
+Maps the columns of an input table onto the output fields of a target and gives a converted table. The Decisions model (`microsoft/microsoft-decision-1.1` through OpenRouter) reads the kind of each output field from its description, scores which columns feed which field, and binds each named role of the description to one column (or none). Code builds the expression from those columns (copy, year, date difference, arithmetic, concat, reference-table lookup), and a field is filled only when its source is present: `p_present` reaches the fill score and `p_none` stays below the ceiling. Everything else is deterministic.
 
-The library is one small package with no third-party dependency. To use it in another project, give it your own knowledge folder (output fields and reference tables):
+The core library is one small package with no third-party dependency. To use it in another project, give it your own knowledge folder (output fields and reference tables):
 
 ```python
 from columnmap import Knowledge, Mapper, OpenRouterDecider
 
 knowledge = Knowledge.load("my_knowledge/")   # outputs.json + reference/*.csv, see data/knowledge/ for the format
-decider = OpenRouterDecider(api_key, "~liquid/d1-ultra-latest", "https://openrouter.ai/api/alpha/decisions")
+decider = OpenRouterDecider(api_key, "microsoft/microsoft-decision-1.1", "https://openrouter.ai/api/alpha/decisions")
 mapping = Mapper(decider, knowledge).map(rows)        # rows: list of dicts
-header, converted = mapping.convert(rows)             # fields below the fill score stay empty
+header, converted = mapping.convert(rows)             # a field without a present source stays empty
 ```
 
 `columnmap.bench` evaluates the mapper on synthetic samples with a ground truth; a project that only maps tables never imports it.
+
+The optional graph harness needs the `graph` extra and adds no dependency to the core:
+
+```bash
+uv sync --extra graph
+```
+
+```python
+from columnmap.harness import run_graph
+
+run = run_graph(rows, decider, knowledge, thread_id="batch-1")
+header, converted = run.header, run.converted
+if run.paused:                                  # a field was close to the fill policy
+    run.resume({"total_charge": "accept"})      # or "empty"
+```
 
 ---
 

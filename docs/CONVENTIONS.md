@@ -5,7 +5,7 @@ Only rules that differ from the language defaults or that the code cannot tell y
 ## Code
 
 - Format with `ruff format` pinned to 0.15.0 (`uvx ruff@0.15.0 format`). Lint is `pyflakes` through `make lint`, no other linter.
-- The library has no third-party dependency. DeepEval is a dev dependency and is imported only by `bench/deepeval.py`.
+- The core library has no third-party dependency. DeepEval is a dev dependency and is imported only by `bench/deepeval.py`; LangGraph is the optional `graph` extra and is imported only by `harness/`.
 - The ground truth never reaches the model or the expression catalog. The model sees column names and values, field names, types and descriptions, and reference tables. Never a rule, a kind, or a source id.
 - Report every result as `x / y` with the denominator named. Tune only on the dev split.
 - The API key is read from the environment only (`OPENROUTER_API_KEY`, loaded from `.env`). Never in a tracked file.
