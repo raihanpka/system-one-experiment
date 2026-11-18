@@ -319,6 +319,24 @@ def test_a_presence_refusal_fails_closed_in_the_fallback():
     assert rec["p_present"] == 0.0 and not is_filled(rec, Fill(0.5, 0.5))
 
 
+def test_choice_labels_are_safe_and_map_back_to_the_raw_column():
+    from columnmap.mapper import _safe_labels
+
+    labels = _safe_labels(["a\nb", "a  b", ""])
+    assert all("\n" not in label for label in labels)
+    assert set(labels.values()) == {"a\nb", "a  b", ""}
+    assert len(labels) == 3
+
+
+def test_a_numeric_id_is_not_offered_for_arithmetic():
+    rows = [{"policy_number": "8532422441", "claim_number": "1234567890"}]
+    out = Output("mystery", "number", "Something computed elsewhere")
+    assert (
+        set_candidates(("policy_number", "claim_number"), rows, out, "arithmetic", ())
+        == []
+    )
+
+
 def test_an_amount_role_is_not_offered_a_rate_column():
     from columnmap.mapper import _columns_for
     from columnmap.roles import Role

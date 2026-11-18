@@ -21,6 +21,10 @@ def _safe(value, limit: int = 200) -> str:
     return text[:limit] + ("…" if len(text) > limit else "")
 
 
+def safe_label(value, limit: int = 120) -> str:
+    return _safe(value, limit)
+
+
 KIND_KEYS = ("copy", "join", "arithmetic", "date_difference", "year", "lookup")
 
 DEFAULT_TEMPLATES = {
@@ -148,7 +152,8 @@ def expression_text(ast: dict) -> str:
 
 
 def option_text(ast: dict, rows: list[dict]) -> str:
-    return f"{expression_text(ast)} => " + "; ".join(examples(ast, rows))
+    text = render(ast, lambda s: safe_label(s))
+    return f"{text} => " + "; ".join(examples(ast, rows))
 
 
 def kind_question(registry=DEFAULT) -> Question:

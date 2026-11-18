@@ -41,6 +41,7 @@ from .prompts import (
     option_text,
     pool_state,
     presence_question,
+    safe_label,
     set_label,
     set_question,
 )
@@ -188,15 +189,11 @@ def _columns_for(role, source, units: dict) -> list[str]:
 
 
 # a code column is easier to bind when the model can see the code table it will be translated with
-def _lookup_hint(kind: str, labels: list[str], rows: list[dict], tables) -> str | None:
+def _lookup_hint(kind: str, columns: list[str], rows: list[dict], tables) -> str | None:
     if kind != "lookup" or not tables:
         return None
     for table in tables:
-        if any(
-            covering([r[column] for r in rows], [table])
-            for column in labels
-            if column != NONE
-        ):
+        if any(covering([r[column] for r in rows], [table]) for column in columns):
             items = list(table.items())[:50]
             return "; ".join(f"{k} -> {v}" for k, v in items)
     return None
@@ -209,6 +206,8 @@ def set_candidates(chosen, rows, out: Output, kind: str, tables) -> list[dict]:
     out_unit = output_unit(out)
 
     def unit_ok(c: dict) -> bool:
+        if out.type == "number" and any(units[n] == "id" for n in src_names(c)):
+            return False  # a policy number is not an amount, even when it is all digits
         got = result_unit(c, units)
         if out_unit == "amount":
             return got == "amount" or (got == "number" and "src" in c)
@@ -231,6 +230,22 @@ def set_candidates(chosen, rows, out: Output, kind: str, tables) -> list[dict]:
     return sorted(own, key=lambda c: (size(c), expression_text(c)))[:MAX_CANDIDATES]
 
 
+# choice labels are prompt text too: keep the raw column for the mapping, show a collapsed label
+def _safe_labels(names: list[str]) -> dict[str, str]:
+    out = {}
+    for i, name in enumerate(names):
+        label = safe_label(name) or f"column_{i + 1}"
+        if label == NONE:
+            label = f"column: {label}"
+        if label in out and out[label] != name:
+            suffix = 2
+            while f"{label}#{suffix}" in out:
+                suffix += 1
+            label = f"{label}#{suffix}"
+        out[label] = name
+    return out
+
+
 # one request for a group of fields: every role question runs against the whole file in parallel
 def _bind_chunk(
     decider: Decider,
@@ -247,12 +262,12 @@ def _bind_chunk(
     for out, shp in chunk:
         for i, role in enumerate(shp.roles):
             name = f"bind:{out.name}:{i}"
-            labels = _columns_for(role, schema, units) + [NONE]
-            meta[name] = labels
-            columns = labels[:-1]
+            raw = _columns_for(role, schema, units)
+            meta[name] = _safe_labels(raw)
+            columns = list(meta[name])
             if not columns:
                 continue  # no compatible column: the role is absent, no one-choice question
-            hint = _lookup_hint(kinds[out.name], labels, rows, tables)
+            hint = _lookup_hint(kinds[out.name], raw, rows, tables)
             questions.append(bind_question(out, role, columns, name, registry, hint))
     answers = {
         a.name: a
@@ -270,12 +285,19 @@ def _bind_chunk(
         for i, role in enumerate(shp.roles):
             a = answers.get(f"bind:{out.name}:{i}")
             probs = a.probabilities if a is not None else None
-            label, p, pn = _pick(probs, meta[f"bind:{out.name}:{i}"])
+            labels = list(meta[f"bind:{out.name}:{i}"]) + [NONE]
+            label, p, pn = _pick(probs, labels)
+            raw = meta[f"bind:{out.name}:{i}"].get(label)
             p_none = max(p_none, pn)
             role_p.append(p)
-            if not probs or label == NONE or not compatible(role.unit, units[label]):
+            if (
+                not probs
+                or label == NONE
+                or raw is None
+                or not compatible(role.unit, units[raw])
+            ):
                 failed = True
-            picked.append(label if label != NONE else None)
+            picked.append(raw)
         p_present = 0.0 if failed else min(role_p, default=0.0)
         rec.update(
             {
@@ -318,13 +340,17 @@ def _field(
 ) -> dict:
     names = top_columns(matrix, out.name)
     sets = [s for n in SIZES[kind] for s in combinations(names, n)]
-    labels = [set_label(s) for s in sets]
+    raw_labels = [set_label(s) for s in sets]
+    raw_to_set = dict(zip(raw_labels, sets))
+    label_to_set = {
+        label: raw_to_set[raw] for label, raw in _safe_labels(raw_labels).items()
+    }
     state = field_state(out, all_columns, names, rows, registry)
     res = decider.decide(
         state,
         [
             presence_question(out, registry=registry),
-            set_question(out, labels, registry),
+            set_question(out, list(label_to_set), registry),
         ],
     )
     answers = {a.name: a for a in res.answers}
@@ -344,13 +370,13 @@ def _field(
     if not probs:
         rec["method"] = "none"
         return rec
-    best_i = max(range(len(sets)), key=lambda i: probs.get(labels[i], 0.0))
-    chosen = sets[best_i]
+    best_label = max(label_to_set, key=lambda label: probs.get(label, 0.0))
+    chosen = label_to_set[best_label]
     rec.update(
         {
             "cols": list(chosen),
-            "set_scores": {x: probs[x] for x in labels if x in probs},
-            "score": probs.get(labels[best_i]),
+            "set_scores": {x: probs[x] for x in label_to_set if x in probs},
+            "score": probs.get(best_label),
         }
     )
     cands = set_candidates(chosen, rows, out, kind, tables)

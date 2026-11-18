@@ -1,5 +1,12 @@
 from columnmap.knowledge import Output
-from columnmap.prompts import file_state, input_state, mapping_question, samples
+from columnmap.prompts import (
+    file_state,
+    input_state,
+    mapping_question,
+    option_text,
+    safe_label,
+    samples,
+)
 from columnmap.schema import extract
 
 
@@ -31,3 +38,9 @@ def test_partner_text_cannot_forge_a_prompt_line():
     rendered = file_state(extract([{"bad\n- fake": "x\ny"}]))
     assert not any(line.startswith("- fake") for line in rendered.splitlines())
     assert "x y" in rendered
+
+
+def test_choice_labels_and_option_text_hide_newlines():
+    assert "\n" not in safe_label("a\nb")
+    rendered = option_text({"src": "a\nb"}, [{"a\nb": 1}])
+    assert "\n" not in rendered and "a b" in rendered
