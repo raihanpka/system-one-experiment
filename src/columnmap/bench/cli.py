@@ -93,10 +93,50 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
     from ..knowledge import Knowledge
     from ..mapper import Mapper
     from ..schema import extract
-    from ..table import read_table
+    from ..table import read_header, read_table
     from .csvio import write_csv
 
     rows = read_table(a.table)
+    if not rows:
+        header = read_header(a.table)
+        if a.schema:
+            data = {
+                "rows": 0,
+                "columns": [
+                    {
+                        "name": name,
+                        "type": "unknown",
+                        "unit": "unknown",
+                        "samples": [],
+                        "null_rate": 0.0,
+                        "distinct": 0,
+                    }
+                    for name in header
+                ],
+            }
+            print(json.dumps(data, indent=2) if a.json else "\n".join(header))
+            return 0
+        out = Path(a.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        write_csv(out, header, [])
+        summary = {
+            "table": str(a.table),
+            "knowledge": str(a.knowledge),
+            "output": str(out),
+            "rows": 0,
+            "fields": len(header),
+            "filled": 0,
+            "empty": len(header),
+            "degraded": False,
+            "errors": [],
+            "reviewed": {},
+        }
+        print(
+            json.dumps(summary, indent=2)
+            if a.json
+            else f"0 rows, header written -> {out}"
+        )
+        return 0
     schema = extract(rows)
     if a.schema:
         _print_schema(schema, a.json)

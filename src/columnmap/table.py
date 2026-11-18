@@ -10,6 +10,28 @@ from pathlib import Path
 EXCEL = (".xlsx", ".xlsm")
 
 
+def _names(header) -> list[str]:
+    return [
+        str(v) if v is not None and str(v).strip() else f"column_{i}"
+        for i, v in enumerate(header)
+    ]
+
+
+# the header survives even when the table has no data rows
+def read_header(path) -> list[str]:
+    path = Path(path)
+    suffix = path.suffix.lower()
+    if suffix in (".csv", ".tsv"):
+        with path.open(encoding="utf-8-sig", newline="") as fh:
+            return next(csv.reader(fh, delimiter="\t" if suffix == ".tsv" else ","), [])
+    if suffix in EXCEL:
+        from openpyxl import load_workbook
+
+        sheet = load_workbook(path, read_only=True, data_only=True).active
+        return _names(next(sheet.iter_rows(values_only=True), ()))
+    raise ValueError(f"unsupported table format {suffix!r}; use .csv, .tsv, or .xlsx")
+
+
 def read_table(path) -> list[dict]:
     path = Path(path)
     suffix = path.suffix.lower()
@@ -30,8 +52,6 @@ def read_table(path) -> list[dict]:
         header = next(rows, None)
         if header is None:
             return []
-        names = [
-            str(v) if v is not None else f"column_{i}" for i, v in enumerate(header)
-        ]
+        names = _names(header)
         return [dict(zip(names, row)) for row in rows]
     raise ValueError(f"unsupported table format {suffix!r}; use .csv, .tsv, or .xlsx")
