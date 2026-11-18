@@ -12,6 +12,7 @@ HEADER = [
     "fields right (with a source)",
     "has a source, left empty",
     "no source, left empty",
+    "filled right (of filled)",
     "all fields right",
     "cells right",
 ]
@@ -58,6 +59,8 @@ def sample_counts(case: dict, matrix: dict, rec: dict, fill: Fill) -> dict:
         "left_empty": sum(not filled[o["name"]] for o in avail),
         "no_source": len(nosrc),
         "no_source_empty": sum(ok[o["name"]] for o in nosrc),
+        "filled": sum(filled.values()),
+        "filled_right": sum(ok[f] and filled[f] for f in outs),
         "right": sum(ok.values()),
         "fields": len(outs),
         "cells_right": cells["correct"],
@@ -73,6 +76,7 @@ def _row(label: str, c: dict) -> list[str]:
         f"{c['right_with_source']} / {c['with_source']}",
         f"{c['left_empty']} / {c['with_source']}",
         f"{c['no_source_empty']} / {c['no_source']}",
+        f"{c['filled_right']} / {c['filled']}",
         f"{c['right']} / {c['fields']}",
         f"{c['cells_right']} / {c['cells']}",
     ]

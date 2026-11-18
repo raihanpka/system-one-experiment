@@ -140,7 +140,11 @@ def evaluate_run(run_dir, fill: Fill | None = None) -> dict:
             {
                 "metrics": summary,
                 "cases": len(rows),
-                "fill": {"derived": fill.derived, "copy": fill.copy},
+                "fill": {
+                    "derived": fill.derived,
+                    "copy": fill.copy,
+                    "none_ceiling": fill.none_ceiling,
+                },
             },
             indent=2,
         )

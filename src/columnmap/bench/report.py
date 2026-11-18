@@ -14,9 +14,12 @@ from .summary import error_lines, sample_counts, table
 DECISION_COLUMNS = [
     "output",
     "chosen_input",
+    "roles",
     "method",
     "expression",
     "score",
+    "p_present",
+    "p_none",
     "filled",
     "truth_available",
     "truth_input",
@@ -33,9 +36,16 @@ def decisions(fields: dict, case: dict, correct: dict, fill: Fill) -> list[dict]
             {
                 "output": o["name"],
                 "chosen_input": "|".join(r["cols"]),
+                "roles": "|".join(
+                    f"{phrase}<-{col or 'none'}" for phrase, col in r.get("roles", [])
+                ),
                 "method": r["method"],
                 "expression": r["best_text"] or "",
                 "score": "" if r["score"] is None else round(r["score"], 4),
+                "p_present": (
+                    "" if r.get("p_present") is None else round(r["p_present"], 4)
+                ),
+                "p_none": "" if r.get("p_none") is None else round(r["p_none"], 4),
                 "filled": is_filled(r, fill),
                 "truth_available": o["available"],
                 "truth_input": "|".join(o["sources"]),
@@ -75,14 +85,22 @@ def make_report(store, cases, letters, run_dir, fill: Fill) -> list[Path]:
         ]
         per_sample.append((x, sample_counts(case, r["matrix"], rec, fill)))
     meta = store.data["meta"]
+    used = [*store.rows("mapping", set(letter)), *store.rows("honest", set(letter))]
+    questions = sum(r.get("questions", 0) for r in used)
+    tokens = sum(r.get("tokens", 0) for r in used)
+    seconds = sum(r.get("seconds", 0) for r in used)
     md = [
         "# Results",
         "",
         f"Model: {meta['model']} (hosted, OpenRouter). Seed {meta.get('seed')}, split {meta.get('split')}. "
         "The model sees each input column's name and sample values. "
-        f"A field copied from one column is filled when its column set has probability at least {fill.copy}, any other field at least {fill.derived}. "
+        "Each field description is read as named roles; each role is bound to one column, and code builds the "
+        f"expression. A field is filled when its source is present: p_present at least {fill.copy} for a copied "
+        f"field or {fill.derived} for a derived one, and p_none at most {fill.none_ceiling}. "
         "Every count is x / y against the ground truth. Column top-1 only checks the column choice; "
         "fields right checks that the converted column equals the expected column.",
+        "",
+        f"Model calls: {questions} questions over {len(per_sample)} files, {tokens:,} tokens, {seconds:.0f} s total.",
         "",
     ]
     if per_sample:

@@ -58,12 +58,16 @@ def test_run_folder_layout_files_and_summary(tmp_path):
         ):
             assert (run / f"{letter}_{word}" / f).exists(), f
     with (run / "c_technical_terms" / "decisions_technical_terms.csv").open() as fh:
-        assert len(list(csv.reader(fh))) == 32  # header + 31 fields
+        rows = list(csv.reader(fh))
+        assert len(rows) == 32  # header + 31 fields
+        assert {"p_present", "p_none", "roles"} <= set(rows[0])
     md = (run / "report" / "summary.md").read_text()
     assert (
         re.search(r"\| a \| \d+ / \d+ \| \d+ / \d+ \|", md)
         and "**total**" in md
         and "Fields still wrong" in md
+        and "filled right (of filled)" in md
+        and "Model calls:" in md
     )
 
 
