@@ -16,11 +16,20 @@ def _day(x):
     return date.fromisoformat(str(x))
 
 
-# arithmetic takes numbers only: a text value must not repeat ("12" * 5) or join ("1" + "2") by accident
+# arithmetic takes numbers only: a text value must not repeat ("abc" * 5) or join ("a" + "b").
+# CSV cells arrive as text, so a numeric string is coerced; only non-numeric text is rejected.
 def _num(x):
-    if isinstance(x, bool) or not isinstance(x, (int, float)):
+    if isinstance(x, bool):
         raise TypeError(f"not a number: {x!r}")
-    return x
+    if isinstance(x, (int, float)):
+        return x
+    if isinstance(x, str):
+        text = x.strip()
+        try:
+            return int(text) if re.fullmatch(r"[+-]?\d+", text) else float(text)
+        except ValueError:
+            raise TypeError(f"not a number: {x!r}") from None
+    raise TypeError(f"not a number: {x!r}")
 
 
 def evaluate(node: dict, row: dict):

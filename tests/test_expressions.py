@@ -89,12 +89,25 @@ def test_safe_evaluate_returns_none_instead_of_raising():
 
 
 def test_arithmetic_refuses_text_instead_of_repeating_or_joining_it():
-    row = {"id": "8532422441", "amount": 19281179, "a": "1", "b": "2"}
+    row = {"id": "POL-8532422441", "amount": 19281179, "a": "abc", "b": "def"}
     mul = {"op": "mul", "args": [{"src": "id"}, {"src": "amount"}]}
     add = {"op": "add", "args": [{"src": "a"}, {"src": "b"}]}
     assert safe_evaluate(mul, row) is None  # was a 1.7 GB string
-    assert safe_evaluate(add, row) is None  # was "12"
+    assert safe_evaluate(add, row) is None  # was "abcdef"
     assert safe_evaluate({"op": "add", "args": [{"lit": 1}, {"lit": 2}]}, row) == 3
+
+
+def test_numeric_csv_cells_are_coerced_not_rejected():
+    row = {"amount": "10", "fee": "2.5", "total": "12.5"}
+    added = {"op": "add", "args": [{"src": "amount"}, {"src": "fee"}]}
+    assert safe_evaluate(added, row) == 12.5
+    assert (
+        safe_evaluate({"op": "mul", "args": [{"src": "amount"}, {"lit": 2}]}, row) == 20
+    )
+    assert (
+        safe_evaluate({"op": "div", "args": [{"src": "total"}, {"src": "amount"}]}, row)
+        == 1.25
+    )
 
 
 def test_column_unit_reads_the_name_before_the_values_and_keeps_codes_out_of_math():
