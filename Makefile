@@ -5,9 +5,11 @@ TABLE ?=
 KNOWLEDGE ?= data/knowledge
 OUT ?= converted.csv
 REVIEW ?= empty
+RUN_DIR ?=
+BUDGET ?= 0.02
 
 .DEFAULT_GOAL := help
-.PHONY: help test lint check run sample full report data map graph schema open clean
+.PHONY: help test lint check run sample full report data map graph schema calibrate open clean
 
 help: ## Show this list
 	@grep -E '^[a-z]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
@@ -47,6 +49,9 @@ graph: ## The same through the LangGraph harness: make graph TABLE=in.csv REVIEW
 
 schema: ## Print the extracted input schema: make schema TABLE=in.csv
 	$(RUN) --table "$(TABLE)" --schema
+
+calibrate: ## Choose thresholds from a labeled run: make calibrate RUN_DIR=results/X BUDGET=0.02
+	$(RUN) --calibrate "$(RUN_DIR)" --knowledge "$(KNOWLEDGE)" --budget "$(BUDGET)"
 
 open: ## Open the summary of the newest run
 	open "$$(ls -dt results/*/ | head -1)report/summary.md"

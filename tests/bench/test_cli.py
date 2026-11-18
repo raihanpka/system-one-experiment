@@ -228,6 +228,33 @@ def test_table_mode_maps_with_the_knowledge_folder_and_writes_a_csv(tmp_path, ca
     assert rows[0] == ["full_name", "amount"] and len(rows) == 3
 
 
+def test_table_mode_uses_the_dataset_policy_before_appsettings(tmp_path, capsys):
+    from columnmap.policy import Policy
+
+    csv_path, knowledge_dir = _table_case(tmp_path)
+    Policy(derived=0.99, copy=0.99).save(knowledge_dir)
+    out = tmp_path / "converted.csv"
+    assert (
+        main(
+            [
+                "--table",
+                str(csv_path),
+                "--knowledge",
+                str(knowledge_dir),
+                "--output",
+                str(out),
+                "--json",
+            ],
+            decider_factory=Approves,
+        )
+        == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert (
+        summary["filled"] == 0
+    )  # the dataset policy overrides the appsettings fallback
+
+
 def test_table_graph_mode_runs_the_harness_and_fails_closed(tmp_path, capsys):
     csv_path, knowledge_dir = _table_case(tmp_path)
     out = tmp_path / "converted.csv"

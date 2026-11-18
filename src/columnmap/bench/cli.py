@@ -51,6 +51,13 @@ def _fill(cfg, a) -> Fill:
     )
 
 
+def _knowledge_fill(knowledge, a, cfg) -> Fill:
+    fill = _fill(cfg, a)
+    if knowledge.policy and a.fill_score is None and a.copy_fill_score is None:
+        return knowledge.policy.fill()  # the dataset's calibrated policy wins
+    return fill
+
+
 def _print_schema(schema, as_json: bool) -> None:
     if as_json:
         print(
@@ -145,7 +152,7 @@ def _map_table(ap, a, cfg, decider_factory=None) -> int:
     if not knowledge_dir.exists():
         ap.error(f"knowledge folder not found: {knowledge_dir}")
     knowledge = Knowledge.load(knowledge_dir)
-    fill = _fill(cfg, a)
+    fill = _knowledge_fill(knowledge, a, cfg)
     if decider_factory is None:
         try:
             opts = openrouter_settings(cfg)
@@ -247,6 +254,17 @@ def main(argv=None, decider_factory=None) -> int:
         help="run the DeepEval metrics on this finished run folder (no model call) and stop",
     )
     ap.add_argument(
+        "--calibrate",
+        metavar="RUN",
+        help="choose thresholds from a labeled run and write policy.json (no model)",
+    )
+    ap.add_argument(
+        "--budget",
+        type=float,
+        default=0.02,
+        help="false-fill budget for --calibrate (default 0.02)",
+    )
+    ap.add_argument(
         "--report-only",
         action="store_true",
         help="rebuild files and summary from result.json, no model",
@@ -297,6 +315,15 @@ def main(argv=None, decider_factory=None) -> int:
         "--json", action="store_true", help="print a machine-readable summary"
     )
     a = ap.parse_args(argv)
+    if a.calibrate:
+        if a.table or a.deepeval:
+            ap.error("--calibrate is its own mode; drop --table and --deepeval")
+        if not 0 <= a.budget <= 1:
+            ap.error("--budget must be in [0, 1]")
+        from .calibrate import calibrate_run
+
+        calibrate_run(_abs(a.calibrate), _abs(a.knowledge), a.budget, a.json)
+        return 0
     if a.schema and not a.table:
         ap.error("--schema needs --table")
     if a.graph and not a.table:
@@ -368,7 +395,11 @@ def _run(ap, a, cfg, seed, decider_factory) -> None:
     sel = [cases[SAMPLES[x][0]] for x in letters]
     if baseline:
         write_samples(
-            t, cases, letters, _abs(a.data)
+            t,
+            cases,
+            letters,
+            _abs(a.data),
+            model=cfg["open_router"]["model"],
         )  # data/ holds the baseline seed only
     print(f"samples {letters}, seed {seed}, run folder {run}")
 

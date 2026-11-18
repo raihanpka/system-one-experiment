@@ -19,51 +19,10 @@ from deepeval.metrics import BaseMetric  # noqa: E402
 from deepeval.test_case import LLMTestCase  # noqa: E402
 
 from ..config import fill_from_settings, load_settings  # noqa: E402
-from ..mapper import Fill, convert, is_filled  # noqa: E402
-from .metrics import field_correct  # noqa: E402
-from .store import Store  # noqa: E402
-from .summary import top_column  # noqa: E402
-from .generate import generate  # noqa: E402
-from .template import load_template  # noqa: E402
+from ..mapper import Fill  # noqa: E402
+from .cases import cases_from_run, load_run  # noqa: E402,F401
 
-
-def load_run(run_dir) -> tuple[Store, dict, dict]:
-    store = Store(Path(run_dir) / "result.json")
-    meta = store.data["meta"]
-    cases = {c["case_id"]: c for c in generate(load_template(), 1, meta["seed"])}
-    return store, meta, cases
-
-
-def cases_from_run(run_dir, fill: Fill) -> list[dict]:
-    store, _, cases = load_run(run_dir)
-    honest = {r["case_id"]: r for r in store.rows("honest")}
-    out = []
-    for row in store.rows("mapping"):
-        rec = honest.get(row["case_id"])
-        if rec is None:
-            continue
-        case = cases[row["case_id"]]
-        names = [o["name"] for o in case["outputs"]]
-        _, conv = convert(rec["fields"], case["rows"], names, fill)
-        right = field_correct(case, conv)
-        actual, expected = {}, {}
-        for o in case["outputs"]:
-            f = o["name"]
-            actual[f] = {
-                "column": top_column(row["matrix"], f),
-                "filled": is_filled(rec["fields"][f], fill),
-                "right": right[f],
-            }
-            expected[f] = sorted(o["sources"]) if o["available"] else []
-        out.append(
-            {
-                "name": row["case_id"],
-                "input": f"{row['case_id']} columns={len(case['columns'])}",
-                "actual_output": json.dumps(actual, sort_keys=True),
-                "expected_output": json.dumps(expected, sort_keys=True),
-            }
-        )
-    return out
+__all__ = ["cases_from_run", "evaluate_run", "load_run"]
 
 
 def _read(test_case) -> tuple[dict, dict]:
