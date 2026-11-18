@@ -1,40 +1,37 @@
 output,kind,available,input_columns,expression
-policy_number,pass,True,Nomor Polis,Nomor Polis
-insured_full_name,concat,True,PRTY_NM_1|Surname,"concat(PRTY_NM_1, "" "", Surname)"
-insured_birth_date,pass,False,,
-insured_birth_year,format,False,,
-insured_gender,pass,False,,
-insured_city,pass,True,Kota,Kota
+policy_number,pass,True,nomorPolis,nomorPolis
+insured_full_name,concat,False,,
+insured_birth_date,pass,True,dob,dob
+insured_birth_year,format,True,dob,year(dob)
+insured_gender,pass,True,insured_gender,insured_gender
+insured_city,pass,False,,
 insured_province,pass,False,,
-postal_code,pass,True,postal code,postal code
+postal_code,pass,True,kodePos,kodePos
 insured_address,concat,False,,
-coverage_start_date,pass,True,Tgl Mulai Polis,Tgl Mulai Polis
-coverage_end_date,pass,True,COVERAGE_END_DATE,COVERAGE_END_DATE
-coverage_days,arith,True,Tgl Mulai Polis|COVERAGE_END_DATE,"days_between(Tgl Mulai Polis, COVERAGE_END_DATE)"
-sum_insured_amount,pass,True,Sum Ins,Sum Ins
-currency_code,pass,False,,
+coverage_start_date,pass,True,tglMulaiPolis,tglMulaiPolis
+coverage_end_date,pass,True,CoverageEndDate,CoverageEndDate
+coverage_days,arith,True,tglMulaiPolis|CoverageEndDate,"days_between(tglMulaiPolis, CoverageEndDate)"
+sum_insured_amount,pass,True,Sum Insured Amount,Sum Insured Amount
+currency_code,pass,True,ccy,ccy
 gross_premium,arith,False,,
-net_premium_after_discount,arith,False,,
+net_premium_after_discount,arith,True,premBase|rebateRate,premBase * (1 - rebateRate)
 claim_number,pass,False,,
-claim_incident_date,pass,True,Tgl Kejadian,Tgl Kejadian
-claim_age_days,arith,True,Tgl Mulai Polis|Tgl Kejadian,"days_between(Tgl Mulai Polis, Tgl Kejadian)"
-claimed_amount,pass,True,Clm Amt,Clm Amt
+claim_incident_date,pass,True,clmDt,clmDt
+claim_age_days,arith,True,tglMulaiPolis|clmDt,"days_between(tglMulaiPolis, clmDt)"
+claimed_amount,pass,True,clmAmt,clmAmt
 deductible_amount,pass,False,,
 net_claim_payable,arith,False,,
-claim_paid_amount,pass,False,,
-claim_paid_ratio,arith,False,,
-claim_status,lookup,True,Clm Stat,"lookup(Clm Stat, {""A"": ""Approved"", ""R"": ""Rejected"", ""P"": ""Pending""})"
-agent_id,pass,False,,
-account_number,pass,True,account number,account number
+claim_paid_amount,pass,True,Claim Paid Amount,Claim Paid Amount
+claim_paid_ratio,arith,True,Claim Paid Amount|premBase,Claim Paid Amount / premBase
+claim_status,lookup,False,,
+agent_id,pass,True,kodeAgen,kodeAgen
+account_number,pass,True,LDG_OWNR_KEY,LDG_OWNR_KEY
 transaction_date,pass,False,,
-transaction_amount,pass,True,Txn Amt,Txn Amt
-transaction_fee_amount,pass,True,transaction_fee_amount,transaction_fee_amount
-total_charge,arith,True,Txn Amt|transaction_fee_amount,Txn Amt + transaction_fee_amount
-,decoy,False,Internal Remark,
-,decoy,False,Agent Commission Amount,
-,decoy,False,Adjuster Name,
-,decoy,False,Record Hash,
-,decoy,False,Premium Receipt Date,
-,decoy,False,Policy Version,
-,anomaly,False,postal code@row20,na: 'N/A'
-,anomaly,False,COVERAGE_END_DATE@row21,sentinel: '1900-01-01'
+transaction_amount,pass,True,MVT_AMT_MAIN,MVT_AMT_MAIN
+transaction_fee_amount,pass,True,biayaAdmin,biayaAdmin
+total_charge,arith,True,MVT_AMT_MAIN|biayaAdmin,MVT_AMT_MAIN + biayaAdmin
+,decoy,False,internalRemark,
+,decoy,False,adjusterName,
+,decoy,False,premiumReceiptDate,
+,decoy,False,policyVersion,
+,anomaly,False,insured_gender@row2,empty: ''
